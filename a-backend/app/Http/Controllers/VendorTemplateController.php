@@ -10,19 +10,22 @@ class VendorTemplateController extends Controller
 {
     /**
      * Download Template Excel untuk New Vendor Import.
-     * Sheets: Vendors, BankAccounts
+     * Sheets: Vendors, BankAccounts, Panduan_Master_Data
      */
     public function downloadNewVendorTemplate(): StreamedResponse
     {
         $spreadsheet = new Spreadsheet();
 
+        // ---------------------------------------------------------------------
         // Sheet 1: Vendors
+        // ---------------------------------------------------------------------
         $vendorSheet = $spreadsheet->getActiveSheet();
         $vendorSheet->setTitle('Vendors');
 
         $vendorHeaders = [
             'vendor_ref',
             'nama_perusahaan',
+            'search_term',
             'address',
             'city',
             'postal_code',
@@ -35,36 +38,85 @@ class VendorTemplateController extends Controller
             'npwp',
             'business_type',
             'kategori_code',
-            'payment_method',
+            'kategori_other',
+            'subcategory',
             'payment_term_code',
+            'payment_term_other',
             'order_currency',
-            'search_term',
+            'order_currency_other',
         ];
         $vendorSheet->fromArray($vendorHeaders, null, 'A1');
 
-        $vendorSample = [
-            'REF001',
-            'PT Cahaya Sukses Mandiri',
-            'Jl. Jendral Sudirman No. 123',
-            'Jakarta Selatan',
-            '12190',
-            'Indonesia',
-            '021-5551234',
-            '081234567890',
-            '021-5551235',
-            'Budi Santoso',
-            'budi@cahayasukses.test',
-            '01.234.567.8-012.000',
-            'Swasta',
-            'VMS_001',
-            'Transfer',
-            'Z001',
-            'IDR',
-            'CAHAYA',
+        $vendorSamples = [
+            [
+                'REF001',
+                'PT Sinergi Komunikasi Mandiri',
+                'SINERGI',
+                'Jl. TB Simatupang No. 18',
+                'Jakarta Selatan',
+                '12430',
+                'Indonesia',
+                '021-7891234',
+                '081234567890',
+                '021-7891235',
+                'Budi Santoso',
+                'budi@sinergikm.co.id',
+                '01.345.678.9-012.000',
+                'PT',
+                'VMS_001',
+                '',
+                'Material & Jasa',
+                'AP04',
+                '',
+                'IDR',
+                '',
+            ],
+            [
+                'REF002',
+                'CV Digital Prima Kreasi',
+                'DIGIPRIMA',
+                'Jl. Gatot Subroto Kav. 52',
+                'Jakarta Selatan',
+                '12950',
+                'Indonesia',
+                '021-5239900',
+                '081198765432',
+                '021-5239901',
+                'Rina Handayani',
+                'rina@digiprima.co.id',
+                '02.456.789.0-015.000',
+                'CV',
+                'VMS_004',
+                '',
+                'Jasa',
+                'AP02',
+                '',
+                'IDR',
+                '',
+            ],
         ];
-        $vendorSheet->fromArray($vendorSample, null, 'A2');
+        $vendorSheet->fromArray($vendorSamples, null, 'A2');
 
+        $vendorSheet->getStyle('A1:U1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '17385F'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $vendorSheet->getRowDimension(1)->setRowHeight(28);
+
+        foreach (range('A', 'U') as $col) {
+            $vendorSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ---------------------------------------------------------------------
         // Sheet 2: BankAccounts
+        // ---------------------------------------------------------------------
         $bankSheet = $spreadsheet->createSheet();
         $bankSheet->setTitle('BankAccounts');
 
@@ -72,19 +124,112 @@ class VendorTemplateController extends Controller
             'vendor_ref',
             'bank_name',
             'account_number',
-            'beneficiary',
+            'account_name',
             'swift_code',
         ];
         $bankSheet->fromArray($bankHeaders, null, 'A1');
 
-        $bankSample = [
-            'REF001',
-            'BCA',
-            '1234567890',
-            'PT CAHAYA SUKSES MANDIRI',
-            'CENAIDJA',
+        $bankSamples = [
+            [
+                'REF001',
+                'Bank Central Asia (BCA)',
+                '8801928371',
+                'PT Sinergi Komunikasi Mandiri',
+                'CENAIDJA',
+            ],
+            [
+                'REF002',
+                'Bank Mandiri',
+                '1370019283741',
+                'CV Digital Prima Kreasi',
+                'BMRIIDJA',
+            ],
         ];
-        $bankSheet->fromArray($bankSample, null, 'A2');
+        $bankSheet->fromArray($bankSamples, null, 'A2');
+
+        $bankSheet->getStyle('A1:E1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '17385F'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $bankSheet->getRowDimension(1)->setRowHeight(28);
+
+        foreach (range('A', 'E') as $col) {
+            $bankSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ---------------------------------------------------------------------
+        // Sheet 3: Panduan_Master_Data
+        // ---------------------------------------------------------------------
+        $refSheet = $spreadsheet->createSheet();
+        $refSheet->setTitle('Panduan_Master_Data');
+
+        $refSheet->setCellValue('A1', 'KODE KATEGORI (kategori_code)');
+        $refSheet->setCellValue('B1', 'DIVISI');
+        $refSheet->setCellValue('C1', 'NAMA KATEGORI / DESKRIPSI');
+
+        $categories = \Illuminate\Support\Facades\DB::table('vendor_categories')
+            ->orderBy('id')
+            ->get();
+
+        $catRow = 2;
+        foreach ($categories as $cat) {
+            $refSheet->setCellValue('A' . $catRow, $cat->cat_code);
+            $refSheet->setCellValue('B' . $catRow, $cat->category_type);
+            $refSheet->setCellValue('C' . $catRow, $cat->category_desc);
+            $catRow++;
+        }
+
+        $refSheet->setCellValue('E1', 'KODE PAYMENT TERM (payment_term_code)');
+        $refSheet->setCellValue('F1', 'KETERANGAN TEMPO PEMBAYARAN');
+
+        $paymentTerms = \Illuminate\Support\Facades\DB::table('payment_terms')
+            ->orderBy('id')
+            ->get();
+
+        $ptRow = 2;
+        foreach ($paymentTerms as $pt) {
+            $refSheet->setCellValue('E' . $ptRow, $pt->code ?: 'OTHER');
+            $refSheet->setCellValue('F' . $ptRow, $pt->name);
+            $ptRow++;
+        }
+
+        $refSheet->setCellValue('H1', 'PILIHAN SUBCATEGORY');
+        $refSheet->setCellValue('H2', 'Material');
+        $refSheet->setCellValue('H3', 'Jasa');
+        $refSheet->setCellValue('H4', 'Material & Jasa');
+
+        $refSheet->setCellValue('J1', 'PILIHAN ORDER CURRENCY');
+        $refSheet->setCellValue('J2', 'IDR');
+        $refSheet->setCellValue('J3', 'USD');
+        $refSheet->setCellValue('J4', 'OTHER (Wajib isi order_currency_other)');
+
+        $refSheet->getStyle('A1:C1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '17385F']],
+        ]);
+        $refSheet->getStyle('E1:F1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '17385F']],
+        ]);
+        $refSheet->getStyle('H1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '17385F']],
+        ]);
+        $refSheet->getStyle('J1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '17385F']],
+        ]);
+
+        foreach (['A', 'B', 'C', 'E', 'F', 'H', 'J'] as $col) {
+            $refSheet->getColumnDimension($col)->setAutoSize(true);
+        }
 
         // Set active sheet back to first sheet
         $spreadsheet->setActiveSheetIndex(0);

@@ -86,19 +86,14 @@ class NewVendorImportController extends Controller
                 'pic_vendor',
                 'email',
                 'npwp',
-                'kategori_id',
-                'kategori_other',
                 'payment_term_code',
-                'payment_term_other',
                 'order_currency',
-                'order_currency_other',
             ];
 
             $requiredBankHeaders = [
                 'vendor_ref',
                 'bank_name',
                 'account_number',
-                'account_name',
             ];
 
             $vendorHeaders = $this->readHeaders($vendorSheet);
@@ -109,10 +104,18 @@ class NewVendorImportController extends Controller
                 $vendorHeaders
             );
 
+            if (!in_array('kategori_code', $vendorHeaders) && !in_array('kategori_id', $vendorHeaders)) {
+                $missingVendorHeaders[] = 'kategori_code';
+            }
+
             $missingBankHeaders = array_diff(
                 $requiredBankHeaders,
                 $bankHeaders
             );
+
+            if (!in_array('account_name', $bankHeaders) && !in_array('beneficiary', $bankHeaders)) {
+                $missingBankHeaders[] = 'account_name';
+            }
 
             if ($missingVendorHeaders || $missingBankHeaders) {
                 return response()->json([
@@ -175,7 +178,6 @@ class NewVendorImportController extends Controller
                     'email' => 'required|email|max:255',
                     'npwp' => 'required|string|max:100',
                     'business_type' => 'nullable|string|max:255',
-                    'kategori_id' => 'required|integer|exists:vendor_categories,id',
                     'kategori_other' => 'nullable|string|max:255',
                     'payment_term_code' => 'required|string|max:50',
                     'payment_term_other' => 'nullable|string|max:255',
@@ -197,9 +199,36 @@ class NewVendorImportController extends Controller
                     continue;
                 }
 
+                // Resolusi Kategori: bisa berdasarkan kategori_code (VMS_001) atau kategori_id (angka)
+                $catIdentifier = $row['kategori_code'] ?? $row['kategori_id'] ?? null;
+
+                if (empty($catIdentifier)) {
+                    $errors[] = [
+                        'sheet' => 'Vendors',
+                        'row' => $rowNumber,
+                        'field' => 'kategori_code',
+                        'message' => 'Kolom kategori_code (misal VMS_001) wajib diisi.',
+                    ];
+                    continue;
+                }
+
                 $category = DB::table('vendor_categories')
-                    ->where('id', $row['kategori_id'])
+                    ->where('cat_code', strtoupper(trim((string) $catIdentifier)))
+                    ->orWhere('id', $catIdentifier)
                     ->first();
+
+                if (!$category) {
+                    $errors[] = [
+                        'sheet' => 'Vendors',
+                        'row' => $rowNumber,
+                        'field' => 'kategori_code',
+                        'message' => "Kode Kategori '{$catIdentifier}' tidak ditemukan di master database.",
+                    ];
+                    continue;
+                }
+
+                $vendorsByRef[$ref]['kategori_id'] = $category->id;
+                $vendorsByRef[$ref]['cat_code'] = $category->cat_code;
 
                 $catDesc = strtolower(trim((string) ($category->category_desc ?? $category->name ?? '')));
                 $isCatOther = str_contains($catDesc, 'other') || in_array($category->cat_code ?? '', ['VMS_012', 'VMS_015']);
@@ -215,7 +244,6 @@ class NewVendorImportController extends Controller
                         'message' => 'Kategori Other wajib diisi.',
                     ];
                 }
-
 
                 $paymentTermCode = strtoupper(
                     trim((string) ($row['payment_term_code'] ?? ''))
@@ -437,7 +465,7 @@ class NewVendorImportController extends Controller
                         'kategori_other' => $row['kategori_other'] ?? null,
 
                         'company_code_purch_org' =>
-                        '1200 / 1300 (PROJECT BAKTI)',
+                        '1200 / 1300 (All Comp. Code)',
 
                         'payment_term_id' => $row['payment_term_id'],
                         'payment_term_other' =>
@@ -452,33 +480,83 @@ class NewVendorImportController extends Controller
                         'created_by' => $user->id,
                     ]);
 
+                    // Simpan subkategori vendor
+                    $subcatRaw = strtolower(trim((string) ($row['subcategory'] ?? '')));
+                    $subcategories = ['Material', 'Jasa'];
+                    if ($subcatRaw === 'material') {
+                        $subcategories = ['Material'];
+                    } elseif ($subcatRaw === 'jasa') {
+                        $subcategories = ['Jasa'];
+                    }
+
+                    foreach ($subcategories as $sub) {
+                        \App\Models\VendorSubcategory::create([
+                            'vendor_id' => $vendor->id,
+                            'category_id' => $row['kategori_id'],
+                            'category_other' => $row['kategori_other'] ?? null,
+                            'subcategory' => $sub,
+                        ]);
+                    }
+
                     foreach ($bankRowsByRef[$ref] as $bank) {
                         VendorBankAccount::create([
                             'vendor_id' => $vendor->id,
                             'bank_name' => $bank['bank_name'],
                             'account_number' => $bank['account_number'],
-                            'account_name' => $bank['account_name'],
+                            'account_name' => $bank['account_name'] ?? $bank['beneficiary'] ?? '',
+                            'swift_code' => $bank['swift_code'] ?? null,
                         ]);
                     }
+
+                    $catCode = $row['cat_code'] ?? null;
 
                     $vendorRequest = VendorRequest::create([
                         'vendor_id' => $vendor->id,
                         'request_type' => 'CREATE',
+                        'cat_code' => $catCode,
                         'form_number' => $this->createRequestNumber('CREATE'),
                         'requested_by_nik' => $user->nik,
-                        'status' => 'Under Review',
-                        'current_stage' => 'REQUESTER',
+                        'requested_by_email' => $user->email,
+                        'status' => 'PENDING_L1',
+                        'current_stage' => 'ASISTEN_KADIV',
                         'submitted_at' => now(),
                     ]);
 
                     $vendorRequest->approvalHistories()->create([
                         'approval_stage' => 'REQUESTER',
+                        'acted_by' => $user->id,
+                        'acted_by_name' => $user->name,
                         'acted_by_nik' => $user->nik,
-                        'status' => 'Under Review',
+                        'acted_by_email' => $user->email,
+                        'status' => 'Submitted',
                         'notes' => 'Pengajuan New Vendor dikirim melalui import Excel.',
                         'acted_at' => now(),
                         'signature_token' => bin2hex(random_bytes(32)),
                     ]);
+
+                    // Generate Form Approvals untuk Level 1 s/d Level 5
+                    if ($catCode) {
+                        $layers = DB::table('master_approval_layer')
+                            ->where('cat_code', $catCode)
+                            ->where('type', 'Approval')
+                            ->orderBy('priority')
+                            ->get();
+
+                        foreach ($layers as $layer) {
+                            \App\Models\FormApproval::firstOrCreate(
+                                [
+                                    'vendor_request_id' => $vendorRequest->id,
+                                    'priority' => $layer->priority,
+                                ],
+                                [
+                                    'stage' => $layer->stage,
+                                    'nik' => $layer->nik,
+                                    'email' => $layer->email,
+                                    'status' => $layer->priority === 1 ? 'Under Review' : 'Pending',
+                                ]
+                            );
+                        }
+                    }
 
                     $imported[] = [
                         'vendor_ref' => $ref,
@@ -493,7 +571,7 @@ class NewVendorImportController extends Controller
             });
 
             return response()->json([
-               'message' => 'Import New Vendor berhasil. Semua pengajuan menunggu persetujuan Kadiv Requester.',
+                'message' => 'Import New Vendor berhasil. Seluruh pengajuan telah masuk ke antrean Level 1 (Verifikasi Dokumen).',
                 'total_imported' => count($imported),
                 'data' => $imported,
             ], 201);
@@ -527,6 +605,10 @@ class NewVendorImportController extends Controller
             'beneficiary' => 'account_name',
             'account_holder' => 'account_name',
             'nama_pemilik_rekening' => 'account_name',
+            'nama_rekening' => 'account_name',
+            'kode_kategori' => 'kategori_code',
+            'cat_code' => 'kategori_code',
+            'category_code' => 'kategori_code',
         ];
 
         return $aliases[$header] ?? $header;
@@ -605,7 +687,7 @@ class NewVendorImportController extends Controller
 
     /**
      * Membuat nomor pengajuan mengikuti VendorController.
-     * Harus dipanggil di dalam transaksi database.
+     * Format: HRIS-VMS-N-YYYYMMDDXXX
      */
     private function createRequestNumber(string $requestType): string
     {
@@ -615,9 +697,7 @@ class NewVendorImportController extends Controller
         $status = match (strtoupper($requestType)) {
             'CREATE', 'NEW' => 'NEW',
             'UPDATE' => 'UPDATE',
-            default => throw new \InvalidArgumentException(
-                'Jenis request tidak valid.'
-            ),
+            default => 'NEW',
         };
 
         $prefix = $status === 'NEW' ? 'N' : 'U';
@@ -636,26 +716,21 @@ class NewVendorImportController extends Controller
             ->lockForUpdate()
             ->first();
 
-        if (!$sequence) {
-            throw new \RuntimeException(
-                'Gagal mendapatkan request sequence.'
-            );
-        }
-
-        $reqnum = $sequence->last_number + 1;
+        $reqnum = $sequence ? ($sequence->last_number + 1) : 1;
 
         DB::table('request_sequences')
-            ->where('id', $sequence->id)
+            ->where('year', $year)
+            ->where('form_type', $formType)
+            ->where('status', $status)
             ->update([
                 'last_number' => $reqnum,
                 'updated_at' => now(),
             ]);
 
         return sprintf(
-            'HRIS-%s-%s-%d%06d',
-            $formType,
+            'HRIS-VMS-%s-%s%03d',
             $prefix,
-            $year,
+            now()->format('Ymd'),
             $reqnum
         );
     }
