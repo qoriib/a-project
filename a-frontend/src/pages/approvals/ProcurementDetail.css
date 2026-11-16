@@ -352,9 +352,27 @@
   flex-wrap: wrap;
   gap: 10px;
   min-width: 0;
-  padding: 13px 16px;
+  padding: 13px 18px;
   border-bottom: 1px solid #e8edf4;
   background: #f8faff;
+}
+
+.procurement-detail-page .procurement-bank-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.procurement-detail-page .procurement-bank-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #edf4ff;
+  border: 1px solid #dce8fa;
+  color: #245da8;
 }
 
 .procurement-detail-page .procurement-bank-card-header h6 {
@@ -368,9 +386,127 @@
 .procurement-detail-page .procurement-bank-card .procurement-detail-row {
   width: 100%;
   margin: 0 !important;
-  padding: 17px 16px;
+  padding: 18px 18px 16px;
   --bs-gutter-x: 18px;
   --bs-gutter-y: 16px;
+}
+
+.procurement-detail-page .procurement-bank-divider {
+  width: 100%;
+  height: 1px;
+  background: #eef2f7;
+}
+
+.procurement-detail-page .procurement-bank-documents {
+  padding: 16px 18px 18px;
+  background: #fbfcfe;
+}
+
+.procurement-detail-page .procurement-bank-documents-header {
+  margin-bottom: 12px;
+}
+
+.procurement-detail-page .procurement-bank-doc-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.procurement-detail-page .procurement-bank-doc-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #4f637b;
+}
+
+.procurement-detail-page .procurement-bank-doc-title {
+  margin: 0;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.procurement-detail-page .procurement-bank-doc-subtitle {
+  margin: 2px 0 0;
+  color: #8793a4;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.procurement-detail-page .procurement-bank-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 11.5px;
+}
+
+.procurement-detail-page .procurement-bank-empty-icon {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.procurement-detail-page .procurement-bank-upload-box {
+  margin-top: 10px;
+}
+
+.procurement-detail-page .procurement-bank-documents .procurement-document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.procurement-detail-page .procurement-bank-documents .procurement-existing-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 1px solid #dce4ee;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.procurement-detail-page .procurement-bank-documents .procurement-existing-file-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.procurement-detail-page .procurement-bank-documents .procurement-view-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 4px 11px;
+  border-radius: 6px;
+  background: #edf4ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.procurement-detail-page .procurement-bank-documents .procurement-view-file:hover {
+  background: #dbeafe;
+  color: #1e40af;
+  text-decoration: none;
 }
 
 .procurement-detail-page .procurement-bank-add,
@@ -1278,6 +1414,10 @@
 
   .procurement-detail-page .procurement-bank-card-header {
     padding: 12px;
+  }
+
+  .procurement-detail-page .procurement-bank-documents {
+    padding: 13px 12px 15px;
   }
 
   .procurement-detail-page .procurement-detail-actions {

@@ -1393,7 +1393,28 @@ function ProcurementDetail() {
               return (
                 <div className="procurement-bank-card" key={bank._key}>
                   <div className="procurement-bank-card-header">
-                    <h6>Rekening Bank {index + 1}</h6>
+                    <div className="procurement-bank-header-title-wrap">
+                      <div className="procurement-bank-header-icon">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="3" y1="21" x2="21" y2="21" />
+                          <line x1="6" y1="10" x2="6" y2="18" />
+                          <line x1="10" y1="10" x2="10" y2="18" />
+                          <line x1="14" y1="10" x2="14" y2="18" />
+                          <line x1="18" y1="10" x2="18" y2="18" />
+                          <polygon points="12 2 20 7 4 7" />
+                        </svg>
+                      </div>
+                      <h6>Rekening Bank {index + 1}</h6>
+                    </div>
 
                     {canEdit && !bank.id && bankAccounts.length > 1 && (
                       <button
@@ -1484,12 +1505,36 @@ function ProcurementDetail() {
                     </div>
                   </div>
 
+                  <div className="procurement-bank-divider" />
+
                   {/* DOKUMEN REKENING */}
                   <div className="procurement-bank-documents">
                     <div className="procurement-bank-documents-header">
-                      <div>
-                        <h6>Dokumen Rekening</h6>
-                        <p>Dokumen pendukung untuk rekening bank ini.</p>
+                      <div className="procurement-bank-doc-heading">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="procurement-bank-doc-icon"
+                        >
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        <div>
+                          <h6 className="procurement-bank-doc-title">
+                            Dokumen Rekening
+                          </h6>
+                          <p className="procurement-bank-doc-subtitle">
+                            Dokumen pendukung untuk rekening bank ini (buku tabungan / rekening koran).
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -1507,6 +1552,20 @@ function ProcurementDetail() {
                                 className="procurement-existing-file-name"
                                 title={getFileName(path)}
                               >
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="me-1 text-primary"
+                                >
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                  <polyline points="14 2 14 8 20 8" />
+                                </svg>
                                 {getFileName(path) || "Dokumen rekening"}
                                 {document.version
                                   ? ` (Versi ${document.version})`
@@ -1520,7 +1579,21 @@ function ProcurementDetail() {
                                   rel="noreferrer"
                                   className="procurement-view-file"
                                 >
-                                  Lihat
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="me-1"
+                                  >
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                  </svg>
+                                  Lihat File
                                 </a>
                               )}
                             </div>
@@ -1528,13 +1601,28 @@ function ProcurementDetail() {
                         })}
                       </div>
                     ) : (
-                      <div className="procurement-no-file">
-                        Belum ada dokumen rekening.
+                      <div className="procurement-bank-empty-state">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="procurement-bank-empty-icon"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                        <span>Belum ada dokumen rekening yang dilampirkan.</span>
                       </div>
                     )}
 
                     {canEdit && (
-                      <>
+                      <div className="procurement-bank-upload-box">
                         <input
                           type="file"
                           className="procurement-detail-file"
@@ -1561,12 +1649,12 @@ function ProcurementDetail() {
                             ))}
                           </div>
                         )}
-                      </>
-                    )}
 
-                    <small className="procurement-detail-file-info">
-                      Format: PDF, JPG, JPEG, PNG.
-                    </small>
+                        <small className="procurement-detail-file-info">
+                          Format yang didukung: PDF, JPG, JPEG, PNG (Maksimal 10 MB per file).
+                        </small>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -1677,12 +1765,12 @@ function ProcurementDetail() {
                             ))}
                           </div>
                         )}
+
+                        <small className="procurement-detail-file-info">
+                          Format: PDF, JPG, JPEG, PNG.
+                        </small>
                       </>
                     )}
-
-                    <small className="procurement-detail-file-info">
-                      Format: PDF, JPG, JPEG, PNG.
-                    </small>
                   </div>
                 );
               })}
