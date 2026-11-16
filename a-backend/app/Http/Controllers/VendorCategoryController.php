@@ -5,23 +5,42 @@ namespace App\Http\Controllers;
 use App\Models\VendorCategory;
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\Http\Request;
+
 class VendorCategoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $today = now()->toDateString();
+        $user = $request->user();
 
-        $categories = VendorCategory::query()
-            ->where(function ($query) use ($today) {
-                $query->whereNull('start_date')
+        $query = VendorCategory::query()
+            ->where(function ($q) use ($today) {
+                $q->whereNull('start_date')
                     ->orWhereDate('start_date', '<=', $today);
             })
-            ->where(function ($query) use ($today) {
-                $query->whereNull('end_date')
+            ->where(function ($q) use ($today) {
+                $q->whereNull('end_date')
                     ->orWhereDate('end_date', '>=', $today);
-            })
-            ->orderBy('id')
-            ->get();
+            });
+
+        // Filter berdasarkan kategori yang boleh diakses oleh divisi/NIK Requester
+        if ($user && $user->nik) {
+            $allowedTypes = DB::table('requester_category_access')
+                ->where('nik', $user->nik)
+                ->whereDate('start_date', '<=', $today)
+                ->where(function ($q) use ($today) {
+                    $q->whereNull('end_date')
+                        ->orWhereDate('end_date', '>=', $today);
+                })
+                ->pluck('category_type');
+
+            if ($allowedTypes->isNotEmpty()) {
+                $query->whereIn('category_type', $allowedTypes);
+            }
+        }
+
+        $categories = $query->orderBy('id')->get();
 
         return response()->json($categories);
     }

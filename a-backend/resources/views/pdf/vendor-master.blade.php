@@ -329,68 +329,56 @@
 
     // KOLOM APPROVAL
     $approvalStages = [
-    'REQUESTER',
-    'KADIV_REQUESTER',
-    'KADIV_ACCOUNTING',
-    'KADIV_TAX',
-    'SAP',
+        'REQUESTER',
+        'ASISTEN_KADIV',
+        'KADIV_REQUESTER',
+        'KADIV_ACCOUNTING',
+        'KADIV_TAX',
+        'SAP',
     ];
 
     $stageMap = [
-    'REQUESTER' => 'Requested by,<br>Requester',
-    'KADIV_REQUESTER' => 'Approved by,<br>Kadiv Requester',
-    'KADIV_ACCOUNTING' => 'Approved by,<br>Kadiv Accounting',
-    'KADIV_TAX' => 'Approved by,<br>Kadiv Tax',
-    'SAP' => 'Accepted by,<br>SAP',
+        'REQUESTER' => 'Requested by,<br>Requester',
+        'ASISTEN_KADIV' => 'Verified by,<br>Asisten Kadiv',
+        'KADIV_REQUESTER' => 'Approved by,<br>Kadiv Requester',
+        'KADIV_ACCOUNTING' => 'Approved by,<br>Accounting',
+        'KADIV_TAX' => 'Approved by,<br>Tax',
+        'SAP' => 'Accepted by,<br>SAP',
     ];
 
     $approvalByStage = collect($approvals)->groupBy(function ($approval) {
-    $stage = strtoupper($approval->approval_stage ?? '');
-    $status = $approval->status ?? '';
+        $stage = strtoupper($approval->approval_stage ?? '');
+        $status = $approval->status ?? '';
 
-    if ($stage === 'PROCUREMENT' || $stage === 'REQUESTER') {
-    if ($status === 'Under Review') {
-    return 'REQUESTER';
-    }
+        if ($stage === 'REQUESTER') {
+            return 'REQUESTER';
+        }
 
-    if ($status === 'Approved') {
-    return 'KADIV_REQUESTER';
-    }
-    }
+        if ($stage === 'ASISTEN_KADIV' || $stage === 'PROCUREMENT') {
+            return 'ASISTEN_KADIV';
+        }
 
-    if ($stage === 'ACCOUNTING') {
-    if ($status === 'Under Review') {
-    return 'ACCOUNTING';
-    }
+        if ($stage === 'KADIV') {
+            return 'KADIV_REQUESTER';
+        }
 
-    if ($status === 'Approved') {
-    return 'KADIV_ACCOUNTING';
-    }
-    }
+        if ($stage === 'ACCOUNTING') {
+            return 'KADIV_ACCOUNTING';
+        }
 
-    if ($stage === 'TAX') {
-    if ($status === 'Under Review') {
-    return 'TAX';
-    }
+        if ($stage === 'TAX') {
+            return 'KADIV_TAX';
+        }
 
-    if ($status === 'Approved') {
-    return 'KADIV_TAX';
-    }
-    }
+        if ($stage === 'SAP') {
+            return 'SAP';
+        }
 
-    if ($stage === 'KADIV') {
-    return 'KADIV_REQUESTER';
-    }
-
-    if ($stage === 'SAP' && $status === 'Approved') {
-    return 'SAP';
-    }
-
-    return null;
+        return null;
     })->filter(function ($items, $key) {
-    return $key !== null;
+        return $key !== null;
     })->map(function ($items) {
-    return $items->sortByDesc('acted_at')->first();
+        return $items->sortByDesc('acted_at')->first();
     });
     @endphp
 
@@ -670,19 +658,20 @@
                 $actor = $approval->actor ?? null;
 
                 $isQrStage = in_array($stage, [
-                'REQUESTER',
-                'KADIV_REQUESTER',
-                'KADIV_ACCOUNTING',
-                'KADIV_TAX',
-                'SAP',
+                    'REQUESTER',
+                    'ASISTEN_KADIV',
+                    'KADIV_REQUESTER',
+                    'KADIV_ACCOUNTING',
+                    'KADIV_TAX',
+                    'SAP',
                 ]);
 
                 // Requester mendapatkan QR setelah submit.
                 // Approval lainnya mendapatkan QR setelah disetujui.
                 $hasQrStatus = $approval && (
-                ($stage === 'REQUESTER' && $approval->status === 'Under Review')
-                ||
-                ($stage !== 'REQUESTER' && $approval->status === 'Approved')
+                    ($stage === 'REQUESTER' && in_array($approval->status, ['Submitted', 'Under Review', 'Approved']))
+                    ||
+                    ($stage !== 'REQUESTER' && $approval->status === 'Approved')
                 );
 
                 $qr = ($isQrStage && $hasQrStatus)

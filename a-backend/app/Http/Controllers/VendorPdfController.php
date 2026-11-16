@@ -33,9 +33,10 @@ class VendorPdfController extends Controller
         }
 
         $stageOrder = [
-            'REQUESTER' => 1,
-            'PROCUREMENT' => 1, // data lama
-            'KADIV' => 2,       // data lama
+            'REQUESTER' => 0,
+            'ASISTEN_KADIV' => 1,
+            'PROCUREMENT' => 1, // data legacy
+            'KADIV' => 2,
             'ACCOUNTING' => 3,
             'TAX' => 4,
             'SAP' => 5,
