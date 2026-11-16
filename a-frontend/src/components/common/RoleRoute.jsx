@@ -33,6 +33,9 @@ export function RoleRoute({ allowedRoles = [], redirectTo = "/dashboard" }) {
     const roleKey = allowed.toUpperCase();
 
     if (roleKey === "APPROVER") {
+      if (userRole === "REQUESTER" || userRole === "PROCUREMENT") {
+        return false;
+      }
       return (
         ["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(
           userRole

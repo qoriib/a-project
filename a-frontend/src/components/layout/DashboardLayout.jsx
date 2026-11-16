@@ -182,8 +182,9 @@ export function DashboardLayout() {
       ));
 
   const isApprover =
-    ["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(userRole) ||
-    user?.has_approval_access === true;
+    !isRequester &&
+    (["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(userRole) ||
+      user?.has_approval_access === true);
 
   const isAccounting = userRole === "ACCOUNTING";
   const isTax = userRole === "TAX";

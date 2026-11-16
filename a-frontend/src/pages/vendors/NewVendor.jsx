@@ -611,7 +611,11 @@ function NewVendor() {
                           className="existing-detail-button"
                           onClick={() => handleDetail(request.id)}
                         >
-                          Detail
+                          {request.status === "DRAFT" || request.status === "Draft"
+                            ? "Lanjutkan Draft"
+                            : request.status === "Rejected"
+                            ? "Revisi Draft"
+                            : "Detail"}
                         </button>
                       </td>
                     </tr>

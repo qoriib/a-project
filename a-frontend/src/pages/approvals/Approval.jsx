@@ -790,7 +790,10 @@ function Approval() {
                                   className="approval-process-button"
                                   onClick={() => handleDetail(request)}
                                 >
-                                  Proses <span>→</span>
+                                  {request.current_stage === "REQUESTER"
+                                    ? "Lanjutkan Draft"
+                                    : "Proses"}{" "}
+                                  <span>→</span>
                                 </button>
                               )}
 
@@ -800,7 +803,7 @@ function Approval() {
                                 className="approval-process-button"
                                 onClick={() => handleDetail(request)}
                               >
-                                Detail <span>→</span>
+                                Revisi / Detail <span>→</span>
                               </button>
                             )}
                           </td>
