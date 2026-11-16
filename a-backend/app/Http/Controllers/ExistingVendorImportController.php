@@ -790,6 +790,41 @@ class ExistingVendorImportController extends Controller
         }
     }
 
+    private function normalizeHeader($value): string
+    {
+        $header = preg_replace('/^\xEF\xBB\xBF/', '', (string) $value);
+        $header = strtolower(trim($header));
+        $header = preg_replace('/[\s\-\.]+/', '_', $header);
+
+        $aliases = [
+            'vendor_ref' => 'vendor_code',
+            'ref' => 'vendor_code',
+            'no_ref' => 'vendor_code',
+            'kode_vendor' => 'vendor_code',
+            'no' => 'vendor_code',
+            'payment_term_code' => 'payment_term',
+            'kode_payment_term' => 'payment_term',
+            'due_date_payment' => 'payment_term',
+            'termin_pembayaran' => 'payment_term',
+            'top' => 'payment_term',
+            'beneficiary' => 'beneficiary',
+            'account_name' => 'beneficiary',
+            'account_holder' => 'beneficiary',
+            'nama_pemilik_rekening' => 'beneficiary',
+            'nama_rekening' => 'beneficiary',
+            'cat_code' => 'kategori_code',
+            'category_code' => 'kategori_code',
+            'kategori' => 'kategori_code',
+            'category' => 'kategori_code',
+            'no_rekening' => 'account_number',
+            'nomor_rekening' => 'account_number',
+            'currency' => 'order_currency',
+            'mata_uang' => 'order_currency',
+        ];
+
+        return $aliases[$header] ?? $header;
+    }
+
     /**
      * Membaca sheet Excel dan menggunakan baris pertama sebagai header.
      */
@@ -802,7 +837,7 @@ class ExistingVendorImportController extends Controller
         }
 
         $headers = array_map(
-            fn($header) => strtolower(trim((string) $header)),
+            fn($header) => $this->normalizeHeader($header),
             array_shift($rows)
         );
 

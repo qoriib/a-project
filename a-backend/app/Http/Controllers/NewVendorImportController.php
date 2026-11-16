@@ -78,12 +78,6 @@ class NewVendorImportController extends Controller
                 'nama_perusahaan',
                 'address',
                 'city',
-                'postal_code',
-                'country',
-                'phone',
-                'mobile_phone',
-                'fax',
-                'pic_vendor',
                 'email',
                 'npwp',
                 'payment_term_code',
@@ -91,7 +85,6 @@ class NewVendorImportController extends Controller
             ];
 
             $requiredBankHeaders = [
-                'vendor_ref',
                 'bank_name',
                 'account_number',
             ];
@@ -104,7 +97,7 @@ class NewVendorImportController extends Controller
                 $vendorHeaders
             );
 
-            if (!in_array('kategori_code', $vendorHeaders) && !in_array('kategori_id', $vendorHeaders)) {
+            if (!in_array('kategori_code', $vendorHeaders) && !in_array('kategori_id', $vendorHeaders) && !in_array('kategori', $vendorHeaders)) {
                 $missingVendorHeaders[] = 'kategori_code';
             }
 
@@ -112,6 +105,11 @@ class NewVendorImportController extends Controller
                 $requiredBankHeaders,
                 $bankHeaders
             );
+
+            // Jika ada lebih dari 1 vendor, sheet BankAccounts wajib menyertakan vendor_ref
+            if (!in_array('vendor_ref', $bankHeaders) && count($vendorRows) > 1) {
+                $missingBankHeaders[] = 'vendor_ref';
+            }
 
             if (!in_array('account_name', $bankHeaders) && !in_array('beneficiary', $bankHeaders)) {
                 $missingBankHeaders[] = 'account_name';
@@ -140,7 +138,11 @@ class NewVendorImportController extends Controller
                 $rowNumber = $row['_row'];
                 unset($row['_row']);
 
-                $ref = trim((string) ($row['vendor_ref'] ?? ''));
+                $ref = trim((string) ($row['vendor_ref'] ?? $row['vendor_code'] ?? ''));
+
+                if ($ref === '' && count($vendorsByRef) === 1) {
+                    $ref = (string) array_key_first($vendorsByRef);
+                }
 
                 if ($ref === '') {
                     $errors[] = [
@@ -246,7 +248,7 @@ class NewVendorImportController extends Controller
                 }
 
                 $paymentTermCode = strtoupper(
-                    trim((string) ($row['payment_term_code'] ?? ''))
+                    trim((string) ($row['payment_term_code'] ?? $row['payment_term'] ?? ''))
                 );
 
                 if ($paymentTermCode === 'OTHER') {
@@ -257,6 +259,16 @@ class NewVendorImportController extends Controller
                 } else {
                     $paymentTerm = DB::table('payment_terms')
                         ->where('code', $paymentTermCode)
+                        ->first();
+                }
+
+                if (!$paymentTerm && is_numeric($paymentTermCode)) {
+                    $paymentTerm = DB::table('payment_terms')->find((int) $paymentTermCode);
+                }
+
+                if (!$paymentTerm && $paymentTermCode !== '') {
+                    $paymentTerm = DB::table('payment_terms')
+                        ->where('name', 'like', '%' . $paymentTermCode . '%')
                         ->first();
                 }
 
@@ -291,7 +303,11 @@ class NewVendorImportController extends Controller
                 $rowNumber = $row['_row'];
                 unset($row['_row']);
 
-                $ref = trim((string) ($row['vendor_ref'] ?? ''));
+                $ref = trim((string) ($row['vendor_ref'] ?? $row['vendor_code'] ?? ''));
+
+                if ($ref === '' && count($vendorsByRef) === 1) {
+                    $ref = (string) array_key_first($vendorsByRef);
+                }
 
                 if ($ref === '' || !isset($vendorsByRef[$ref])) {
                     $errors[] = [
@@ -598,17 +614,77 @@ class NewVendorImportController extends Controller
         // Hilangkan BOM jika ada, lalu normalkan spasi dan huruf.
         $header = preg_replace('/^\xEF\xBB\xBF/', '', (string) $value);
         $header = strtolower(trim($header));
-        $header = preg_replace('/\s+/', '_', $header);
+        $header = preg_replace('/[\s\-\.]+/', '_', $header);
 
         // Alias header Excel ke nama kolom yang digunakan backend.
         $aliases = [
+            // Vendor identifier
+            'vendor_code' => 'vendor_ref',
+            'kode_vendor' => 'vendor_ref',
+            'no_vendor' => 'vendor_ref',
+            'nomor_vendor' => 'vendor_ref',
+            'ref' => 'vendor_ref',
+            'no_ref' => 'vendor_ref',
+            'ref_no' => 'vendor_ref',
+            'vendor_id' => 'vendor_ref',
+            'id_vendor' => 'vendor_ref',
+            'no' => 'vendor_ref',
+
+            // Payment term
+            'payment_term' => 'payment_term_code',
+            'payment_term_id' => 'payment_term_code',
+            'kode_payment_term' => 'payment_term_code',
+            'due_date_payment' => 'payment_term_code',
+            'due_date' => 'payment_term_code',
+            'termin_pembayaran' => 'payment_term_code',
+            'term_of_payment' => 'payment_term_code',
+            'top' => 'payment_term_code',
+
+            // Bank Accounts
             'beneficiary' => 'account_name',
             'account_holder' => 'account_name',
             'nama_pemilik_rekening' => 'account_name',
             'nama_rekening' => 'account_name',
+            'pemilik_rekening' => 'account_name',
+            'nama_akun' => 'account_name',
+            'nama_bank' => 'bank_name',
+            'bank' => 'bank_name',
+            'nomor_rekening' => 'account_number',
+            'no_rekening' => 'account_number',
+            'no_rek' => 'account_number',
+            'rek' => 'account_number',
+            'rekening' => 'account_number',
+
+            // Kategori
             'kode_kategori' => 'kategori_code',
             'cat_code' => 'kategori_code',
             'category_code' => 'kategori_code',
+            'kategori' => 'kategori_code',
+            'category' => 'kategori_code',
+            'kategori_id' => 'kategori_code',
+
+            // Order Currency
+            'currency' => 'order_currency',
+            'mata_uang' => 'order_currency',
+
+            // Profil & Alamat
+            'nama_pt' => 'nama_perusahaan',
+            'perusahaan' => 'nama_perusahaan',
+            'company_name' => 'nama_perusahaan',
+            'alamat' => 'address',
+            'kota' => 'city',
+            'kode_pos' => 'postal_code',
+            'zip_code' => 'postal_code',
+            'negara' => 'country',
+            'telepon' => 'phone',
+            'no_telepon' => 'phone',
+            'no_telp' => 'phone',
+            'telp' => 'phone',
+            'no_hp' => 'mobile_phone',
+            'handphone' => 'mobile_phone',
+            'hp' => 'mobile_phone',
+            'pic' => 'pic_vendor',
+            'kontak_pic' => 'pic_vendor',
         ];
 
         return $aliases[$header] ?? $header;
