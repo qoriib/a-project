@@ -357,35 +357,38 @@ function editVendor() {
       business_type: data.business_type ?? "",
 
       kategori_id: String(
-        data.kategori_id ??
-        data.vendor_subcategories?.[0]?.category_id ??
-        data.vendorSubcategories?.[0]?.category_id ??
-        data.kategori?.id ??
+        data.kategori_id ||
+        data.kategori?.id ||
+        data.vendor_subcategories?.[0]?.category_id ||
+        data.vendorSubcategories?.[0]?.category_id ||
         ""
       ),
 
       kategori_other: data.kategori_other ?? "",
 
       payment_term_id: String(
-        data.payment_term_id ?? data.payment_term?.id ?? "",
+        data.payment_term_id ||
+        data.payment_term?.id ||
+        data.paymentTerm?.id ||
+        ""
       ),
 
       payment_term_other: data.payment_term_other ?? "",
 
-      order_currency: data.order_currency ?? "IDR",
+      order_currency: String(data.order_currency || "IDR"),
       order_currency_other: data.order_currency_other ?? "",
 
       account_group_id: String(
-        data.account_group_id ??
-        data.account_group?.id ??
-        data.accountGroup?.id ??
+        data.account_group_id ||
+        data.account_group?.id ||
+        data.accountGroup?.id ||
         ""
       ),
 
       recon_account_id: String(
-        data.recon_account_id ??
-        data.recon_account?.id ??
-        data.reconAccount?.id ??
+        data.recon_account_id ||
+        data.recon_account?.id ||
+        data.reconAccount?.id ||
         ""
       ),
 
@@ -415,7 +418,7 @@ function editVendor() {
 
         const endpoints = [
           `${API_URL}/vendors/${id}`,
-          `${API_URL}/vendor-categories`,
+          `${API_URL}/vendor-categories?all=1`,
           `${API_URL}/payment-terms`,
           `${API_URL}/account-groups`,
           `${API_URL}/recon-accounts`,
@@ -479,14 +482,87 @@ function editVendor() {
 
         const data = getData(vendorResult.body);
 
+        // Siapkan opsi master dengan menjamin data eksisting vendor selalu termasuk
+        const existingCatId = String(
+          data?.kategori_id ||
+          data?.kategori?.id ||
+          data?.vendor_subcategories?.[0]?.category_id ||
+          data?.vendorSubcategories?.[0]?.category_id ||
+          ""
+        );
+
+        let categoriesList = getList(categoryResult.body);
+        if (existingCatId && !categoriesList.some((c) => String(c.id) === existingCatId)) {
+          const fallbackCat =
+            data?.kategori ||
+            data?.vendor_subcategories?.[0]?.category ||
+            data?.vendorSubcategories?.[0]?.category || {
+              id: Number(existingCatId) || existingCatId,
+              cat_code: data?.kategori?.cat_code || "",
+              name:
+                data?.kategori?.name ||
+                data?.kategori?.category_desc ||
+                `Kategori ID ${existingCatId}`,
+            };
+          categoriesList = [fallbackCat, ...categoriesList];
+        }
+
+        const existingPtId = String(
+          data?.payment_term_id ||
+          data?.payment_term?.id ||
+          data?.paymentTerm?.id ||
+          ""
+        );
+        let paymentTermsList = getList(paymentResult.body);
+        if (existingPtId && !paymentTermsList.some((p) => String(p.id) === existingPtId)) {
+          const fallbackPt = data?.payment_term || data?.paymentTerm || {
+            id: Number(existingPtId) || existingPtId,
+            code: data?.payment_term?.code || "",
+            name: data?.payment_term?.name || `Payment Term ID ${existingPtId}`,
+          };
+          paymentTermsList = [fallbackPt, ...paymentTermsList];
+        }
+
+        const existingAgId = String(
+          data?.account_group_id ||
+          data?.account_group?.id ||
+          data?.accountGroup?.id ||
+          ""
+        );
+        let accountGroupsList = getList(accountGroupResult.body);
+        if (existingAgId && !accountGroupsList.some((g) => String(g.id) === existingAgId)) {
+          const fallbackAg = data?.account_group || data?.accountGroup || {
+            id: Number(existingAgId) || existingAgId,
+            code: data?.account_group?.code || "",
+            name: data?.account_group?.name || `Account Group ID ${existingAgId}`,
+          };
+          accountGroupsList = [fallbackAg, ...accountGroupsList];
+        }
+
+        const existingRaId = String(
+          data?.recon_account_id ||
+          data?.recon_account?.id ||
+          data?.reconAccount?.id ||
+          ""
+        );
+        let reconAccountsList = getList(reconAccountResult.body);
+        if (existingRaId && !reconAccountsList.some((r) => String(r.id) === existingRaId)) {
+          const fallbackRa = data?.recon_account || data?.reconAccount || {
+            id: Number(existingRaId) || existingRaId,
+            code: data?.recon_account?.code || "",
+            name: data?.recon_account?.name || `Recon Account ID ${existingRaId}`,
+          };
+          reconAccountsList = [fallbackRa, ...reconAccountsList];
+        }
+
+        setCategories(categoriesList);
+        setPaymentTerms(paymentTermsList);
+        setAccountGroups(accountGroupsList);
+        setReconAccounts(reconAccountsList);
+        setWithholdingTaxes(getList(taxResult.body));
+
         setVendor(data);
         fillForm(data);
-
-        setCategories(getList(categoryResult.body));
-        setPaymentTerms(getList(paymentResult.body));
-        setAccountGroups(getList(accountGroupResult.body));
-        setReconAccounts(getList(reconAccountResult.body));
-        setWithholdingTaxes(getList(taxResult.body));
 
         setSelectedDocuments(EMPTY_DOCUMENTS);
         setDeletedDocuments([]);
@@ -938,18 +1014,28 @@ function editVendor() {
   // =========================================================
 
   const renderSelectOptions = (items) =>
-    items.map((item) => (
-      <option key={item.id} value={String(item.id)}>
-        {item.code ? `${item.code} - ` : ""}
-        {item.name ?? item.nama ?? item.description ?? `ID ${item.id}`}
-      </option>
-    ));
+    items.map((item) => {
+      const code = item.code || item.cat_code || "";
+      const label =
+        item.name ??
+        item.nama ??
+        item.category_desc ??
+        item.description ??
+        `ID ${item.id}`;
+
+      return (
+        <option key={item.id} value={String(item.id)}>
+          {code ? `${code} - ` : ""}
+          {label}
+        </option>
+      );
+    });
 
   const isOtherSelected = (items, selectedId) =>
     items.some(
       (item) =>
         String(item.id) === String(selectedId) &&
-        String(item.name ?? item.nama ?? "")
+        String(item.name ?? item.nama ?? item.category_desc ?? item.description ?? "")
           .toLowerCase()
           .includes("other"),
     );
@@ -1073,7 +1159,7 @@ function editVendor() {
                   <select
                     className="account-detail-input account-detail-select"
                     name="kategori_id"
-                    value={form.kategori_id}
+                    value={String(form.kategori_id || "")}
                     onChange={updateField}
                     required
                     disabled={saving}
@@ -1310,7 +1396,7 @@ function editVendor() {
                 <select
                   className="account-detail-input account-detail-select"
                   name="payment_term_id"
-                  value={form.payment_term_id}
+                  value={String(form.payment_term_id || "")}
                   onChange={updateField}
                   disabled={saving}
                 >
@@ -1344,13 +1430,16 @@ function editVendor() {
                 <select
                   className="account-detail-input account-detail-select"
                   name="order_currency"
-                  value={form.order_currency}
+                  value={String(form.order_currency || "IDR")}
                   onChange={updateField}
                   required
                   disabled={saving}
                 >
                   <option value="IDR">IDR</option>
                   <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="SGD">SGD</option>
+                  <option value="JPY">JPY</option>
                   <option value="OTHER">Other</option>
                 </select>
               </div>
@@ -1599,7 +1688,7 @@ function editVendor() {
                 <select
                   className="account-detail-input account-detail-select"
                   name="account_group_id"
-                  value={form.account_group_id}
+                  value={String(form.account_group_id || "")}
                   onChange={updateField}
                   required
                   disabled={saving}
@@ -1617,7 +1706,7 @@ function editVendor() {
                 <select
                   className="account-detail-input account-detail-select"
                   name="recon_account_id"
-                  value={form.recon_account_id}
+                  value={String(form.recon_account_id || "")}
                   onChange={updateField}
                   required
                   disabled={saving}

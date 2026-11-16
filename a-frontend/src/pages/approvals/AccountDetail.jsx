@@ -159,15 +159,23 @@ function AccountDetail() {
 
       const vendor = requestData.vendor || {};
 
-      setAccountGroupId(
-        vendor.account_group_id ? String(vendor.account_group_id) : "",
+      const existingAg = String(
+        vendor.account_group_id ||
+        vendor.account_group?.id ||
+        vendor.accountGroup?.id ||
+        ""
       );
+      setAccountGroupId(existingAg);
 
       setAccountGroupOther(vendor.account_group_other || "");
 
-      setReconAccountId(
-        vendor.recon_account_id ? String(vendor.recon_account_id) : "",
+      const existingRa = String(
+        vendor.recon_account_id ||
+        vendor.recon_account?.id ||
+        vendor.reconAccount?.id ||
+        ""
       );
+      setReconAccountId(existingRa);
 
       setReconAccountOther(vendor.recon_account_other || "");
     } catch (error) {
@@ -939,7 +947,7 @@ function AccountDetail() {
               {canEdit ? (
                 <select
                   className="account-detail-input account-detail-select"
-                  value={accountGroupId}
+                  value={String(accountGroupId || "")}
                   onChange={(e) => {
                     setAccountGroupId(e.target.value);
                     setAccountGroupOther("");
@@ -948,7 +956,7 @@ function AccountDetail() {
                   <option value="">Pilih Account Group</option>
 
                   {accountGroups.map((item) => (
-                    <option key={item.id} value={item.id}>
+                    <option key={item.id} value={String(item.id)}>
                       {item.code ? `${item.code} - ${item.name}` : item.name}
                     </option>
                   ))}
@@ -984,7 +992,7 @@ function AccountDetail() {
               {canEdit ? (
                 <select
                   className="account-detail-input account-detail-select"
-                  value={reconAccountId}
+                  value={String(reconAccountId || "")}
                   onChange={(e) => {
                     setReconAccountId(e.target.value);
                     setReconAccountOther("");
@@ -993,7 +1001,7 @@ function AccountDetail() {
                   <option value="">Pilih Recon Account</option>
 
                   {reconAccounts.map((item) => (
-                    <option key={item.id} value={item.id}>
+                    <option key={item.id} value={String(item.id)}>
                       {item.code ? `${item.code} - ${item.name}` : item.name}
                     </option>
                   ))}

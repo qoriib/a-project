@@ -336,9 +336,14 @@ function ProcurementDetail() {
           email: vendor.email || "",
           npwp: vendor.npwp || "",
           business_type: vendor.business_type || "",
-          payment_term_id: vendor.payment_term_id || "",
+          payment_term_id: String(
+            vendor.payment_term_id ||
+            vendor.payment_term?.id ||
+            vendor.paymentTerm?.id ||
+            ""
+          ),
           payment_term_other: vendor.payment_term_other || "",
-          order_currency: vendor.order_currency || "",
+          order_currency: vendor.order_currency || "IDR",
           order_currency_other: vendor.order_currency_other || "",
         });
       } catch (error) {
@@ -1303,7 +1308,7 @@ function ProcurementDetail() {
                 </label>
                 <select
                   name="payment_term_id"
-                  value={form.payment_term_id}
+                  value={String(form.payment_term_id || "")}
                   onChange={handleChange}
                   disabled={!canEdit}
                   className="procurement-detail-input procurement-detail-select"
@@ -1311,7 +1316,7 @@ function ProcurementDetail() {
                 >
                   <option value="">Pilih Due Date Payment</option>
                   {paymentTerms.map((payment) => (
-                    <option key={payment.id} value={payment.id}>
+                    <option key={payment.id} value={String(payment.id)}>
                       {payment.code
                         ? `${payment.code} - ${payment.name}`
                         : payment.name}
@@ -1339,7 +1344,7 @@ function ProcurementDetail() {
                 </label>
                 <select
                   name="order_currency"
-                  value={form.order_currency}
+                  value={String(form.order_currency || "IDR")}
                   onChange={handleChange}
                   disabled={!canEdit}
                   className="procurement-detail-input procurement-detail-select"
@@ -1348,6 +1353,9 @@ function ProcurementDetail() {
                   <option value="">Pilih Order Currency</option>
                   <option value="IDR">IDR</option>
                   <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="SGD">SGD</option>
+                  <option value="JPY">JPY</option>
                   <option value="OTHER">Other</option>
                 </select>
 

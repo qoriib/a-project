@@ -579,6 +579,10 @@ class VendorController extends Controller
                 );
             }
 
+            $firstSubcat = collect($validated['vendor_subcategories'] ?? [])->first();
+            $catId = $firstSubcat['category_id'] ?? $request->input('kategori_id');
+            $catOther = $firstSubcat['category_other'] ?? $request->input('kategori_other');
+
             $vendor = Vendor::create([
                 'nama_perusahaan' => $validated['nama_perusahaan'] ?? null,
                 'vendor_code' => null,
@@ -596,8 +600,8 @@ class VendorController extends Controller
 
                 'npwp' => $validated['npwp'] ?? null,
                 'business_type' => $validated['business_type'] ?? null,
-
-
+                'kategori_id' => $catId,
+                'kategori_other' => $catOther,
 
                 'company_code_purch_org' =>
                 '1200 / 1300 (All Comp. Code)',
@@ -819,6 +823,14 @@ class VendorController extends Controller
             'withholdingTaxes',
         ])->findOrFail($id);
 
+        if (empty($vendor->kategori_id) && $vendor->vendorSubcategories->isNotEmpty()) {
+            $firstSub = $vendor->vendorSubcategories->first();
+            $vendor->kategori_id = $firstSub->category_id;
+            if (!$vendor->kategori && $firstSub->category) {
+                $vendor->setRelation('kategori', $firstSub->category);
+            }
+        }
+
         return response()->json($vendor);
     }
 
@@ -831,6 +843,7 @@ class VendorController extends Controller
     public function update(Request $request, $id)
     {
         $vendor = Vendor::findOrFail($id);
+        $user = $request->user();
 
         if (blank($vendor->vendor_code)) {
             return response()->json([

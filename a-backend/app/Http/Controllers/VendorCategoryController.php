@@ -24,8 +24,12 @@ class VendorCategoryController extends Controller
                     ->orWhereDate('end_date', '>=', $today);
             });
 
-        // Filter berdasarkan kategori yang boleh diakses oleh divisi/NIK Requester
-        if ($user && $user->nik) {
+        // Filter berdasarkan kategori yang boleh diakses oleh divisi/NIK Requester jika bukan request seluruh master
+        $userRole = strtoupper((string) ($user->role ?? ''));
+        $isRequester = in_array($userRole, ['REQUESTER', 'PROCUREMENT']);
+        $bypassFilter = $request->boolean('all') || $request->input('all') === '1' || !$isRequester;
+
+        if (!$bypassFilter && $user && $user->nik) {
             $allowedTypes = DB::table('requester_category_access')
                 ->where('nik', $user->nik)
                 ->whereDate('start_date', '<=', $today)
@@ -36,7 +40,12 @@ class VendorCategoryController extends Controller
                 ->pluck('category_type');
 
             if ($allowedTypes->isNotEmpty()) {
-                $query->whereIn('category_type', $allowedTypes);
+                $query->where(function ($q) use ($allowedTypes, $request) {
+                    $q->whereIn('category_type', $allowedTypes);
+                    if ($request->filled('include_id')) {
+                        $q->orWhere('id', (int) $request->input('include_id'));
+                    }
+                });
             }
         }
 
