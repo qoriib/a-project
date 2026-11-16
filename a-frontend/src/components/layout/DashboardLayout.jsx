@@ -145,12 +145,44 @@ export function DashboardLayout() {
         userRole
       ));
 
-  const canSeeAllVendor = isAdmin || isRequester;
-  const canSeeNewVendor = isRequester;
+  const isApprover =
+    ["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(userRole) ||
+    user?.has_approval_access === true;
+
+  // Pembatasan menu sesuai role:
+  // - Dashboard: Seluruh pengguna
+  // - All Vendor: Seluruh pengguna (master daftar vendor IBS)
+  // - New Vendor: Admin dan Requester/Procurement
+  // - Existing Vendor: Admin dan Requester/Procurement
+  // - Approval: Admin dan Approver (Asisten Kadiv, Kadiv, Accounting, Tax, SAP)
+  // - User Management: Khusus Administrator
+  const canSeeAllVendor = true;
+  const canSeeNewVendor = isAdmin || isRequester;
   const canSeeExistingVendor = isAdmin || isRequester;
-  const canSeeApproval = true;
+  const canSeeApproval = isAdmin || isApprover;
   const canSeeUserManagement = isAdmin;
-  const canSeeMasterApproval = isAdmin;
+
+  const getRoleDisplayName = (role, admin) => {
+    if (admin) return "Administrator";
+    switch (role) {
+      case "REQUESTER":
+        return "Staff Requester SCM";
+      case "PROCUREMENT":
+        return "Staff Procurement";
+      case "ASISTEN_KADIV":
+        return "Asisten Kadiv SCM (L1)";
+      case "KADIV":
+        return "Kadiv SCM (L2)";
+      case "ACCOUNTING":
+        return "Accounting Lead (L3)";
+      case "TAX":
+        return "Tax Specialist (L4)";
+      case "SAP":
+        return "SAP Team (L5)";
+      default:
+        return role || "User";
+    }
+  };
 
   return (
     <div className="dashboard">
@@ -249,20 +281,6 @@ export function DashboardLayout() {
               {sidebarOpen && <span>User Management</span>}
             </button>
           )}
-
-          {/* MASTER APPROVAL */}
-          {canSeeMasterApproval && (
-            <button
-              type="button"
-              className={`nav-item ${
-                isActive("master-approval") ? "active" : ""
-              }`}
-              onClick={() => navigate("/master-approvals")}
-            >
-              <span className="nav-icon">⚙</span>
-              {sidebarOpen && <span>Master Approval</span>}
-            </button>
-          )}
         </div>
 
         {/* SIDEBAR FOOTER */}
@@ -304,7 +322,7 @@ export function DashboardLayout() {
 
               <div className="header-profile-text">
                 <strong>{user?.name || "Administrator"}</strong>
-                <span>{user?.role || "Admin"}</span>
+                <span>{getRoleDisplayName(userRole, isAdmin)}</span>
               </div>
             </div>
           </div>

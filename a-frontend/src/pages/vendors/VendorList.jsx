@@ -1,10 +1,26 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./VendorList.css";
-import { API_BASE_URL, getAuthHeaders } from "../../api/config";
+import { API_BASE_URL, getAuthHeaders, getAuthUser } from "../../api/config";
 
 function VendorList() {
   const navigate = useNavigate();
+
+  const user = getAuthUser();
+  const userRole = String(
+    user?.role || user?.role_name || (user?.is_admin ? "ADMIN" : "")
+  )
+    .toUpperCase()
+    .trim();
+
+  const isAdmin = userRole === "ADMIN" || user?.is_admin === true;
+  const isRequester =
+    userRole === "REQUESTER" ||
+    userRole === "PROCUREMENT" ||
+    (!isAdmin &&
+      !["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(
+        userRole
+      ));
 
   // ==========================================
   // STATE
@@ -351,46 +367,39 @@ function VendorList() {
                       {/* AKSI */}
                       <td>
                         <div className="vendor-actions">
-                          {isRejected ? (
-                            <>
-                              <button
-                                type="button"
-                                className="action-button detail-button"
-                                onClick={() =>
-                                  navigate(`/vendors/detail/${vendor.id}`)
-                                }
-                              >
-                                Detail
-                              </button>
+                          {/* Tombol Detail dapat diakses oleh seluruh pengguna */}
+                          <button
+                            type="button"
+                            className="action-button detail-button"
+                            onClick={() =>
+                              navigate(`/vendors/detail/${vendor.id}`)
+                            }
+                          >
+                            Detail
+                          </button>
 
-                              <button
-                                type="button"
-                                className="action-button delete-button"
-                                onClick={() => handleDelete(vendor.id)}
-                              >
-                                Hapus
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="action-button edit-button"
-                                onClick={() =>
-                                  navigate(`/vendors/edit/${vendor.id}`)
-                                }
-                              >
-                                Edit
-                              </button>
+                          {/* Tombol Edit khusus untuk Admin dan Requester/Procurement */}
+                          {(isAdmin || isRequester) && !isRejected && (
+                            <button
+                              type="button"
+                              className="action-button edit-button"
+                              onClick={() =>
+                                navigate(`/vendors/edit/${vendor.id}`)
+                              }
+                            >
+                              Edit
+                            </button>
+                          )}
 
-                              <button
-                                type="button"
-                                className="action-button delete-button"
-                                onClick={() => handleDelete(vendor.id)}
-                              >
-                                Hapus
-                              </button>
-                            </>
+                          {/* Tombol Hapus KHUSUS Administrator */}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              className="action-button delete-button"
+                              onClick={() => handleDelete(vendor.id)}
+                            >
+                              Hapus
+                            </button>
                           )}
                         </div>
                       </td>

@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// Layout
+// Layout & Common
 import DashboardLayout from "./components/layout/DashboardLayout";
+import { RoleRoute } from "./components/common";
 
 // Auth
 import { Login } from "./pages/auth";
@@ -53,41 +54,50 @@ function App() {
 
         {/* MAIN APPLICATION (DASHBOARD LAYOUT) */}
         <Route element={<DashboardLayout />}>
-          {/* Overview Dashboard */}
+          {/* Overview Dashboard - Seluruh pengguna terautentikasi */}
           <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* Vendors Management */}
+          {/* Master Vendor - Seluruh pengguna terautentikasi dapat melihat daftar vendor */}
           <Route path="/vendors/all" element={<VendorList />} />
-          <Route path="/vendors/edit/:id" element={<EditVendor />} />
           <Route path="/vendors/detail/:id" element={<VendorDetail />} />
-          <Route path="/vendors/existing" element={<ExistingVendor />} />
-          <Route path="/vendors/existing/add" element={<AddExistingVendor />} />
-          <Route path="/vendors/add" element={<NewVendor />} />
-          <Route path="/vendors/add/new" element={<AddVendor />} />
-          <Route path="/vendors-requests" element={<VendorRequest />} />
 
-          {/* 5-Level Approval Workflow */}
-          <Route path="/approval" element={<Approval />} />
-          <Route path="/approval/:id" element={<ApprovalDetail />} />
-          <Route path="/procurement/:id" element={<ProcurementDetail />} />
-          <Route path="/vendor-requests/:id" element={<KadivRequester />} />
-          
-          {/* Level 3: Accounting */}
-          <Route path="/account" element={<Account />} />
-          <Route path="/account/:id" element={<AccountDetail />} />
+          {/* Rute Khusus Requester & Admin (Input Form Vendor & Import) */}
+          <Route element={<RoleRoute allowedRoles={["REQUESTER"]} />}>
+            <Route path="/vendors/add" element={<NewVendor />} />
+            <Route path="/vendors/add/new" element={<AddVendor />} />
+            <Route path="/vendors/existing" element={<ExistingVendor />} />
+            <Route path="/vendors/existing/add" element={<AddExistingVendor />} />
+            <Route path="/vendors/edit/:id" element={<EditVendor />} />
+            <Route path="/vendors-requests" element={<VendorRequest />} />
+          </Route>
 
-          {/* Level 4: Tax */}
-          <Route path="/tax" element={<Tax />} />
-          <Route path="/tax/:id" element={<TaxDetail />} />
+          {/* Rute Khusus Approver & Admin (Alur Approval 5 Level) */}
+          <Route element={<RoleRoute allowedRoles={["APPROVER"]} />}>
+            <Route path="/approval" element={<Approval />} />
+            <Route path="/approval/:id" element={<ApprovalDetail />} />
+            <Route path="/procurement/:id" element={<ProcurementDetail />} />
+            <Route path="/vendor-requests/:id" element={<KadivRequester />} />
 
-          {/* Level 5: SAP */}
-          <Route path="/sap" element={<Sap />} />
-          <Route path="/sap/:id" element={<SapDetail />} />
-          <Route path="/sap-history" element={<SapHistory />} />
+            {/* Level 3: Accounting */}
+            <Route path="/account" element={<Account />} />
+            <Route path="/account/:id" element={<AccountDetail />} />
 
-          {/* User Management (Admin Only) */}
-          <Route path="/user" element={<ManageUser />} />
-          <Route path="/user/:id" element={<UserDetail />} />
+            {/* Level 4: Tax */}
+            <Route path="/tax" element={<Tax />} />
+            <Route path="/tax/:id" element={<TaxDetail />} />
+
+            {/* Level 5: SAP */}
+            <Route path="/sap" element={<Sap />} />
+            <Route path="/sap/:id" element={<SapDetail />} />
+            <Route path="/sap-history" element={<SapHistory />} />
+          </Route>
+
+          {/* Rute Khusus Administrator (User Management) */}
+          <Route element={<RoleRoute allowedRoles={["ADMIN"]} />}>
+            <Route path="/user" element={<ManageUser />} />
+            <Route path="/user/:id" element={<UserDetail />} />
+            <Route path="/master-approvals" element={<ManageUser />} />
+          </Route>
         </Route>
 
         {/* CATCH-ALL REDIRECT TO LOGIN */}

@@ -105,6 +105,25 @@ function Dashboard() {
 
   const userName = user?.name || user?.nama || user?.nama_lengkap || "User";
 
+  const userRole = String(
+    user?.role || user?.role_name || (user?.is_admin ? "ADMIN" : "")
+  )
+    .toUpperCase()
+    .trim();
+
+  const isAdmin = userRole === "ADMIN" || user?.is_admin === true;
+  const isRequester =
+    userRole === "REQUESTER" ||
+    userRole === "PROCUREMENT" ||
+    (!isAdmin &&
+      !["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(
+        userRole
+      ));
+
+  const isApprover =
+    ["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(userRole) ||
+    user?.has_approval_access === true;
+
   /*
   |--------------------------------------------------------------------------
   | WARNA DONUT CHART
@@ -411,37 +430,69 @@ function Dashboard() {
 
       <div className="welcome-section">
         <div>
-          <p className="welcome-small">ADMINISTRATOR</p>
+          <p className="welcome-small">
+            {isAdmin
+              ? "PORTAL ADMINISTRATOR"
+              : isApprover
+              ? "PORTAL APPROVAL WORKFLOW"
+              : "PORTAL PENGADAAN & VENDOR"}
+          </p>
 
           <h2>Selamat datang kembali, {userName}</h2>
 
-          <p>Kelola dan pantau seluruh data vendor dalam sistem.</p>
+          <p>
+            {isAdmin
+              ? "Kelola dan pantau seluruh data vendor, pengguna, dan alur persetujuan sistem."
+              : isApprover
+              ? "Pantau dan proses antrean verifikasi serta persetujuan vendor pada tahapan Anda."
+              : "Kelola pengajuan vendor baru dan pantau status persetujuan vendor."}
+          </p>
         </div>
 
         <div className="welcome-actions">
-          <button
-            type="button"
-            className="dashboard-action-btn existing-vendor-button"
-            onClick={() => navigate("/vendors/existing")}
-          >
-            <span className="dashboard-btn-icon">
-              <i className="bi bi-database"></i>
-            </span>
-            <span>Existing Vendor</span>
-            <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-          </button>
+          {/* Untuk Requester dan Admin: Tambah Vendor & Existing Vendor */}
+          {(isAdmin || isRequester) && (
+            <>
+              <button
+                type="button"
+                className="dashboard-action-btn existing-vendor-button"
+                onClick={() => navigate("/vendors/existing")}
+              >
+                <span className="dashboard-btn-icon">
+                  <i className="bi bi-database"></i>
+                </span>
+                <span>Existing Vendor</span>
+                <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+              </button>
 
-          <button
-            type="button"
-            className="dashboard-action-btn add-vendor-button"
-            onClick={() => navigate("/vendors/add")}
-          >
-            <span className="dashboard-btn-icon">
-              <i className="bi bi-plus-lg"></i>
-            </span>
-            <span>Tambah Vendor</span>
-            <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-          </button>
+              <button
+                type="button"
+                className="dashboard-action-btn add-vendor-button"
+                onClick={() => navigate("/vendors/add")}
+              >
+                <span className="dashboard-btn-icon">
+                  <i className="bi bi-plus-lg"></i>
+                </span>
+                <span>Tambah Vendor</span>
+                <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+              </button>
+            </>
+          )}
+
+          {/* Untuk Approver (dan Admin): Tombol Cepat ke Antrean Approval */}
+          {(isAdmin || isApprover) && (
+            <button
+              type="button"
+              className="dashboard-action-btn approval-vendor-button"
+              onClick={() => navigate("/approval")}
+            >
+              <span className="dashboard-btn-icon">
+                <i className="bi bi-check2-circle"></i>
+              </span>
+              <span>Proses Approval</span>
+              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+            </button>
+          )}
         </div>
       </div>
 
