@@ -10,31 +10,55 @@ class VendorBankAccountSeeder extends Seeder
 {
     public function run(): void
     {
-        $vendors = Vendor::all();
+        $vendors = Vendor::orderBy('id')->get();
 
-        $banks = [
-            ['bank_name' => 'Bank Central Asia (BCA)', 'swift_code' => 'CENAIDJA'],
-            ['bank_name' => 'Bank Mandiri', 'swift_code' => 'BMRIIDJA'],
-            ['bank_name' => 'Bank Negara Indonesia (BNI)', 'swift_code' => 'BNINIDJA'],
-            ['bank_name' => 'Bank Rakyat Indonesia (BRI)', 'swift_code' => 'BRINIDJA'],
-            ['bank_name' => 'Bank CIMB Niaga', 'swift_code' => 'BNIAIDJA'],
+        $bankOptions = [
+            ['bank' => 'Bank Central Asia (BCA)', 'swift' => 'CENAIDJA'],
+            ['bank' => 'Bank Mandiri (Persero) Tbk', 'swift' => 'BMRIIDJA'],
+            ['bank' => 'Bank Negara Indonesia (BNI)', 'swift' => 'BNINIDJA'],
+            ['bank' => 'Bank Rakyat Indonesia (BRI)', 'swift' => 'BRINIDJA'],
+            ['bank' => 'Bank Permata Tbk', 'swift' => 'BBBAIDJA'],
+            ['bank' => 'Bank CIMB Niaga Tbk', 'swift' => 'BNIAIDJA'],
+            ['bank' => 'Bank Danamon Indonesia', 'swift' => 'BDINIDJA'],
+            ['bank' => 'Bank Syariah Indonesia (BSI)', 'swift' => 'BSMDIDJA'],
         ];
 
         foreach ($vendors as $index => $vendor) {
-            $bank = $banks[$index % count($banks)];
+            $primaryBank = $bankOptions[$index % count($bankOptions)];
+            $accNumber = sprintf('%010d', 1000000000 + ($index + 1) * 38291);
 
+            // Rekening Utama
             VendorBankAccount::updateOrCreate(
                 [
                     'vendor_id' => $vendor->id,
-                    'account_number' => '123' . str_pad((string)$vendor->id, 7, '0', STR_PAD_LEFT),
+                    'account_number' => $accNumber,
                 ],
                 [
-                    'bank_name' => $bank['bank_name'],
+                    'bank_name' => $primaryBank['bank'],
                     'account_name' => $vendor->nama_perusahaan,
-                    'swift_code' => $bank['swift_code'],
+                    'swift_code' => $primaryBank['swift'],
                     'is_primary' => true,
                 ]
             );
+
+            // Rekening Sekunder untuk sebagian vendor (setiap kelipatan 2)
+            if ($index % 2 === 0) {
+                $secondaryBank = $bankOptions[($index + 3) % count($bankOptions)];
+                $secondaryAccNumber = sprintf('%010d', 2000000000 + ($index + 1) * 94712);
+
+                VendorBankAccount::updateOrCreate(
+                    [
+                        'vendor_id' => $vendor->id,
+                        'account_number' => $secondaryAccNumber,
+                    ],
+                    [
+                        'bank_name' => $secondaryBank['bank'],
+                        'account_name' => $vendor->nama_perusahaan,
+                        'swift_code' => $secondaryBank['swift'],
+                        'is_primary' => false,
+                    ]
+                );
+            }
         }
     }
 }

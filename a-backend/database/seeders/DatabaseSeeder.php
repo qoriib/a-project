@@ -28,16 +28,18 @@ class DatabaseSeeder extends Seeder
             RequesterCategoryAccessSeeder::class,
             RequestSequenceSeeder::class,
 
-            // 4. Data Master Vendor
+            // 4. Data Master Vendor & Profil Bank
             VendorSeeder::class,
             VendorSubcategorySeeder::class,
             VendorBankAccountSeeder::class,
-            VendorDocumentSeeder::class,
-            VendorWithholdingTaxSeeder::class,
 
-            // 5. Transaksi Permohonan & Riwayat Approval
+            // 5. Transaksi Permohonan & Detail Riwayat Perubahan (Diff)
             VendorRequestSeeder::class,
             VendorRequestDetailSeeder::class,
+
+            // 6. Dokumen Legalitas, Pajak, & Riwayat Approval Lengkap
+            VendorWithholdingTaxSeeder::class,
+            VendorDocumentSeeder::class,
             VendorApprovalHistorySeeder::class,
             FormApprovalSeeder::class,
         ]);
