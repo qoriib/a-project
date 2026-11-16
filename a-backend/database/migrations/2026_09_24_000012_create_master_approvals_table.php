@@ -13,19 +13,15 @@ return new class extends Migration
     {
         Schema::create('master_approvals', function (Blueprint $table) {
             $table->id();
-            $table->string('nik');
-            $table->string('email');
-            $table->string('approval_stage');
+            $table->string('nik', 50)->index();
+            $table->string('email', 255)->index();
+            $table->string('approval_stage', 50)->index();
             $table->boolean('can_view')->default(false);
             $table->boolean('can_edit')->default(false);
             $table->boolean('can_approve')->default(false);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->timestamps();
-
-            $table->index('nik');
-            $table->index('email');
-            $table->index('approval_stage');
         });
     }
 

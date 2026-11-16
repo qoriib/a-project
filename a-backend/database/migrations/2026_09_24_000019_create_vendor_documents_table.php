@@ -21,12 +21,11 @@ return new class extends Migration
             $table->foreignId('bank_account_id')
                 ->nullable()
                 ->constrained('vendor_bank_accounts')
-                ->restrictOnDelete();
+                ->nullOnDelete();
 
-            $table->string('document_type');
-            $table->string('file_name')->nullable();
-            $table->string('file_path');
-
+            $table->string('document_type', 100);
+            $table->string('file_name', 255)->nullable();
+            $table->string('file_path', 500);
             $table->integer('version')->default(1);
 
             $table->foreignId('uploaded_by')
@@ -35,6 +34,9 @@ return new class extends Migration
                 ->nullOnDelete();
 
             $table->timestamps();
+
+            // Indeks pencarian berkas
+            $table->index(['vendor_id', 'document_type']);
         });
     }
 

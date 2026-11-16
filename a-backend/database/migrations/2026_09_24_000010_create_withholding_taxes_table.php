@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('withholding_taxes', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name', 255);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->timestamps();

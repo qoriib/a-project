@@ -13,22 +13,37 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('nik')->unique();
-            $table->string('email')->unique();
+
+            // Identitas Karyawan
+            $table->string('name', 255);
+            $table->string('nik', 50)->unique();
+            $table->string('email', 255)->unique();
+            $table->string('password', 255);
+
+            // Peran & Hak Akses
             $table->foreignId('role_id')
                 ->nullable()
                 ->constrained('roles')
                 ->nullOnDelete();
-            $table->string('division')->nullable();
-            $table->string('department')->nullable();
-            $table->string('position')->nullable();
-            $table->string('depthead')->nullable();
-            $table->string('divhead')->nullable();
-            $table->string('director')->nullable();
-            $table->string('password');
+
+            // Struktur Organisasi (HRIS)
+            $table->string('division', 100)->nullable();
+            $table->string('department', 100)->nullable();
+            $table->string('position', 100)->nullable();
+            $table->string('depthead', 100)->nullable();
+            $table->string('divhead', 100)->nullable();
+            $table->string('director', 100)->nullable();
+
+            // Status Akun & Delegasi Cuti
+            $table->boolean('is_active')->default(true);
+            $table->string('substitute_nik', 50)->nullable();
+
             $table->rememberToken();
             $table->timestamps();
+
+            // Indeks untuk pencarian cepat
+            $table->index(['is_active', 'role_id']);
+            $table->index('substitute_nik');
         });
     }
 

@@ -14,96 +14,74 @@ return new class extends Migration
         Schema::create('vendors', function (Blueprint $table) {
             $table->id();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Data Utama Vendor
-            |--------------------------------------------------------------------------
-            */
-            $table->string('nama_perusahaan');
-            $table->string('vendor_code')->nullable()->unique();
+            // 1. Data Utama Perusahaan
+            $table->string('nama_perusahaan', 255);
+            $table->string('vendor_code', 100)->nullable()->unique();
             $table->enum('source_type', ['EXISTING', 'NEW'])->default('NEW');
-            $table->string('search_term')->nullable();
-            $table->string('pic_vendor')->nullable();
-            $table->string('email')->nullable();
+            $table->string('search_term', 255)->nullable();
+            $table->string('business_type', 255)->nullable();
+
+            // 2. Data Kontak Perusahaan
+            $table->string('pic_vendor', 255)->nullable();
+            $table->string('email', 255)->nullable();
             $table->string('phone', 50)->nullable();
             $table->string('mobile_phone', 50)->nullable();
             $table->string('fax', 50)->nullable();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Kategori Vendor
-            |--------------------------------------------------------------------------
-            */
+            // 3. Kategori Vendor
             $table->foreignId('kategori_id')
                 ->nullable()
                 ->constrained('vendor_categories')
                 ->nullOnDelete();
+            $table->string('kategori_other', 255)->nullable();
 
-            $table->string('kategori_other')->nullable();
-            $table->string('business_type')->nullable();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Data Alamat & Legalitas
-            |--------------------------------------------------------------------------
-            */
+            // 4. Data Alamat & Legalitas
             $table->string('npwp', 100)->nullable();
             $table->text('address')->nullable();
-            $table->string('city')->nullable();
+            $table->string('city', 100)->nullable();
             $table->string('postal_code', 20)->nullable();
-            $table->string('country', 100)->nullable();
+            $table->string('country', 100)->nullable()->default('Indonesia');
 
-            /*
-            |--------------------------------------------------------------------------
-            | Accounting Data
-            |--------------------------------------------------------------------------
-            */
+            // 5. Data Accounting & SAP
             $table->foreignId('account_group_id')
                 ->nullable()
                 ->constrained('account_groups')
                 ->nullOnDelete();
-
-            $table->string('account_group_other')->nullable();
+            $table->string('account_group_other', 255)->nullable();
 
             $table->foreignId('recon_account_id')
                 ->nullable()
                 ->constrained('recon_accounts')
                 ->nullOnDelete();
+            $table->string('recon_account_other', 255)->nullable();
 
-            $table->string('recon_account_other')->nullable();
-
-            $table->string('payment_method')->default('transfer');
-            $table->string('company_code_purch_org')->default('1200 / 1300 (PROJECT BAKTI)');
+            $table->string('payment_method', 100)->default('Transfer');
+            $table->string('company_code_purch_org', 255)->default('1200 / 1300 (PROJECT BAKTI)');
 
             $table->foreignId('payment_term_id')
                 ->nullable()
                 ->constrained('payment_terms')
                 ->nullOnDelete();
+            $table->string('payment_term_other', 255)->nullable();
 
-            $table->string('payment_term_other')->nullable();
+            // 6. Data Purchasing
+            $table->string('order_currency', 20)->nullable()->default('IDR');
+            $table->string('order_currency_other', 255)->nullable();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Purchasing Data
-            |--------------------------------------------------------------------------
-            */
-            $table->string('order_currency', 20)->nullable();
-            $table->string('order_currency_other')->nullable();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Pembuat & Masa Berlaku
-            |--------------------------------------------------------------------------
-            */
+            // 7. Pembuat & Masa Berlaku
             $table->foreignId('created_by')
                 ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
-
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
 
             $table->timestamps();
+
+            // Indeks pencarian
+            $table->index('source_type');
+            $table->index('nama_perusahaan');
+            $table->index('npwp');
         });
     }
 

@@ -14,11 +14,14 @@ return new class extends Migration
         Schema::create('vendor_categories', function (Blueprint $table) {
             $table->id();
             $table->string('cat_code', 50)->nullable()->unique();
-            $table->string('category_type', 100)->nullable();
-            $table->string('category_desc');
+            $table->string('category_type', 50)->nullable();
+            $table->string('category_desc', 255);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->timestamps();
+
+            // Indeks untuk filter kategori SCM / BR
+            $table->index('category_type');
         });
     }
 

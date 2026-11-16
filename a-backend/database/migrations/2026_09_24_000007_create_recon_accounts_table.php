@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('recon_accounts', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 20)->nullable();
-            $table->string('name');
+            $table->string('code', 50)->nullable()->index();
+            $table->string('name', 255);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->timestamps();

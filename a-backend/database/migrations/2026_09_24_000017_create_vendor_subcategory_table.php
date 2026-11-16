@@ -22,15 +22,12 @@ return new class extends Migration
                 ->constrained('vendor_categories')
                 ->cascadeOnDelete();
 
-            $table->string('category_other')->nullable();
-
-            $table->enum('subcategory', [
-                'Material',
-                'Jasa',
-            ]);
+            $table->string('category_other', 255)->nullable();
+            $table->enum('subcategory', ['Material', 'Jasa']);
 
             $table->timestamps();
 
+            // Satu kombinasi vendor, kategori, dan subkategori bersifat unik
             $table->unique(
                 ['vendor_id', 'category_id', 'subcategory'],
                 'vendor_subcategory_unique'

@@ -13,15 +13,16 @@ return new class extends Migration
     {
         Schema::create('requester_category_access', function (Blueprint $table) {
             $table->id();
-            $table->string('nik', 255);
-            $table->string('category_type', 20);
+            $table->string('nik', 50);
+            $table->string('category_type', 50);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->timestamps();
 
-            $table->index(
+            // Indeks unik akses kategori per NIK
+            $table->unique(
                 ['nik', 'category_type'],
-                'requester_category_access_nik_category_idx'
+                'requester_category_access_nik_type_unique'
             );
         });
     }

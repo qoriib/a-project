@@ -13,21 +13,23 @@ return new class extends Migration
     {
         Schema::create('master_approval_layer', function (Blueprint $table) {
             $table->id();
-            $table->string('cat_code', 255);
+            $table->string('cat_code', 50);
             $table->string('type', 50)->default('Approval');
             $table->unsignedInteger('priority');
-            $table->string('stage', 100);
+            $table->string('stage', 50);
             $table->string('email', 255);
-            $table->string('nik', 255);
+            $table->string('nik', 50);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->timestamps();
 
+            // Indeks alur layer persetujuan
             $table->index(
                 ['cat_code', 'type', 'priority'],
                 'master_approval_layer_flow_idx'
             );
 
+            // Indeks data approver
             $table->index(
                 ['nik', 'email'],
                 'master_approval_layer_approver_idx'

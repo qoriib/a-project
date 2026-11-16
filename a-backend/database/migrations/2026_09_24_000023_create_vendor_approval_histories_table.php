@@ -18,27 +18,29 @@ return new class extends Migration
                 ->constrained('vendor_requests')
                 ->cascadeOnDelete();
 
-            $table->string('approval_stage');
+            $table->string('approval_stage', 50)->index();
 
+            // Identitas Approver yang Menindak
             $table->foreignId('acted_by')
                 ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
-
-            $table->string('acted_by_nik', 255)->nullable();
+            $table->string('acted_by_name', 255)->nullable();
+            $table->string('acted_by_nik', 50)->nullable()->index();
             $table->string('acted_by_email', 255)->nullable();
 
+            // Status Tindakan & Catatan / Alasan
             $table->string('status', 50);
-
             $table->text('notes')->nullable();
 
+            // Waktu & Tanda Tangan Digital
             $table->timestamp('acted_at')->nullable();
-
-            $table->string('signature_token', 64)
-                ->nullable()
-                ->unique();
+            $table->string('signature_token', 64)->nullable()->unique();
 
             $table->timestamps();
+
+            // Indeks pencarian kronologis riwayat
+            $table->index(['vendor_request_id', 'acted_at']);
         });
     }
 

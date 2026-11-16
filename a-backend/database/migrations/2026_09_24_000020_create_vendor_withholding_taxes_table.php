@@ -24,6 +24,7 @@ return new class extends Migration
 
             $table->timestamps();
 
+            // Satu jenis pajak hanya boleh dipasangkan sekali per vendor
             $table->unique(
                 ['vendor_id', 'withholding_tax_id'],
                 'vendor_withholding_tax_unique'

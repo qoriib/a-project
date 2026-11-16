@@ -14,42 +14,42 @@ return new class extends Migration
         Schema::create('vendor_requests', function (Blueprint $table) {
             $table->id();
 
+            // Identitas Pengajuan
             $table->string('form_number', 100)->nullable()->unique();
+            $table->enum('request_type', ['CREATE', 'IMPORT_EXISTING', 'UPDATE'])->default('CREATE');
 
-            $table->enum('request_type', [
-                'CREATE',
-                'IMPORT_EXISTING',
-                'UPDATE',
-            ]);
-
+            // Relasi ke Master Vendor
             $table->foreignId('vendor_id')
                 ->nullable()
                 ->constrained('vendors')
                 ->cascadeOnDelete();
 
+            // Kode Referensi & Kategori
             $table->string('internal_vendor_code', 100)->nullable();
             $table->string('sap_vendor_code', 100)->nullable();
-            $table->string('cat_code', 50)->nullable();
+            $table->string('cat_code', 50)->nullable()->index();
 
-            $table->string('requested_by_nik', 255)->nullable();
+            // Pemohon (Requester)
+            $table->string('requested_by_nik', 50)->nullable()->index();
             $table->string('requested_by_email', 255)->nullable();
 
-            $table->enum('status', [
-                'DRAFT',
-                'PENDING',
-                'CANCEL_APPROVE',
-                'APPROVED',
-                'REJECTED',
-            ])->default('DRAFT');
+            // Status & Tahapan Workflow
+            $table->string('status', 50)->default('DRAFT')->index();
+            $table->string('current_stage', 50)->default('REQUESTER')->index();
 
-            $table->string('current_stage', 255)->default('REQUESTER');
+            // Alasan Penolakan / Rollback
+            $table->text('rejection_reason')->nullable();
+            $table->text('cancellation_reason')->nullable();
 
+            // Waktu & PDF Final
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('completed_at')->nullable();
-
             $table->string('final_pdf_path', 255)->nullable();
 
             $table->timestamps();
+
+            // Indeks komposit antrean approval
+            $table->index(['current_stage', 'status']);
         });
     }
 

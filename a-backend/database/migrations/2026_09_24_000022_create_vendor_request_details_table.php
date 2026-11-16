@@ -18,9 +18,12 @@ return new class extends Migration
                 ->constrained('vendor_requests')
                 ->cascadeOnDelete();
 
+            // Snapshot Data Lama vs Baru dan Diff Field Perubahan
             $table->json('old_data')->nullable();
             $table->json('new_data');
+            $table->json('diff_data')->nullable();
 
+            // Informasi User Pemohon Perubahan
             $table->string('changed_by_nik', 50)->nullable();
             $table->string('changed_by_email', 255)->nullable();
 

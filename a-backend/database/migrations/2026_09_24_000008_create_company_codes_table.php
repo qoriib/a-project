@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('company_codes', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 20);
-            $table->string('name');
+            $table->string('code', 50)->index();
+            $table->string('name', 255);
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->timestamps();

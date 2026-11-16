@@ -19,24 +19,21 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->unsignedInteger('priority');
-
             $table->string('status', 50)->default('WAITING');
-
             $table->string('stage', 50);
 
-            $table->string('nik', 255);
-
+            $table->string('nik', 50);
             $table->string('email', 255);
 
             $table->timestamps();
 
-            // Satu urutan approval hanya boleh muncul sekali dalam satu pengajuan.
+            // Satu urutan prioritas hanya boleh muncul sekali per permohonan
             $table->unique(
                 ['vendor_request_id', 'priority'],
                 'form_approvals_request_priority_unique'
             );
 
-            // Mempermudah pencarian tugas berdasarkan NIK dan status.
+            // Indeks pencarian antrean approver
             $table->index(['nik', 'status']);
         });
     }

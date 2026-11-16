@@ -18,14 +18,16 @@ return new class extends Migration
                 ->constrained('vendors')
                 ->cascadeOnDelete();
 
-            $table->string('bank_name');
-            $table->string('account_number');
-            $table->string('account_name')->nullable();
-            $table->string('swift_code')->nullable();
-
+            $table->string('bank_name', 255);
+            $table->string('account_number', 100);
+            $table->string('account_name', 255)->nullable();
+            $table->string('swift_code', 50)->nullable();
             $table->boolean('is_primary')->default(false);
 
             $table->timestamps();
+
+            // Indeks pencarian rekening
+            $table->index(['vendor_id', 'is_primary']);
         });
     }
 
