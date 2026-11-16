@@ -100,6 +100,11 @@ class Vendor extends Model
         return $this->hasMany(VendorRequest::class);
     }
 
+    public function vendorRequests()
+    {
+        return $this->hasMany(VendorRequest::class);
+    }
+
     public function latestRequest()
     {
         return $this->hasOne(VendorRequest::class, 'vendor_id')

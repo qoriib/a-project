@@ -9,6 +9,8 @@ class VendorApprovalHistory extends Model
     protected $fillable = [
         'vendor_request_id',
         'approval_stage',
+        'acted_by',
+        'acted_by_name',
         'acted_by_nik',
         'acted_by_email',
         'status',

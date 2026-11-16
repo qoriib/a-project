@@ -19,6 +19,16 @@ class VendorCategory extends Model
         'end_date' => 'date',
     ];
 
+    protected $appends = ['name'];
+
+    /**
+     * Accessor agar $category->name selalu mengembalikan deskripsi kategori
+     */
+    public function getNameAttribute(): string
+    {
+        return (string) ($this->category_desc ?? $this->cat_code ?? '');
+    }
+
     public function vendorSubcategories()
     {
         return $this->hasMany(

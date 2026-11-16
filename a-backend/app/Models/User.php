@@ -14,7 +14,7 @@ use App\Models\Role;
 use App\Models\Admin;
 
 
-#[Fillable(['name', 'nik', 'email', 'division', 'department', 'position', 'depthead', 'divhead', 'director', 'role_id', 'password'])]
+#[Fillable(['name', 'nik', 'email', 'division', 'department', 'position', 'depthead', 'divhead', 'director', 'role_id', 'is_active', 'substitute_nik', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {

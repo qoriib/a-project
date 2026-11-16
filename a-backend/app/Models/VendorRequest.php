@@ -17,6 +17,8 @@ class VendorRequest extends Model
         'requested_by_email',
         'status',
         'current_stage',
+        'rejection_reason',
+        'cancellation_reason',
         'submitted_at',
         'completed_at',
         'final_pdf_path',
