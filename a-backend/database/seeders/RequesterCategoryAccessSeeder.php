@@ -9,26 +9,35 @@ class RequesterCategoryAccessSeeder extends Seeder
 {
     public function run(): void
     {
-        $data = [
-            ['nik' => '20268888', 'category_type' => 'SCM'],
-            ['nik' => '90000007', 'category_type' => 'SCM'],
-            ['nik' => '90000007', 'category_type' => 'BR'],
-            ['nik' => '90000000', 'category_type' => 'SCM'],
-            ['nik' => '90000000', 'category_type' => 'BR'],
-            ['nik' => '90000003', 'category_type' => 'BR'],
+        // Hak akses kategori berdasarkan NIK requester
+        $accessRules = [
+            // Admin (Akses Penuh SCM & BR)
+            '90000000' => ['SCM', 'BR'],
+            'ADM001'   => ['SCM', 'BR'],
+
+            // Staff Requester SCM
+            '90000007' => ['SCM'],
+            'REQ001'   => ['SCM'],
+            '20268888' => ['SCM'],
+
+            // Staff Requester BR
+            '90000017' => ['BR'],
+            'REQ002'   => ['BR'],
         ];
 
-        foreach ($data as $item) {
-            RequesterCategoryAccess::updateOrCreate(
-                [
-                    'nik' => $item['nik'],
-                    'category_type' => $item['category_type'],
-                ],
-                [
-                    'start_date' => '2026-01-01',
-                    'end_date' => null,
-                ]
-            );
+        foreach ($accessRules as $nik => $types) {
+            foreach ($types as $type) {
+                RequesterCategoryAccess::updateOrCreate(
+                    [
+                        'nik' => $nik,
+                        'category_type' => $type,
+                    ],
+                    [
+                        'start_date' => '2026-01-01',
+                        'end_date' => null,
+                    ]
+                );
+            }
         }
     }
 }

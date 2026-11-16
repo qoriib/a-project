@@ -11,6 +11,7 @@ class AdminSeeder extends Seeder
     {
         $adminNiks = [
             '90000000', // Admin Testing
+            'ADM001',   // Admin Demo
         ];
 
         foreach ($adminNiks as $nik) {

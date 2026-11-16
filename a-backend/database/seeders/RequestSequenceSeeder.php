@@ -9,18 +9,20 @@ class RequestSequenceSeeder extends Seeder
 {
     public function run(): void
     {
+        $year = (int) date('Y');
+
         $sequences = [
             [
-                'year' => 2026,
-                'form_type' => 'N',
-                'status' => 'ACTIVE',
-                'last_number' => 10,
+                'year' => $year,
+                'form_type' => 'VMS',
+                'status' => 'NEW',
+                'last_number' => 25,
             ],
             [
-                'year' => 2026,
-                'form_type' => 'U',
-                'status' => 'ACTIVE',
-                'last_number' => 5,
+                'year' => $year,
+                'form_type' => 'VMS',
+                'status' => 'UPDATE',
+                'last_number' => 15,
             ],
         ];
 
@@ -29,9 +31,9 @@ class RequestSequenceSeeder extends Seeder
                 [
                     'year' => $seq['year'],
                     'form_type' => $seq['form_type'],
+                    'status' => $seq['status'],
                 ],
                 [
-                    'status' => $seq['status'],
                     'last_number' => $seq['last_number'],
                 ]
             );
