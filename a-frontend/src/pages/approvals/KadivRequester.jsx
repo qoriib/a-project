@@ -69,6 +69,20 @@ function KadivDetail() {
     }));
   };
 
+  const handleModalConfirm = () => {
+    const callback = modal.onConfirm;
+
+    setModal((prev) => ({
+      ...prev,
+      open: false,
+      onConfirm: null,
+    }));
+
+    if (callback) {
+      callback();
+    }
+  };
+
   // ==========================================
   // ALERT KEMBALI
   // ==========================================
