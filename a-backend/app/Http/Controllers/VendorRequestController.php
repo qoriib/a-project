@@ -389,13 +389,7 @@ class VendorRequestController extends Controller
             ], 401);
         }
 
-        if (!$user->isAdmin()) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki akses untuk melihat seluruh pengajuan New Vendor.',
-            ], 403);
-        }
-
-        $requests = VendorRequest::with([
+        $query = VendorRequest::with([
             'vendor.kategori',
             'vendor.vendorSubcategories.category',
             'vendor.bankAccounts',
@@ -410,9 +404,26 @@ class VendorRequestController extends Controller
             ->where('request_type', 'CREATE')
             ->whereHas('vendor', function ($query) {
                 $query->where('source_type', 'NEW');
-            })
-            ->latest()
-            ->get();
+            });
+
+        // Jika bukan Admin, tampilkan pengajuan yang diajukan oleh user atau divisinya
+        if (!$user->isAdmin()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('requested_by_nik', $user->nik)
+                    ->orWhere('requested_by_email', $user->email)
+                    ->orWhereHas('vendor', function ($vq) use ($user) {
+                        $vq->where('created_by', $user->id);
+                    });
+
+                if (!empty($user->division)) {
+                    $q->orWhereHas('requester', function ($rq) use ($user) {
+                        $rq->where('division', $user->division);
+                    });
+                }
+            });
+        }
+
+        $requests = $query->latest()->get();
 
         // Tambahkan informasi penolakan terakhir.
         $requests->each(function ($vendorRequest) {

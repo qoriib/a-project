@@ -74,12 +74,12 @@ function NewVendor() {
         })),
       );
 
-      // New Vendor hanya menampilkan pengajuan yang belum Completed.
+      // New Vendor menampilkan pengajuan aktif/berjalan (Draft s/d Review SAP)
       const activeRequests = requestList.filter((request) => {
         const stage = (request.current_stage || "").toUpperCase().trim();
-        const status = (request.status || "").toLowerCase().trim();
+        const status = (request.status || "").toUpperCase().trim();
 
-        return !(stage === "COMPLETED" && status === "approved");
+        return !(stage === "COMPLETED" || status === "COMPLETED");
       });
 
       setVendors(activeRequests);
@@ -101,46 +101,46 @@ function NewVendor() {
 
   const getStageLabel = (request) => {
     const stage = (request.current_stage || "").toUpperCase();
-    const status = (request.status || "").trim().toLowerCase();
+    const status = (request.status || "").trim().toUpperCase();
 
     // Pengajuan ditolak
-    if (status === "rejected") {
+    if (status === "REJECTED") {
       return request.rejection_info?.label || "Ditolak";
     }
 
-    if (stage === "REQUESTER" && status === "pending") {
+    if (status === "DRAFT" || stage === "REQUESTER") {
       return "Draft Requester";
     }
 
-    if (stage === "REQUESTER" && status === "under review") {
-      return "Menunggu Kadiv Requester";
+    if (status === "PENDING_L1" || stage === "ASISTEN_KADIV") {
+      return "Level 1: Verifikasi Dokumen";
     }
 
-    if (stage === "ACCOUNTING" && status === "pending") {
-      return "Proses Accounting";
+    if (status === "PENDING_L2" || stage === "KADIV") {
+      return "Level 2: Approval Kadiv SCM";
     }
 
-    if (stage === "ACCOUNTING" && status === "under review") {
-      return "Menunggu Kadiv Accounting";
+    if (status === "PENDING_L3" || stage === "ACCOUNTING") {
+      return "Level 3: Accounting Input";
     }
 
-    if (stage === "TAX" && status === "pending") {
-      return "Proses Tax";
+    if (status === "PENDING_L4" || stage === "TAX") {
+      return "Level 4: Tax Input";
     }
 
-    if (stage === "TAX" && status === "under review") {
-      return "Menunggu Kadiv Tax";
+    if (status === "PENDING_L5") {
+      return "Level 5: Review Tim SAP";
     }
 
-    if (stage === "SAP" && status === "pending") {
-      return "Proses SAP";
+    if (status === "FORM_APPROVED") {
+      return "Form Disetujui (Menunggu Kode SAP)";
     }
 
-    if (stage === "COMPLETED" && status === "approved") {
+    if (status === "COMPLETED" || stage === "COMPLETED") {
       return "Completed";
     }
 
-    return stage || "-";
+    return stage || status || "-";
   };
 
   // ==========================================
@@ -340,18 +340,13 @@ function NewVendor() {
   // ==========================================
 
   const getStatusClass = (status) => {
-    switch ((status || "").trim().toLowerCase()) {
-      case "pending":
-        return "pending";
-      case "rejected":
-        return "rejected";
-      case "under review":
-        return "review";
-      case "approved":
-        return "approved";
-      default:
-        return "inactive";
-    }
+    const s = (status || "").trim().toUpperCase();
+    if (s.startsWith("PENDING")) return "pending";
+    if (s === "REJECTED") return "rejected";
+    if (s === "UNDER REVIEW" || s === "FORM_APPROVED") return "review";
+    if (s === "COMPLETED" || s === "APPROVED") return "approved";
+    if (s === "DRAFT") return "inactive";
+    return "inactive";
   };
 
   // ==========================================
