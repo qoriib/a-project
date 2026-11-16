@@ -383,9 +383,9 @@ function AddVendor() {
       bankAccounts: prev.bankAccounts.map((bank, i) =>
         i === bankIndex
           ? {
-              ...bank,
-              documents: [...bank.documents, ...files],
-            }
+            ...bank,
+            documents: [...bank.documents, ...files],
+          }
           : bank
       ),
     }));
@@ -410,9 +410,9 @@ function AddVendor() {
       bankAccounts: prev.bankAccounts.map((bank, i) =>
         i === bankIndex
           ? {
-              ...bank,
-              documents: bank.documents.filter((_, j) => j !== fileIndex),
-            }
+            ...bank,
+            documents: bank.documents.filter((_, j) => j !== fileIndex),
+          }
           : bank
       ),
     }));
@@ -1394,9 +1394,8 @@ function AddVendor() {
                           </p>
 
                           <div
-                            className={`add-vendor-document-status ${
-                              isUploaded ? "completed" : ""
-                            }`}
+                            className={`add-vendor-document-status ${isUploaded ? "completed" : ""
+                              }`}
                           >
                             {isUploaded ? (
                               <>
@@ -1606,7 +1605,7 @@ function AddVendor() {
               {approvalLayers.length > 0 && (
                 <div className="mb-3 text-start p-3 bg-light rounded border">
                   <label className="fw-bold mb-2 text-primary" style={{ fontSize: "13px" }}>
-                    ℹ️ Alur Approval untuk Kategori Ini:
+                    Alur Approval untuk Kategori Ini:
                   </label>
                   <ol className="mb-0 ps-3" style={{ fontSize: "12px", color: "#333" }}>
                     {approvalLayers.map((layer) => (

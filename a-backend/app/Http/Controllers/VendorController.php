@@ -159,7 +159,9 @@ class VendorController extends Controller
                 return 'Kategori yang dipilih tidak ditemukan.';
             }
 
-            if (strtolower(trim($category->name)) === 'other') {
+            $isOther = $this->isCategoryOther($category);
+
+            if ($isOther) {
                 if (blank($item['category_other'] ?? null)) {
                     return 'Nama kategori Other wajib diisi.';
                 }
@@ -171,11 +173,26 @@ class VendorController extends Controller
         return null;
     }
 
+    /**
+     * Mengecek apakah kategori merupakan kategori 'Other' / khusus
+     */
+    private function isCategoryOther($category): bool
+    {
+        if (!$category) {
+            return false;
+        }
+
+        $desc = strtolower(trim((string) ($category->category_desc ?? $category->name ?? '')));
+        $catCode = strtoupper(trim((string) ($category->cat_code ?? '')));
+
+        return str_contains($desc, 'other') || in_array($catCode, ['VMS_012', 'VMS_015']);
+    }
+
     /*
-|--------------------------------------------------------------------------
-| SIMPAN KATEGORI DAN SUBKATEGORI VENDOR
-|--------------------------------------------------------------------------
-*/
+    |--------------------------------------------------------------------------
+    | SIMPAN KATEGORI DAN SUBKATEGORI VENDOR
+    |--------------------------------------------------------------------------
+    */
 
     private function saveVendorSubcategories(
         Vendor $vendor,
@@ -186,14 +203,13 @@ class VendorController extends Controller
                 ->where('id', $item['category_id'])
                 ->first();
 
+            $isOther = $this->isCategoryOther($category);
+
             $vendor->vendorSubcategories()->create([
                 'category_id' => $item['category_id'],
-
-                'category_other' =>
-                strtolower(trim($category->name)) === 'other'
+                'category_other' => $isOther && !blank($item['category_other'] ?? null)
                     ? trim($item['category_other'])
                     : null,
-
                 'subcategory' => $item['subcategory'],
             ]);
         }

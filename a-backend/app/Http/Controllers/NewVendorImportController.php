@@ -201,8 +201,11 @@ class NewVendorImportController extends Controller
                     ->where('id', $row['kategori_id'])
                     ->first();
 
+                $catDesc = strtolower(trim((string) ($category->category_desc ?? $category->name ?? '')));
+                $isCatOther = str_contains($catDesc, 'other') || in_array($category->cat_code ?? '', ['VMS_012', 'VMS_015']);
+
                 if (
-                    strtolower(trim($category->name ?? '')) === 'other'
+                    $isCatOther
                     && blank($row['kategori_other'] ?? null)
                 ) {
                     $errors[] = [
