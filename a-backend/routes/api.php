@@ -21,6 +21,7 @@ use App\Http\Controllers\VendorVerificationController;
 use App\Http\Controllers\ExistingVendorImportController;
 use App\Http\Controllers\NewVendorImportController;
 use App\Http\Controllers\RequesterCategoryController;
+use App\Http\Controllers\VendorTemplateController;
 
 
 /*
@@ -121,6 +122,11 @@ Route::middleware('auth:sanctum')->group(function () {
             'show'
         ]);
 
+        Route::put('/{id}', [
+            UserManagementController::class,
+            'update'
+        ]);
+
         Route::put('/{id}/role', [
             UserManagementController::class,
             'updateRole'
@@ -168,6 +174,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/import', [
             NewVendorImportController::class,
             'import'
+        ]);
+
+        Route::get('/template/new', [
+            VendorTemplateController::class,
+            'downloadNewVendorTemplate'
+        ]);
+
+        Route::get('/template/existing', [
+            VendorTemplateController::class,
+            'downloadExistingVendorTemplate'
         ]);
 
         Route::get('/{id}', [
@@ -249,6 +265,11 @@ Route::middleware('auth:sanctum')->group(function () {
             'reject'
         ]);
 
+        Route::post('/{id}/cancel-approve', [
+            VendorRequestController::class,
+            'cancelApprove'
+        ]);
+
         // ACCOUNTING
         Route::post('/{id}/accounting', [
             VendorRequestController::class,
@@ -320,6 +341,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/vendor-categories', [
         VendorCategoryController::class,
         'index'
+    ]);
+
+    Route::get('/vendor-categories/{catCode}/approval-layer', [
+        VendorCategoryController::class,
+        'approvalLayer'
     ]);
 
     Route::get('/payment-terms', [

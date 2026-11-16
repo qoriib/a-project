@@ -145,11 +145,61 @@ class VendorRequestController extends Controller
             ];
         }
 
-        $today = now()->toDateString();
+        $roleName = strtoupper($user->role?->name ?? '');
+        $upperStage = strtoupper($stage);
 
+        $hasRole = false;
+        $canEdit = false;
+        $canApprove = false;
+
+        if ($upperStage === 'REQUESTER' && in_array($roleName, ['REQUESTER', 'PROCUREMENT'])) {
+            $hasRole = true;
+            $canEdit = true;
+        } elseif ($upperStage === 'ASISTEN_KADIV' && $roleName === 'ASISTEN_KADIV') {
+            $hasRole = true;
+            $canApprove = true;
+        } elseif ($upperStage === 'KADIV' && $roleName === 'KADIV') {
+            $hasRole = true;
+            $canApprove = true;
+        } elseif ($upperStage === 'ACCOUNTING' && $roleName === 'ACCOUNTING') {
+            $hasRole = true;
+            $canEdit = true;
+            $canApprove = true;
+        } elseif ($upperStage === 'TAX' && $roleName === 'TAX') {
+            $hasRole = true;
+            $canEdit = true;
+            $canApprove = true;
+        } elseif ($upperStage === 'SAP' && $roleName === 'SAP') {
+            $hasRole = true;
+            $canEdit = true;
+            $canApprove = true;
+        }
+
+        // Check master_approval_layer
+        $today = now()->toDateString();
+        $inLayer = DB::table('master_approval_layer')
+            ->where('stage', $upperStage)
+            ->where(function ($q) use ($user) {
+                $q->where('nik', $user->nik);
+                if (!empty($user->substitute_nik)) {
+                    $q->orWhere('nik', $user->substitute_nik);
+                }
+            })
+            ->whereDate('start_date', '<=', $today)
+            ->where(function ($q) use ($today) {
+                $q->whereNull('end_date')->orWhereDate('end_date', '>=', $today);
+            })
+            ->exists();
+
+        if ($inLayer) {
+            $hasRole = true;
+            $canApprove = true;
+        }
+
+        // Check master_approvals table
         $approvals = MasterApproval::query()
             ->where('nik', $user->nik)
-            ->where('approval_stage', strtoupper($stage))
+            ->where('approval_stage', $upperStage)
             ->whereDate('start_date', '<=', $today)
             ->where(function ($query) use ($today) {
                 $query->whereNull('end_date')
@@ -157,21 +207,21 @@ class VendorRequestController extends Controller
             })
             ->get();
 
-        $canView = $approvals->contains(
-            fn($item) => (bool) $item->can_view
-        );
+        if ($approvals->isNotEmpty()) {
+            $canViewOld = $approvals->contains(fn($item) => (bool) $item->can_view);
+            $canEdit = $canEdit || ($canViewOld && $approvals->contains(fn($item) => (bool) $item->can_edit));
+            $canApprove = $canApprove || ($canViewOld && $approvals->contains(fn($item) => (bool) $item->can_approve));
+            if ($canViewOld) {
+                $hasRole = true;
+            }
+        }
+
+        $canView = $hasRole || $canEdit || $canApprove;
 
         return [
             'can_view' => $canView,
-
-            'can_edit' => $canView && $approvals->contains(
-                fn($item) => (bool) $item->can_edit
-            ),
-
-            'can_approve' => $canView && $approvals->contains(
-                fn($item) => (bool) $item->can_approve
-            ),
-
+            'can_edit' => $canEdit,
+            'can_approve' => $canApprove,
             'is_admin' => false,
         ];
     }
@@ -193,18 +243,12 @@ class VendorRequestController extends Controller
             ], 401);
         }
 
-        // Admin boleh mengedit pada semua tahap.
         $isAdmin = $user->isAdmin();
 
-        // Pegawai biasa wajib memiliki can_edit.
         if (!$isAdmin) {
-            $approval = $this->getMasterApproval(
-                $request,
-                $stage,
-                'can_edit'
-            );
+            $perms = $this->getStagePermissions($request, $stage);
 
-            if (!$approval) {
+            if (!$perms['can_edit'] && !$perms['can_view']) {
                 return response()->json([
                     'message' => 'Anda tidak memiliki akses Staff/PIC pada tahap ini.',
                 ], 403);
@@ -216,13 +260,13 @@ class VendorRequestController extends Controller
             strtoupper($stage)
         ) {
             return response()->json([
-                'message' => 'Request tidak berada pada tahap yang sesuai.',
+                'message' => 'Request tidak berada pada tahap yang sesuai (' . $vendorRequest->current_stage . ').',
             ], 422);
         }
 
-        if ($vendorRequest->status !== 'Pending') {
+        if (in_array(strtoupper($vendorRequest->status ?? ''), ['REJECTED', 'COMPLETED', 'DONE'])) {
             return response()->json([
-                'message' => 'Request tidak dapat diedit. Hanya request dengan status Pending yang dapat diproses.',
+                'message' => 'Request sudah berstatus ' . $vendorRequest->status . ' dan tidak dapat diedit.',
             ], 422);
         }
 
@@ -274,15 +318,10 @@ class VendorRequestController extends Controller
 
         $isAdmin = $user->isAdmin();
 
-        // Pegawai biasa wajib memiliki can_approve.
         if (!$isAdmin) {
-            $approval = $this->getMasterApproval(
-                $request,
-                $stage,
-                'can_approve'
-            );
+            $perms = $this->getStagePermissions($request, $stage);
 
-            if (!$approval) {
+            if (!$perms['can_approve']) {
                 return response()->json([
                     'message' => 'Anda tidak memiliki hak approval pada tahap ini.',
                 ], 403);
@@ -290,11 +329,16 @@ class VendorRequestController extends Controller
         }
 
         if (
-            strtoupper($vendorRequest->current_stage ?? '') !== strtoupper($stage) ||
-            $vendorRequest->status !== 'Under Review'
+            strtoupper($vendorRequest->current_stage ?? '') !== strtoupper($stage)
         ) {
             return response()->json([
-                'message' => 'Request belum tersedia untuk approval atau sudah diproses.',
+                'message' => 'Request tidak berada pada tahap yang sesuai (' . $vendorRequest->current_stage . ').',
+            ], 422);
+        }
+
+        if (in_array(strtoupper($vendorRequest->status ?? ''), ['REJECTED', 'COMPLETED', 'DONE'])) {
+            return response()->json([
+                'message' => 'Request sudah berstatus ' . $vendorRequest->status . ' dan tidak dapat diproses lagi.',
             ], 422);
         }
 
@@ -431,7 +475,7 @@ class VendorRequestController extends Controller
 
     public function byStage(Request $request, $stage)
     {
-        $allowedStages = ['REQUESTER', 'ACCOUNTING', 'TAX', 'SAP'];
+        $allowedStages = ['REQUESTER', 'ASISTEN_KADIV', 'KADIV', 'ACCOUNTING', 'TAX', 'SAP'];
 
         $stage = strtoupper($stage);
 
@@ -449,7 +493,7 @@ class VendorRequestController extends Controller
 
         $permissions = $this->getStagePermissions($request, $stage);
 
-        if (!$permissions['can_view']) {
+        if (!$permissions['can_view'] && !$permissions['is_admin']) {
             return response()->json([
                 'message' => 'Anda tidak memiliki akses untuk melihat request pada tahap ini.'
             ], 403);
@@ -467,29 +511,12 @@ class VendorRequestController extends Controller
             'requester',
             'approvalHistories.actor',
         ])
-            ->where('request_type', 'CREATE')
+            ->whereIn('request_type', ['CREATE', 'UPDATE'])
             ->where('current_stage', $stage);
 
-        // Admin dapat melihat seluruh status pada stage tersebut.
-        // Staff dibatasi berdasarkan permission.
+        // Jika bukan admin, jangan tampilkan request yang sudah selesai di tahap lain
         if (!$permissions['is_admin']) {
-
-            $canEdit = $permissions['can_edit'];
-            $canApprove = $permissions['can_approve'];
-
-            if ($canEdit && $canApprove) {
-                $query->whereIn('status', [
-                    'Pending',
-                    'Under Review',
-                ]);
-            } elseif ($canEdit) {
-                $query->where('status', 'Pending');
-            } elseif ($canApprove) {
-                $query->where('status', 'Under Review');
-            }
-
-            // Jika hanya memiliki can_view, user dapat melihat
-            // seluruh request pada stage tersebut dalam mode baca.
+            $query->whereNotIn('status', ['COMPLETED', 'DONE']);
         }
 
         $requests = $query->latest()->get();
@@ -785,9 +812,9 @@ class VendorRequestController extends Controller
             return $response;
         }
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request ini bukan pengajuan vendor yang valid.',
             ], 422);
         }
 
@@ -888,8 +915,10 @@ class VendorRequestController extends Controller
                     (int) $versionQuery->max('version')
                 ) + 1;
 
+                $folderPath = 'vendor-documents/' . $vendor->id . '/' . strtolower(preg_replace('/[^A-Za-z0-9_\-]/', '_', $documentType));
+
                 $filePath = $file->store(
-                    'vendor-documents/' . $vendor->id,
+                    $folderPath,
                     'public'
                 );
 
@@ -1025,7 +1054,7 @@ class VendorRequestController extends Controller
             if ($validated['action'] === 'draft') {
 
                 $vendorRequest->update([
-                    'status' => 'Pending',
+                    'status' => 'DRAFT',
                     'current_stage' => 'REQUESTER',
                     'submitted_at' => null,
                 ]);
@@ -1050,8 +1079,8 @@ class VendorRequestController extends Controller
                 'form_number' => $vendorRequest->form_number
                     ?: $this->createRequestNumber('CREATE'),
 
-                'status' => 'Under Review',
-                'current_stage' => 'REQUESTER',
+                'status' => 'PENDING_L1',
+                'current_stage' => 'ASISTEN_KADIV',
                 'submitted_at' => now(),
                 'rejection_reason' => null,
             ]);
@@ -1060,7 +1089,7 @@ class VendorRequestController extends Controller
                 $vendorRequest,
                 'REQUESTER',
                 $this->getCurrentNik($request),
-                'Under Review'
+                'Submitted'
             );
 
             /*
@@ -1113,9 +1142,9 @@ class VendorRequestController extends Controller
         $vendorRequest = VendorRequest::with('vendor')
             ->findOrFail($id);
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request ini bukan pengajuan vendor yang valid.',
             ], 422);
         }
 
@@ -1189,9 +1218,9 @@ class VendorRequestController extends Controller
         $vendorRequest = VendorRequest::with('vendor')
             ->findOrFail($id);
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request ini bukan pengajuan vendor yang valid.',
             ], 422);
         }
 
@@ -1221,25 +1250,25 @@ class VendorRequestController extends Controller
                 'payment_method' => $request->payment_method,
             ]);
 
-            // Tetap di ACCOUNTING karena masih menunggu Kadiv.
+            // Sesuai alur workflow: Accounting approve -> lanjut ke Level 4 (Tax)
             $vendorRequest->update([
-                'current_stage' => 'ACCOUNTING',
-                'status' => 'Under Review',
+                'current_stage' => 'TAX',
+                'status' => 'PENDING_L4',
                 'rejection_reason' => null,
             ]);
 
-            // History ini menandakan Staff Accounting sudah submit.
+            // History menandakan Accounting approve
             $this->recordApprovalHistory(
                 $vendorRequest,
                 'ACCOUNTING',
                 $this->getCurrentNik($request),
-                'Under Review'
+                'Approved'
             );
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Data Accounting berhasil disubmit dan menunggu approval Kadiv Accounting.',
+                'message' => 'Data Accounting berhasil disimpan dan disetujui. Pengajuan diteruskan ke Tax.',
                 'data' => $vendorRequest
                     ->fresh()
                     ->load($this->vendorRelations()),
@@ -1277,9 +1306,9 @@ class VendorRequestController extends Controller
         $vendorRequest = VendorRequest::with('vendor')
             ->findOrFail($id);
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request ini bukan pengajuan vendor yang valid.',
             ], 422);
         }
 
@@ -1367,9 +1396,9 @@ class VendorRequestController extends Controller
         $vendorRequest = VendorRequest::with('vendor')
             ->findOrFail($id);
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request ini bukan pengajuan vendor yang valid.',
             ], 422);
         }
 
@@ -1400,25 +1429,25 @@ class VendorRequestController extends Controller
                 ->withholdingTaxes()
                 ->sync($taxIds);
 
-            // Tetap berada di TAX sampai Kadiv menyetujui.
+            // Sesuai alur workflow: Tax approve -> lanjut ke Level 5 (SAP)
             $vendorRequest->update([
-                'current_stage' => 'TAX',
-                'status' => 'Under Review',
+                'current_stage' => 'SAP',
+                'status' => 'PENDING_L5',
                 'rejection_reason' => null,
             ]);
 
-            // Mencatat Staff Tax yang melakukan submit.
+            // Mencatat Tax yang melakukan approve.
             $this->recordApprovalHistory(
                 $vendorRequest,
                 'TAX',
                 $this->getCurrentNik($request),
-                'Under Review'
+                'Approved'
             );
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Data Tax berhasil disubmit dan menunggu approval Kadiv Tax.',
+                'message' => 'Data Tax berhasil disimpan dan disetujui. Pengajuan diteruskan ke SAP.',
                 'data' => $vendorRequest
                     ->fresh()
                     ->load($this->vendorRelations()),
@@ -1461,9 +1490,9 @@ class VendorRequestController extends Controller
         $vendorRequest = VendorRequest::with('vendor')
             ->findOrFail($id);
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request ini bukan pengajuan vendor yang valid.',
             ], 422);
         }
 
@@ -1519,9 +1548,9 @@ class VendorRequestController extends Controller
             $this->vendorRelations()
         )->findOrFail($id);
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request tidak valid.',
             ], 422);
         }
 
@@ -1530,15 +1559,41 @@ class VendorRequestController extends Controller
         );
 
         $nextStage = [
-            'REQUESTER' => 'ACCOUNTING',
-            'ACCOUNTING' => 'TAX',
-            'TAX' => 'SAP',
+            'REQUESTER' => [
+                'stage' => 'ASISTEN_KADIV',
+                'status' => 'PENDING_L1',
+                'label' => 'Level 1 (Asisten Kadiv)',
+            ],
+            'ASISTEN_KADIV' => [
+                'stage' => 'KADIV',
+                'status' => 'PENDING_L2',
+                'label' => 'Level 2 (Kadiv SCM)',
+            ],
+            'KADIV' => [
+                'stage' => 'ACCOUNTING',
+                'status' => 'PENDING_L3',
+                'label' => 'Level 3 (Accounting)',
+            ],
+            'ACCOUNTING' => [
+                'stage' => 'TAX',
+                'status' => 'PENDING_L4',
+                'label' => 'Level 4 (Tax)',
+            ],
+            'TAX' => [
+                'stage' => 'SAP',
+                'status' => 'PENDING_L5',
+                'label' => 'Level 5 (SAP)',
+            ],
+            'SAP' => [
+                'stage' => 'SAP',
+                'status' => 'FORM_APPROVED',
+                'label' => 'Form Full Approved (Menunggu Pengisian Vendor Code SAP)',
+            ],
         ];
 
-        // SAP tidak lagi membutuhkan approval.
         if (!array_key_exists($stage, $nextStage)) {
             return response()->json([
-                'message' => 'Approval tidak tersedia pada tahap ini. Tahap SAP menyelesaikan pengajuan secara langsung.',
+                'message' => "Approval tidak tersedia pada tahap {$stage}.",
             ], 422);
         }
 
@@ -1562,18 +1617,36 @@ class VendorRequestController extends Controller
             );
 
             // Lanjutkan ke tahap berikutnya.
-            $destinationStage = $nextStage[$stage];
+            $destination = $nextStage[$stage];
 
             $vendorRequest->update([
-                'current_stage' => $destinationStage,
-                'status' => 'Pending',
+                'current_stage' => $destination['stage'],
+                'status' => $destination['status'],
                 'rejection_reason' => null,
             ]);
+
+            // Update FormApproval stage saat ini menjadi APPROVED
+            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', $stage)
+                ->update(['status' => 'APPROVED']);
+
+            // Update FormApproval stage berikutnya menjadi IN_PROGRESS
+            if (isset($destination['stage'])) {
+                \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('stage', $destination['stage'])
+                    ->where('status', 'WAITING')
+                    ->update(['status' => 'IN_PROGRESS']);
+            }
+
+            // Jika SAP (Level 5 Step 1: SAP Approval), buat PDF final
+            if ($stage === 'SAP') {
+                $this->generateFinalVendorPdf($vendorRequest->id);
+            }
 
             DB::commit();
 
             return response()->json([
-                'message' => "Approval {$stage} berhasil. Request dikirim ke {$destinationStage}.",
+                'message' => "Approval {$stage} berhasil. Status sekarang: {$destination['status']} ({$destination['label']}).",
                 'data' => $vendorRequest
                     ->fresh()
                     ->load($this->vendorRelations()),
@@ -1592,6 +1665,105 @@ class VendorRequestController extends Controller
 
             return response()->json([
                 'message' => 'Gagal memproses approval.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function cancelApprove(Request $request, $id)
+    {
+        $vendorRequest = VendorRequest::with(
+            $this->vendorRelations()
+        )->findOrFail($id);
+
+        $stage = strtoupper(
+            $vendorRequest->current_stage ?? ''
+        );
+
+        $rollbackMap = [
+            'ASISTEN_KADIV' => [
+                'target_stage' => 'REQUESTER',
+                'target_status' => 'DRAFT',
+                'message' => 'Cancel Approve berhasil. Pengajuan dikembalikan ke Draft.',
+            ],
+            'KADIV' => [
+                'target_stage' => 'ASISTEN_KADIV',
+                'target_status' => 'PENDING_L1',
+                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 1 (Asisten Kadiv).',
+            ],
+            'ACCOUNTING' => [
+                'target_stage' => 'KADIV',
+                'target_status' => 'PENDING_L2',
+                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 2 (Kadiv SCM).',
+            ],
+            'TAX' => [
+                'target_stage' => 'ACCOUNTING',
+                'target_status' => 'PENDING_L3',
+                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 3 (Accounting).',
+            ],
+            'SAP' => [
+                'target_stage' => 'TAX',
+                'target_status' => 'PENDING_L4',
+                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 4 (Tax).',
+            ],
+        ];
+
+        if (!array_key_exists($stage, $rollbackMap)) {
+            return response()->json([
+                'message' => "Cancel Approve tidak tersedia pada tahap {$stage}.",
+            ], 422);
+        }
+
+        if ($response = $this->ensureApprovalAccess(
+            $request,
+            $vendorRequest,
+            $stage
+        )) {
+            return $response;
+        }
+
+        $reason = $request->input('reason') ?? $request->input('notes') ?? ('Cancel Approve oleh ' . $stage);
+
+        DB::beginTransaction();
+
+        try {
+            $this->recordApprovalHistory(
+                $vendorRequest,
+                $stage,
+                $this->getCurrentNik($request),
+                'CANCEL_APPROVE',
+                $reason
+            );
+
+            $target = $rollbackMap[$stage];
+
+            $vendorRequest->update([
+                'current_stage' => $target['target_stage'],
+                'status' => $target['target_status'],
+                'cancellation_reason' => $reason,
+            ]);
+
+            // Update FormApproval stage saat ini menjadi CANCEL_APPROVE
+            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', $stage)
+                ->update(['status' => 'CANCEL_APPROVE']);
+
+            // Update FormApproval stage target rollback menjadi IN_PROGRESS
+            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', $target['target_stage'])
+                ->update(['status' => 'IN_PROGRESS']);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => $target['message'],
+                'data' => $vendorRequest->fresh()->load($this->vendorRelations()),
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Gagal memproses Cancel Approve.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -1619,9 +1791,9 @@ class VendorRequestController extends Controller
         $vendorRequest = VendorRequest::with('vendor')
             ->findOrFail($id);
 
-        if ($vendorRequest->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($vendorRequest->request_type), ['CREATE', 'UPDATE'], true)) {
             return response()->json([
-                'message' => 'Request ini bukan pengajuan New Vendor.',
+                'message' => 'Request ini bukan pengajuan vendor yang valid.',
             ], 422);
         }
 
@@ -1657,13 +1829,41 @@ class VendorRequestController extends Controller
                 'vendor_code' => trim($validated['vendor_code']),
             ]);
 
+            // Jika UPDATE, terapkan perubahan data dari vendor_request_details ke vendor master
+            if (strtoupper($vendorRequest->request_type) === 'UPDATE') {
+                $detail = $vendorRequest->details()->latest()->first();
+                if ($detail && is_array($detail->new_data)) {
+                    $newPayload = $detail->new_data;
+                    $mainData = collect($newPayload)->except([
+                        'bank_accounts', 'vendor_subcategories', 'withholding_tax_ids'
+                    ])->all();
+                    $vendorRequest->vendor->update($mainData);
+
+                    if (!empty($newPayload['vendor_subcategories'])) {
+                        $vendorRequest->vendor->vendorSubcategories()->delete();
+                        foreach ($newPayload['vendor_subcategories'] as $sc) {
+                            $vendorRequest->vendor->vendorSubcategories()->create([
+                                'category_id' => $sc['category_id'],
+                                'subcategory' => $sc['subcategory'],
+                                'category_other' => $sc['category_other'] ?? null,
+                            ]);
+                        }
+                    }
+                }
+            }
+
             // SAP adalah tahap terakhir: langsung COMPLETED.
             $vendorRequest->update([
                 'current_stage' => 'COMPLETED',
-                'status' => 'Approved',
+                'status' => 'COMPLETED',
                 'completed_at' => now(),
                 'rejection_reason' => null,
             ]);
+
+            // Update FormApproval stage SAP menjadi APPROVED
+            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', 'SAP')
+                ->update(['status' => 'APPROVED']);
 
             // Catat SAP sebagai Approved, bukan Under Review.
             $this->recordApprovalHistory(
@@ -1759,11 +1959,18 @@ class VendorRequestController extends Controller
                 . base64_encode($result->getString());
         }
 
+        $logoPath = public_path('images/IBS.png');
+        $logoDataUri = null;
+        if (is_file($logoPath)) {
+            $logoDataUri = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+        }
+
         $pdf = Pdf::loadView('pdf.vendor-master', [
             'vendorRequest' => $finalRequest,
             'vendor' => $finalRequest->vendor,
             'approvals' => $finalRequest->approvalHistories,
             'qrCodes' => $qrCodes,
+            'logoDataUri' => $logoDataUri,
         ]);
 
         $pdf->setPaper('A4', 'portrait');
@@ -1772,6 +1979,7 @@ class VendorRequestController extends Controller
             . $finalRequest->id
             . '.pdf';
 
+        Storage::disk('public')->makeDirectory('vendor-pdfs');
         $saved = Storage::disk('public')->put(
             $pdfPath,
             $pdf->output()
@@ -1833,6 +2041,8 @@ class VendorRequestController extends Controller
         // 3. Tahap yang boleh melakukan Reject
         $allowedStages = [
             'REQUESTER',
+            'ASISTEN_KADIV',
+            'KADIV',
             'ACCOUNTING',
             'TAX',
             'SAP',
@@ -1844,21 +2054,7 @@ class VendorRequestController extends Controller
             ], 422);
         }
 
-        // 4. Hanya pengajuan New Vendor
-        if (strtoupper($vendorRequest->request_type) !== 'CREATE') {
-            return response()->json([
-                'message' => 'Hanya pengajuan vendor baru yang dapat ditolak.',
-            ], 422);
-        }
-
-        // 5. Reject hanya ketika menunggu approval
-        if ($vendorRequest->status !== 'Under Review') {
-            return response()->json([
-                'message' => 'Pengajuan belum tersedia untuk ditolak.',
-            ], 422);
-        }
-
-        // 6. Periksa hak akses approval
+        // 4. Periksa hak akses approval
         if ($response = $this->ensureApprovalAccess(
             $request,
             $vendorRequest,
@@ -1870,7 +2066,7 @@ class VendorRequestController extends Controller
         $reason = trim($validated['rejection_reason']);
         $nik = $this->getCurrentNik($request);
 
-        // 7. Simpan perubahan dan approval history
+        // 5. Simpan perubahan dan approval history
         DB::transaction(function () use (
             $vendorRequest,
             $currentStage,
@@ -1878,23 +2074,28 @@ class VendorRequestController extends Controller
             $nik
         ) {
             $vendorRequest->update([
-                'current_stage' => 'REQUESTER',
-                'status' => 'Rejected',
+                'current_stage' => 'REJECTED',
+                'status' => 'REJECTED',
                 'rejection_reason' => $reason,
             ]);
+
+            // Update FormApproval stage saat ini menjadi REJECTED
+            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', $currentStage)
+                ->update(['status' => 'REJECTED']);
 
             $this->recordApprovalHistory(
                 $vendorRequest,
                 $currentStage,
                 $nik,
-                'Rejected',
+                'REJECTED',
                 $reason
             );
         });
 
-        // 8. Response
+        // 6. Response
         return response()->json([
-            'message' => 'Pengajuan berhasil ditolak dan dikembalikan ke Requester.',
+            'message' => 'Pengajuan berhasil ditolak.',
             'data' => $vendorRequest
                 ->fresh()
                 ->load($this->vendorRelations()),
@@ -2246,9 +2447,14 @@ class VendorRequestController extends Controller
             );
         }
 
+        $user = \App\Models\User::where('nik', $nik)->first();
+
         return $vendorRequest->approvalHistories()->create([
             'approval_stage' => strtoupper($stage),
+            'acted_by' => $user?->id,
+            'acted_by_name' => $user?->name,
             'acted_by_nik' => $nik,
+            'acted_by_email' => $user?->email,
             'status' => $status,
             'notes' => $notes,
             'acted_at' => now(),

@@ -474,6 +474,21 @@ class ExistingVendorImportController extends Controller
                         ]);
                     }
 
+                    // Existing vendor juga memiliki no request (UPDATE) dan tercatat di vendor_requests
+                    $formNumber = $this->createRequestNumber('UPDATE');
+                    DB::table('vendor_requests')->insert([
+                        'vendor_id' => $vendorId,
+                        'request_type' => 'UPDATE',
+                        'form_number' => $formNumber,
+                        'requested_by_nik' => $request->user()?->nik ?? '90000000',
+                        'status' => 'Approved',
+                        'current_stage' => 'COMPLETED',
+                        'submitted_at' => $now,
+                        'completed_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+
                     $count++;
                 }
 
@@ -885,5 +900,49 @@ class ExistingVendorImportController extends Controller
             $errors[] =
                 "{$sheet} baris {$rowNumber}: {$field} '{$value}' tidak ditemukan di master {$table}.";
         }
+    }
+
+    private function createRequestNumber(string $requestType): string
+    {
+        $now = now();
+        $year = (int) $now->format('Y');
+        $formType = 'VMS';
+        $status = strtoupper($requestType) === 'CREATE' ? 'NEW' : 'UPDATE';
+        $prefix = $status === 'NEW' ? 'N' : 'U';
+
+        DB::table('request_sequences')->insertOrIgnore([
+            'year' => $year,
+            'form_type' => $formType,
+            'status' => $status,
+            'last_number' => 0,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $sequence = DB::table('request_sequences')
+            ->where('year', $year)
+            ->where('form_type', $formType)
+            ->where('status', $status)
+            ->lockForUpdate()
+            ->first();
+
+        $nextNumber = (int) ($sequence?->last_number ?? 0) + 1;
+
+        if ($sequence) {
+            DB::table('request_sequences')
+                ->where('id', $sequence->id)
+                ->update([
+                    'last_number' => $nextNumber,
+                    'updated_at' => $now,
+                ]);
+        }
+
+        return sprintf(
+            'HRIS-%s-%s-%s%03d',
+            $formType,
+            $prefix,
+            $now->format('Ymd'),
+            $nextNumber
+        );
     }
 }

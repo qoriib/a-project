@@ -86,8 +86,10 @@ class VendorController extends Controller
 
         $nextVersion = ((int) $latestVersion) + 1;
 
+        $folderPath = 'vendor-documents/' . $vendor->id . '/' . strtolower(preg_replace('/[^A-Za-z0-9_\-]/', '_', $documentType));
+
         $filePath = $file->store(
-            'vendor-documents/' . $vendor->id,
+            $folderPath,
             'public'
         );
 
@@ -215,15 +217,17 @@ class VendorController extends Controller
             'reconAccount',
             'latestRequest',
         ])
+            ->whereNotNull('vendor_code')
+            ->where('vendor_code', '!=', '')
             ->where(function ($query) {
-                $query->where('source_type', 'EXISTING');
-            })
-            ->orWhere(function ($query) {
-                $query->where('source_type', 'NEW')
-                    ->whereHas('latestRequest', function ($requestQuery) {
-                        $requestQuery
-                            ->where('status', 'Approved')
-                            ->where('current_stage', 'COMPLETED');
+                $query->where('source_type', 'EXISTING')
+                    ->orWhere(function ($newQuery) {
+                        $newQuery->where('source_type', 'NEW')
+                            ->whereHas('requests', function ($requestQuery) {
+                                $requestQuery
+                                    ->whereIn('status', ['Approved', 'COMPLETED', 'DONE'])
+                                    ->where('current_stage', 'COMPLETED');
+                            });
                     });
             })
             ->latest()
@@ -547,12 +551,12 @@ class VendorController extends Controller
             */
 
             if ($action === 'draft') {
-                $requestStatus = 'Pending';
+                $requestStatus = 'DRAFT';
                 $currentStage = 'REQUESTER';
                 $submittedAt = null;
             } else {
-                $requestStatus = 'Under Review';
-                $currentStage = 'REQUESTER';
+                $requestStatus = 'PENDING_L1';
+                $currentStage = 'ASISTEN_KADIV';
                 $submittedAt = now();
             }
 
@@ -568,15 +572,24 @@ class VendorController extends Controller
             |--------------------------------------------------------------------------
             */
 
+            $firstSubcat = collect($validated['vendor_subcategories'] ?? [])->first();
+            $catId = $firstSubcat['category_id'] ?? null;
+            $catCode = null;
+            if ($catId) {
+                $cat = DB::table('vendor_categories')->find($catId);
+                $catCode = $cat->cat_code ?? null;
+            }
+
             $vendorRequest = VendorRequest::create([
                 'vendor_id' => $vendor->id,
                 'request_type' => 'CREATE',
-
+                'cat_code' => $catCode,
                 'form_number' => $action === 'submit'
                     ? $this->createRequestNumber('CREATE')
                     : null,
 
                 'requested_by_nik' => $user->nik,
+                'requested_by_email' => $user->email,
                 'status' => $requestStatus,
                 'current_stage' => $currentStage,
                 'submitted_at' => $submittedAt,
@@ -584,19 +597,46 @@ class VendorController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | 4. RIWAYAT APPROVAL REQUESTER
+            | 4. RIWAYAT APPROVAL REQUESTER & FORM APPROVALS
             |--------------------------------------------------------------------------
             */
 
             if ($action === 'submit') {
                 $vendorRequest->approvalHistories()->create([
                     'approval_stage' => 'REQUESTER',
+                    'acted_by' => $user->id,
+                    'acted_by_name' => $user->name,
                     'acted_by_nik' => $user->nik,
-                    'status' => 'Under Review',
-                    'notes' => 'Pengajuan vendor dikirim oleh Requester.',
+                    'acted_by_email' => $user->email,
+                    'status' => 'Submitted',
+                    'notes' => 'Pengajuan vendor baru disubmit oleh Requester.',
                     'acted_at' => now(),
                     'signature_token' => bin2hex(random_bytes(32)),
                 ]);
+
+                // Generate Form Approvals dari Master Approval Layer
+                if ($catCode) {
+                    $layers = DB::table('master_approval_layer')
+                        ->where('cat_code', $catCode)
+                        ->where('type', 'Approval')
+                        ->orderBy('priority')
+                        ->get();
+
+                    foreach ($layers as $layer) {
+                        \App\Models\FormApproval::firstOrCreate(
+                            [
+                                'vendor_request_id' => $vendorRequest->id,
+                                'priority' => $layer->priority,
+                            ],
+                            [
+                                'stage' => $layer->stage,
+                                'nik' => $layer->nik,
+                                'email' => $layer->email,
+                                'status' => $layer->priority === 1 ? 'IN_PROGRESS' : 'WAITING',
+                            ]
+                        );
+                    }
+                }
             }
 
             /*
@@ -717,6 +757,12 @@ class VendorController extends Controller
     public function update(Request $request, $id)
     {
         $vendor = Vendor::findOrFail($id);
+
+        if (blank($vendor->vendor_code)) {
+            return response()->json([
+                'message' => 'Update hanya dapat dilakukan pada vendor yang sudah memiliki Vendor Code SAP.',
+            ], 422);
+        }
 
         $rules = [
             // DATA PERUSAHAAN
@@ -924,10 +970,12 @@ class VendorController extends Controller
         try {
             /*
             |--------------------------------------------------------------------------
-            | 1. UPDATE DATA UTAMA VENDOR
+            | 1. SIAPKAN DATA LAMA (OLD) DAN DATA BARU (NEW) BESERTA DIFF
             |--------------------------------------------------------------------------
             |
-            | Field dokumen tidak boleh ikut masuk ke tabel vendors.
+            | Perubahan data baru diterapkan ke tabel vendors setelah disetujui
+            | hingga tahap SAP (COMPLETED). Tabel vendor_request_details menyimpan
+            | riwayat lengkap perbandingan old_data, new_data, dan diff_data.
             |
             */
 
@@ -944,45 +992,96 @@ class VendorController extends Controller
                 ))
                 ->all();
 
-            $vendor->update($vendorData);
+            $oldSnapshot = $vendor->toArray();
+            $newPayload = array_merge($vendorData, [
+                'vendor_subcategories' => $validated['vendor_subcategories'] ?? [],
+                'bank_accounts' => $validated['bank_accounts'] ?? [],
+                'withholding_tax_ids' => $validated['withholding_tax_ids'] ?? [],
+            ]);
 
-            // UPDATE KATEGORI DAN SUBKATEGORI
-            $vendor->vendorSubcategories()->delete();
-
-            $this->saveVendorSubcategories(
-                $vendor,
-                $validated['vendor_subcategories']
-            );
+            // Hitung perbedaan field antara data lama dan data baru
+            $diffData = [];
+            foreach ($vendorData as $k => $v) {
+                $oldVal = $oldSnapshot[$k] ?? null;
+                if ((string)$oldVal !== (string)$v) {
+                    $diffData[$k] = [
+                        'field' => $k,
+                        'old' => $oldVal,
+                        'new' => $v,
+                    ];
+                }
+            }
 
             /*
             |--------------------------------------------------------------------------
-            | 2. UPDATE NOMOR REQUEST N MENJADI U
+            | 2. CATAT REQUEST UPDATE DAN RIWAYAT PERUBAHAN
             |--------------------------------------------------------------------------
-            |
-            | Hanya untuk vendor NEW yang sudah Completed.
-            | Tidak membuat request baru.
-            | Tidak menjalankan approval ulang.
-            | Existing Vendor tidak mendapatkan nomor request.
-            |
             */
 
-            if (strtoupper($vendor->source_type ?? '') !== 'EXISTING') {
-                $completedRequest = VendorRequest::where(
-                    'vendor_id',
-                    $vendor->id
-                )
-                    ->where('current_stage', 'COMPLETED')
-                    ->where('status', 'Approved')
-                    ->whereNotNull('form_number')
-                    ->lockForUpdate()
-                    ->latest('id')
-                    ->first();
+            $formNumber = $this->createRequestNumber('UPDATE');
 
-                if ($completedRequest) {
-                    $completedRequest->form_number =
-                        $this->createRequestNumber('UPDATE');
+            $firstSubcat = collect($validated['vendor_subcategories'] ?? [])->first();
+            $catId = $firstSubcat['category_id'] ?? $vendor->kategori_id;
+            $catCode = null;
+            if ($catId) {
+                $cat = DB::table('vendor_categories')->find($catId);
+                $catCode = $cat->cat_code ?? null;
+            }
 
-                    $completedRequest->save();
+            $updateRequest = VendorRequest::create([
+                'vendor_id' => $vendor->id,
+                'request_type' => 'UPDATE',
+                'cat_code' => $catCode,
+                'form_number' => $formNumber,
+                'requested_by_nik' => $user->nik ?? '90000000',
+                'requested_by_email' => $user->email ?? null,
+                'status' => 'PENDING_L1',
+                'current_stage' => 'ASISTEN_KADIV',
+                'submitted_at' => now(),
+            ]);
+
+            \App\Models\VendorRequestDetail::create([
+                'vendor_request_id' => $updateRequest->id,
+                'old_data' => $oldSnapshot,
+                'new_data' => $newPayload,
+                'diff_data' => $diffData,
+                'changed_by_nik' => $user->nik ?? null,
+                'changed_by_email' => $user->email ?? null,
+            ]);
+
+            $updateRequest->approvalHistories()->create([
+                'approval_stage' => 'REQUESTER',
+                'acted_by' => $user->id,
+                'acted_by_name' => $user->name,
+                'acted_by_nik' => $user->nik ?? null,
+                'acted_by_email' => $user->email ?? null,
+                'status' => 'Submitted',
+                'notes' => 'Pengajuan perbaikan/update data vendor dikirim oleh Requester.',
+                'acted_at' => now(),
+                'signature_token' => bin2hex(random_bytes(32)),
+            ]);
+
+            // Inisialisasi Form Approvals untuk alur update ini
+            if ($catCode) {
+                $layers = DB::table('master_approval_layer')
+                    ->where('cat_code', $catCode)
+                    ->where('type', 'Approval')
+                    ->orderBy('priority')
+                    ->get();
+
+                foreach ($layers as $layer) {
+                    \App\Models\FormApproval::firstOrCreate(
+                        [
+                            'vendor_request_id' => $updateRequest->id,
+                            'priority' => $layer->priority,
+                        ],
+                        [
+                            'stage' => $layer->stage,
+                            'nik' => $layer->nik,
+                            'email' => $layer->email,
+                            'status' => $layer->priority === 1 ? 'IN_PROGRESS' : 'WAITING',
+                        ]
+                    );
                 }
             }
 
