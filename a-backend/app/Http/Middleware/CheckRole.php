@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class CheckRole
+{
+    public function handle(
+        Request $request,
+        Closure $next,
+        string ...$roles
+    ): Response {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        // Muat relasi role pengguna
+        $user->loadMissing('role');
+
+        $roleName = $user->role?->name;
+
+        // Tolak jika role tidak sesuai
+        if (!$roleName || !in_array($roleName, $roles, true)) {
+            return response()->json([
+                'message' => 'Anda tidak memiliki izin untuk mengakses fitur ini.',
+            ], 403);
+        }
+
+        return $next($request);
+    }
+}

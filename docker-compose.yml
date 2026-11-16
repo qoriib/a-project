@@ -1,0 +1,30 @@
+services:
+
+  backend:
+    build:
+      context: ./a-backend
+      dockerfile: Dockerfile
+    container_name: a-backend
+    ports:
+      - "8000:80"
+    volumes:
+      - ./a-backend:/var/www/html
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./a-frontend
+      dockerfile: Dockerfile
+    container_name: a-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./a-frontend:/app
+      - /app/node_modules
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true

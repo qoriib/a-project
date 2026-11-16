@@ -1,0 +1,803 @@
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+.dashboard {
+  width: 100%;
+  min-height: 100vh;
+  background: #f8f8fa;
+}
+
+.main-content {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.page-content {
+  width: 100%;
+  padding: 30px 32px 40px;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   WELCOME SECTION
+========================================================= */
+
+.welcome-section {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.welcome-section > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.welcome-small {
+  margin: 0 0 7px;
+  color: #B42332;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+}
+
+.welcome-section h2 {
+  margin: 0;
+  color: #292631;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.35;
+}
+
+.welcome-section p:last-child {
+  margin: 7px 0 0;
+  color: #92909a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   WELCOME ACTIONS
+========================================================= */
+
+.welcome-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   WELCOME BUTTONS
+========================================================= */
+
+.existing-vendor-button,
+.add-vendor-button {
+  min-height: 46px;
+  padding: 0 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* EXISTING VENDOR */
+
+.existing-vendor-button {
+  color: #ffffff;
+  background: #6750A4;
+  border: 1px solid #F2CDD1;
+  box-shadow: none;
+}
+
+.existing-vendor-button:hover {
+  color: #ffffff;
+  background: #6750A4;
+  border-color: #6750A4;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 13px rgba(180, 35, 50, 0.18);
+}
+
+/* TAMBAH VENDOR */
+
+.add-vendor-button {
+  color: #ffffff;
+  background: #6750A4;
+  border: 1px solid #6750A4;
+  box-shadow: 0 3px 9px rgba(180, 35, 50, 0.2);
+}
+
+.add-vendor-button:hover {
+  color: #ffffff;
+  background: #6750A4;
+  border-color: #6750A4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(180, 35, 50, 0.25);
+}
+
+/* =========================================================
+   BUTTON ICONS
+========================================================= */
+
+.plus-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.17);
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.button-text {
+  display: inline-block;
+  line-height: 1;
+}
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+.stat-box {
+  min-height: 155px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #eeeef3;
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(40, 30, 50, 0.025);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(40, 30, 50, 0.06);
+}
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-title {
+  color: #85818d;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.stat-symbol {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.total-symbol {
+  background: #FCEBED;
+  color: #B42332;
+}
+
+.active-symbol {
+  background: #eaf8ef;
+  color: #198754;
+}
+
+.pending-symbol {
+  background: #fff5df;
+  color: #d99000;
+}
+
+.rejected-symbol {
+  background: #fdecef;
+  color: #dc3545;
+}
+
+.stat-value {
+  margin-top: 10px;
+  color: #292631;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.stat-bottom {
+  display: flex;
+  gap: 7px;
+  margin-top: 7px;
+  color: #a09ca5;
+  font-size: 11px;
+}
+
+.stat-change {
+  color: #198754;
+  font-weight: 600;
+}
+
+.stat-warning {
+  color: #d99000;
+  font-weight: 600;
+}
+
+.stat-danger {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* =========================================================
+   CONTENT CARD
+========================================================= */
+
+.content-card {
+  width: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #eeeef3;
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(40, 30, 50, 0.025);
+}
+
+/* =========================================================
+   CARD HEADER
+========================================================= */
+
+.card-header-custom {
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid #f0f0f3;
+}
+
+.card-header-custom h5 {
+  margin: 0;
+  color: #292631;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.card-header-custom p {
+  margin: 5px 0 0;
+  color: #a09ca5;
+  font-size: 11px;
+}
+
+/* =========================================================
+   VIEW ALL
+========================================================= */
+
+.view-all-button {
+  padding: 5px 0;
+  border: none;
+  background: transparent;
+  color: #B42332;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.view-all-button:hover {
+    color: #821724;
+}
+
+/* =========================================================
+   CHART CARD
+========================================================= */
+
+.chart-card {
+  height: 100%;
+}
+
+/* =========================================================
+   CATEGORY CHART
+========================================================= */
+
+.category-chart {
+  width: 100%;
+  min-height: 280px;
+  padding: 15px 20px 20px;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   VENDOR TABLE
+========================================================= */
+
+.vendor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.vendor-table th {
+  padding: 14px 20px;
+  background: #fcfcfd;
+  border-bottom: 1px solid #f0f0f3;
+  color: #aaa6b0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+}
+
+.vendor-table td {
+  padding: 14px 20px;
+  border-bottom: 1px solid #f3f3f5;
+  color: #77737e;
+  white-space: nowrap;
+}
+
+.vendor-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.vendor-table tbody tr:hover {
+  background: #faf9fc;
+}
+
+.vendor-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =========================================================
+   VENDOR NAME
+========================================================= */
+
+.vendor-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #35313c;
+}
+
+.vendor-name strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   VENDOR AVATAR
+========================================================= */
+
+.vendor-avatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+   background: #FCEBED;
+  color: #B42332;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status.active,
+.status.approved {
+  background: #eaf8ef;
+  color: #198754;
+}
+
+.status.pending {
+  background: #fff5df;
+  color: #b77900;
+}
+
+.status.rejected {
+  background: #fdecef;
+  color: #dc3545;
+}
+
+.status.under-review {
+  background: #eef2ff;
+  color: #667eea;
+}
+
+.status.revision-required {
+  background: #fff0e5;
+  color: #d66a00;
+}
+
+/* =========================================================
+   APPROVAL CARD
+========================================================= */
+
+.approval-card {
+  height: 100%;
+}
+
+.approval-count {
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #fff5df;
+  color: #d99000;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.approval-body {
+  padding: 32px 25px;
+  text-align: center;
+}
+
+.approval-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  background: #fff5df;
+  color: #d99000;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.approval-body h5 {
+  margin: 0;
+  color: #292631;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.approval-body p {
+  max-width: 250px;
+  margin: 7px auto 20px;
+  color: #99959f;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.approval-button {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #292631;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.approval-button:hover {
+  opacity: 0.9;
+}
+
+/* =========================================================
+   DONUT CHART
+========================================================= */
+
+.category-donut-card {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.category-donut-card .card-header-custom {
+  min-width: 0;
+}
+
+.category-donut-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 300px;
+  padding: 12px 16px 16px;
+  box-sizing: border-box;
+}
+
+.category-donut-chart {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  min-width: 0;
+}
+
+.category-donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 110px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  text-align: center;
+}
+
+.category-donut-center-label {
+  color: #858b98;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.category-donut-center strong {
+  margin: 3px 0;
+  color: #292d3a;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.category-donut-center-caption {
+  color: #9ba1ad;
+  font-size: 11px;
+}
+
+.category-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+}
+
+.category-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+}
+
+.category-legend-item:hover {
+  background: #f7f7fb;
+  border-color: #ededf4;
+}
+
+.category-legend-dot {
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.category-legend-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.category-legend-name {
+  overflow: hidden;
+  color: #424656;
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-legend-percentage {
+  color: #9298a5;
+  font-size: 11px;
+}
+
+.category-legend-count {
+  flex-shrink: 0;
+  color: #303444;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.category-donut-empty {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #7d8492;
+  text-align: center;
+}
+
+.category-donut-empty-icon {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #FCEBED;
+  color: #B42332;
+  font-size: 28px;
+}
+
+.category-donut-empty strong {
+  color: #424656;
+  font-size: 14px;
+}
+
+.category-donut-empty span {
+  font-size: 12px;
+}
+
+/* =========================================================
+   RESPONSIVE - TABLET
+========================================================= */
+
+@media (max-width: 1200px) {
+  .page-content {
+    padding: 26px 24px 35px;
+  }
+
+  .category-donut-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .category-donut-chart {
+    height: 260px;
+  }
+
+  .category-donut-legend {
+    padding: 0 8px 12px;
+  }
+}
+
+@media (max-width: 991px) {
+  .page-content {
+    padding: 24px 20px 32px;
+  }
+
+  .welcome-section {
+    align-items: flex-start;
+  }
+
+  .welcome-section h2 {
+    font-size: 22px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE - MOBILE
+========================================================= */
+
+@media (max-width: 767px) {
+  .page-content {
+    padding: 22px 18px 30px;
+  }
+
+  .welcome-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .welcome-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 9px;
+  }
+
+  .existing-vendor-button,
+  .add-vendor-button {
+    min-height: 43px;
+    padding: 0 13px;
+    font-size: 12px;
+  }
+
+  .category-donut-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .category-donut-chart {
+    height: 260px;
+  }
+
+  .category-donut-legend {
+    padding: 0 8px 12px;
+  }
+
+  .category-legend-item {
+    padding: 9px 10px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE - SMALL MOBILE
+========================================================= */
+
+@media (max-width: 575px) {
+  .page-content {
+    padding: 20px 15px 28px;
+  }
+
+  .welcome-section {
+    gap: 15px;
+  }
+
+  .welcome-section h2 {
+    font-size: 20px;
+  }
+
+  .welcome-section p:last-child {
+    font-size: 11px;
+  }
+
+  .welcome-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .existing-vendor-button,
+  .add-vendor-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 43px;
+    padding: 0 8px;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .plus-icon {
+    width: 19px;
+    height: 19px;
+    font-size: 16px;
+  }
+
+  .card-header-custom {
+    padding: 17px 16px;
+  }
+
+  .vendor-table th,
+  .vendor-table td {
+    padding: 12px 14px;
+  }
+}

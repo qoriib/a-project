@@ -1,0 +1,544 @@
+
+/* =========================================================
+   VENDOR LIST PAGE
+========================================================= */
+
+.vendor-list-page {
+  width: 100%;
+  min-width: 0;
+}
+
+
+/* =========================================================
+   HEADER
+   TITLE LEFT - SEARCH RIGHT
+========================================================= */
+
+.vendor-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 100%;
+  gap: 30px;
+
+  margin-bottom: 24px;
+}
+
+
+/* =========================================================
+   TITLE
+========================================================= */
+
+.vendor-list-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.vendor-list-title h2 {
+  margin: 0;
+
+  color: #312628;
+
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.vendor-list-title p {
+  margin: 6px 0 0;
+
+  color: #918a8d;
+
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   SEARCH CONTAINER
+========================================================= */
+
+.vendor-list-search-container {
+  flex: 0 0 380px;
+
+  width: 380px;
+  max-width: 100%;
+}
+
+.vendor-list-search-container .existing-vendor-search {
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+
+  gap: 8px;
+
+  padding: 0;
+  margin: 0;
+}
+
+.vendor-list-search-container .existing-vendor-search label {
+  margin: 0;
+
+  color: #554d50;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   SEARCH INPUT
+========================================================= */
+
+.vendor-list-search-container .existing-search-wrapper {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  height: 43px;
+
+  border: 1px solid #e5bfc2;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.vendor-list-search-container .existing-search-wrapper:focus-within {
+  border-color: #c6535d;
+
+  box-shadow: 0 0 0 3px rgba(198, 83, 93, 0.12);
+}
+
+.vendor-list-search-container .existing-search-wrapper input {
+  flex: 1;
+
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+
+  padding: 0 13px;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: #554d50;
+
+  font-family: inherit;
+  font-size: 12px;
+
+  box-sizing: border-box;
+}
+
+.vendor-list-search-container .existing-search-wrapper input::placeholder {
+  color: #aaa0a3;
+}
+
+
+/* =========================================================
+   SEARCH ICON - RED
+========================================================= */
+
+.vendor-list-search-container .existing-search-wrapper .search-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 45px;
+
+  width: 45px;
+  height: 100%;
+
+  background: #c6535d;
+  color: #ffffff;
+
+  font-size: 15px;
+
+  cursor: default;
+
+  transition: background 0.2s ease;
+}
+
+
+/* =========================================================
+   TABLE CARD
+========================================================= */
+
+.vendor-list-card {
+  width: 100%;
+
+  background: #ffffff;
+
+  border: 1px solid #eeeef2;
+  border-radius: 15px;
+
+  overflow: hidden;
+
+  box-shadow: 0 4px 18px rgba(49, 38, 40, 0.04);
+}
+
+
+/* =========================================================
+   TABLE 
+========================================================= */
+
+.vendor-list-table {
+  width: 100%;
+  min-width: 1050px;
+
+  border-collapse: collapse;
+}
+
+.vendor-list-table thead {
+  background: #faf9fb;
+}
+
+.vendor-list-table th {
+  padding: 15px 18px;
+
+  border-bottom: 1px solid #eeeef2;
+
+  color: #8b8588;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.6px;
+
+  white-space: nowrap;
+}
+
+.vendor-list-table td {
+  padding: 16px 18px;
+
+  border-bottom: 1px solid #f1f0f2;
+
+  color: #554d50;
+
+  font-size: 13px;
+
+  vertical-align: middle;
+}
+
+.vendor-list-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.vendor-list-table tbody tr:hover {
+  background: #fcfbfd;
+}
+
+.vendor-list-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* =========================================================
+   VENDOR NAME
+========================================================= */
+
+.vendor-list-name {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  min-width: 220px;
+}
+
+.vendor-list-avatar {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  background: #f1eafa;
+  color: #764ba2;
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.vendor-list-name strong {
+  color: #312628;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   VENDOR TYPE
+========================================================= */
+
+.vendor-list-type {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 11px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.vendor-list-type.existing {
+  background: #e8f7ef;
+  color: #25845a;
+}
+
+.vendor-list-type.new {
+  background: #eee9f8;
+  color: #764ba2;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.vendor-list-status {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 11px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.vendor-list-status.pending {
+  background: #fff4dc;
+  color: #c48516;
+}
+
+.vendor-list-status.under-review {
+  background: #eaf1ff;
+  color: #4c76c8;
+}
+
+.vendor-list-status.approved {
+  background: #e8f7ef;
+  color: #25845a;
+}
+
+.vendor-list-status.rejected {
+  background: #fdebec;
+  color: #c6535d;
+}
+
+.vendor-list-status.revision-required {
+  background: #f3eafb;
+  color: #764ba2;
+}
+
+.vendor-list-status.no-status {
+  background: #f3f2f4;
+  color: #999294;
+}
+
+
+/* =========================================================
+   STAGE
+========================================================= */
+
+.vendor-list-stage {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 10px;
+
+  border-radius: 20px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.vendor-list-stage.procurement {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.vendor-list-stage.kadiv {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.vendor-list-stage.accounting {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.vendor-list-stage.tax {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.vendor-list-stage.sap {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.vendor-list-stage.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+
+/* =========================================================
+   ACTION
+========================================================= */
+
+.vendor-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  white-space: nowrap;
+}
+
+.action-button {
+  border: none;
+  border-radius: 7px;
+
+  padding: 6px 11px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: all 0.15s ease;
+}
+
+
+/* EDIT */
+
+.edit-button {
+  background: #eee9f8;
+  border: 1px solid #764ba2;
+  color: #764ba2;
+}
+
+.edit-button:hover {
+  background: #764ba2;
+  color: #ffffff;
+}
+
+
+/* DELETE */
+
+.delete-button {
+  background: #fdebec;
+  border: 1px solid #c6535d;
+  color: #c6535d;
+}
+
+.delete-button:hover {
+  background: #c6535d;
+  color: #ffffff;
+}
+
+
+/* DETAIL */
+
+.detail-button {
+  border: 1px solid #315f9f;
+  background: #f3f7fd;
+  color: #315f9f;
+}
+
+.detail-button:hover {
+  background: #e5eefb;
+  border-color: #b9cce8;
+  color: #244c83;
+}
+
+
+/* =========================================================
+   LOADING / EMPTY
+========================================================= */
+
+.vendor-list-message {
+  padding: 45px 20px !important;
+
+  text-align: center;
+
+  color: #999294 !important;
+
+  font-size: 13px !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 768px) {
+
+  .vendor-list-header {
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 18px;
+  }
+
+  .vendor-list-title {
+    flex: none;
+    width: 100%;
+  }
+
+  .vendor-list-title h2 {
+    font-size: 22px;
+  }
+
+  .vendor-list-search-container {
+    flex: none;
+
+    width: 100%;
+    max-width: 100%;
+  }
+
+}
+
+@media (max-width: 576px) {
+
+  .vendor-list-header {
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .vendor-list-search-container .existing-search-wrapper {
+    height: 42px;
+  }
+
+}

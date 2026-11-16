@@ -1,0 +1,963 @@
+
+/* =========================================================
+   KADIV DETAIL — PAGE
+========================================================= */
+
+.kadiv-detail-page {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  background: #f5f7fb;
+  color: #263445;
+  font-family: Arial, Helvetica, sans-serif;
+  animation: kadivFadeIn 0.25s ease;
+}
+
+.kadiv-detail-page *,
+.kadiv-detail-page *::before,
+.kadiv-detail-page *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   MAIN CARD
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-card {
+  width: 100%;
+  max-width: 1440px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid #e5eaf1;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 14px rgba(15, 23, 42, 0.035);
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-header {
+  margin-bottom: 20px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #e9edf3;
+}
+
+.kadiv-detail-page .procurement-detail-header h4 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.kadiv-detail-page .procurement-detail-header p {
+  margin: 5px 0 0;
+  color: #7b8798;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   REQUEST INFO — STATUS DAN TAHAP
+========================================================= */
+
+.kadiv-detail-page .procurement-request-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  width: 100%;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f1f4;
+}
+
+.kadiv-detail-page .procurement-request-item {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 7px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.kadiv-detail-page .procurement-request-label {
+  margin: 0;
+  color: #4a4650;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.kadiv-detail-page .procurement-request-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 27px;
+  padding: 0 10px;
+  border: 1px solid #e3e4e9;
+  border-radius: 6px;
+  background: #fff;
+  color: #343640;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   FORM CONTAINER
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-form {
+  width: 100%;
+  min-width: 0;
+}
+
+.kadiv-detail-page .procurement-section,
+.kadiv-detail-page .procurement-document-section {
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 18px;
+  padding: 20px;
+  border: 1px solid #e5eaf1;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.025);
+}
+
+/* =========================================================
+   SECTION TITLE
+========================================================= */
+
+.kadiv-detail-page .procurement-section-title {
+  margin: 0 0 5px;
+  color: #26364a;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.kadiv-detail-page .procurement-section-description {
+  margin: 0 0 17px;
+  color: #8290a3;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   FORM GRID
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-row {
+  width: 100%;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  --bs-gutter-x: 18px;
+  --bs-gutter-y: 16px;
+}
+
+.kadiv-detail-page .procurement-detail-field {
+  min-width: 0;
+}
+
+/* =========================================================
+   LABELS
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-label,
+.kadiv-detail-page .procurement-detail-file-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #455367;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.kadiv-detail-page .procurement-detail-file-label {
+  margin-bottom: 8px;
+}
+
+/* =========================================================
+   READ-ONLY INPUTS
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #d9e1eb;
+  border-radius: 6px;
+  background: #f7f8fa;
+  color: #273548;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: none;
+  opacity: 1;
+  cursor: default;
+  -webkit-text-fill-color: #273548;
+  transition: border-color 0.18s ease;
+}
+
+.kadiv-detail-page .procurement-detail-input:hover,
+.kadiv-detail-page .procurement-detail-input:focus,
+.kadiv-detail-page .procurement-detail-input[readonly],
+.kadiv-detail-page .procurement-detail-input:disabled {
+  border-color: #d9e1eb;
+  outline: none;
+  background: #f7f8fa;
+  color: #273548;
+  box-shadow: none;
+  opacity: 1;
+  -webkit-text-fill-color: #273548;
+}
+
+.kadiv-detail-page .procurement-detail-textarea {
+  min-height: 78px;
+  padding: 8px 10px;
+  font-size: 12px;
+  resize: vertical;
+}
+
+/* =========================================================
+   BANK SECTION — HEADER
+========================================================= */
+
+.kadiv-detail-page .kadiv-bank-section {
+  overflow: hidden;
+}
+
+.kadiv-detail-page .kadiv-bank-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 17px;
+}
+
+.kadiv-detail-page .kadiv-bank-section-heading > div {
+  min-width: 0;
+}
+
+.kadiv-detail-page .kadiv-bank-section-heading .procurement-section-title {
+  margin-bottom: 5px;
+}
+
+.kadiv-detail-page
+  .kadiv-bank-section-heading
+  .procurement-section-description {
+  margin-bottom: 0;
+}
+
+/* =========================================================
+   BANK SECTION — ACCOUNT LIST
+========================================================= */
+
+.kadiv-detail-page .kadiv-bank-account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.kadiv-detail-page .kadiv-bank-account-card {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #e0e7f0;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.02);
+  transition: border-color 0.18s ease;
+}
+
+.kadiv-detail-page .kadiv-bank-account-card:hover {
+  border-color: #cbd8e8;
+}
+
+/* =========================================================
+   BANK CARD HEADING
+========================================================= */
+
+.kadiv-detail-page .kadiv-bank-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 15px;
+  border-bottom: 1px solid #e8edf4;
+  background: #f8faff;
+}
+
+.kadiv-detail-page .kadiv-bank-card-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.kadiv-detail-page .kadiv-bank-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dce7f7;
+  border-radius: 7px;
+  background: #edf4ff;
+  color: #2563eb;
+}
+
+.kadiv-detail-page .kadiv-bank-card-icon svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.kadiv-detail-page .kadiv-bank-card-title-wrap > div:last-child {
+  min-width: 0;
+}
+
+.kadiv-detail-page .kadiv-bank-card-title {
+  margin: 0 0 3px;
+  color: #29394e;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.kadiv-detail-page .kadiv-bank-card-subtitle {
+  margin: 0;
+  color: #8290a3;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   BANK CARD FIELDS
+========================================================= */
+
+.kadiv-detail-page .kadiv-bank-card-divider {
+  display: none;
+}
+
+.kadiv-detail-page .kadiv-bank-fields-row {
+  width: 100%;
+  margin: 0 !important;
+  padding: 15px;
+  --bs-gutter-x: 15px;
+  --bs-gutter-y: 13px;
+}
+
+.kadiv-detail-page .kadiv-bank-fields-row > [class*="col-"] {
+  min-width: 0;
+}
+
+.kadiv-detail-page .kadiv-bank-fields-row .procurement-detail-field {
+  margin-bottom: 0;
+}
+
+.kadiv-detail-page .kadiv-bank-fields-row .procurement-detail-label {
+  margin-bottom: 6px;
+}
+
+.kadiv-detail-page .kadiv-bank-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #d9e1eb;
+  border-radius: 6px;
+  background: #f7f8fa;
+  color: #273548;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: none;
+  opacity: 1;
+  cursor: default;
+  -webkit-text-fill-color: #273548;
+}
+
+.kadiv-detail-page .kadiv-bank-input:hover,
+.kadiv-detail-page .kadiv-bank-input:focus,
+.kadiv-detail-page .kadiv-bank-input[readonly] {
+  border-color: #d9e1eb;
+  outline: none;
+  background: #f7f8fa;
+  color: #273548;
+  box-shadow: none;
+  opacity: 1;
+  -webkit-text-fill-color: #273548;
+}
+
+/* =========================================================
+   BANK EMPTY STATE
+========================================================= */
+
+.kadiv-detail-page .kadiv-bank-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 72px;
+  padding: 16px;
+  border: 1px dashed #d9e1eb;
+  border-radius: 8px;
+  background: #f8faff;
+  color: #8290a3;
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* =========================================================
+   DOCUMENT SECTION
+========================================================= */
+
+.kadiv-detail-page .procurement-document-section {
+  margin-top: 0;
+}
+
+.kadiv-detail-page .procurement-document-section > .row {
+  width: 100%;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  --bs-gutter-x: 18px;
+  --bs-gutter-y: 16px;
+}
+
+.kadiv-detail-page .procurement-existing-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 9px 6px 10px;
+  border: 1px solid #d9e1eb;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.kadiv-detail-page .procurement-existing-file-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #455367;
+  font-size: 11px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kadiv-detail-page .procurement-view-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid #cbdcf2;
+  border-radius: 5px;
+  background: #f3f7fd;
+  color: #245da8;
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+
+.kadiv-detail-page .procurement-view-file:hover {
+  border-color: #8fb4e8;
+  background: #e8f1ff;
+  color: #174b90;
+}
+
+.kadiv-detail-page .procurement-no-file {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px dashed #d9e1eb;
+  border-radius: 6px;
+  background: #f8faff;
+  color: #929cad;
+  font-size: 11px;
+}
+
+.kadiv-detail-page .procurement-detail-file-info {
+  display: block;
+  margin-top: 6px;
+  color: #8290a3;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   ACTION BUTTONS
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e9edf3;
+}
+
+.kadiv-detail-page .procurement-detail-cancel,
+.kadiv-detail-page .kadiv-reject-button,
+.kadiv-detail-page .kadiv-approve-button,
+.kadiv-detail-page .kadiv-reject-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  min-height: 37px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+/* Kembali */
+
+.kadiv-detail-page .procurement-detail-cancel {
+  border-color: #d4dce7;
+  background: #fff;
+  color: #526176;
+}
+
+.kadiv-detail-page .procurement-detail-cancel:hover:not(:disabled) {
+  border-color: #bac5d3;
+  background: #f6f8fb;
+}
+
+/* Tolak */
+
+.kadiv-detail-page .kadiv-reject-button {
+  border-color: #f0d4d7;
+  background: #fff;
+  color: #c43d49;
+}
+
+.kadiv-detail-page .kadiv-reject-button:hover:not(:disabled) {
+  border-color: #e6a8ae;
+  background: #fff3f4;
+}
+
+/* Setujui */
+
+.kadiv-detail-page .kadiv-approve-button {
+  border-color: #1769c2;
+  background: #1769c2;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(23, 105, 194, 0.1);
+}
+
+.kadiv-detail-page .kadiv-approve-button:hover:not(:disabled) {
+  border-color: #1256a4;
+  background: #1256a4;
+}
+
+/* Konfirmasi penolakan */
+
+.kadiv-detail-page .kadiv-reject-confirm {
+  border-color: #c93643;
+  background: #c93643;
+  color: #fff;
+}
+
+.kadiv-detail-page .kadiv-reject-confirm:hover:not(:disabled) {
+  border-color: #ae2935;
+  background: #ae2935;
+}
+
+/* Disabled */
+
+.kadiv-detail-page .procurement-detail-cancel:disabled,
+.kadiv-detail-page .kadiv-reject-button:disabled,
+.kadiv-detail-page .kadiv-approve-button:disabled,
+.kadiv-detail-page .kadiv-reject-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* =========================================================
+   REJECTION FORM
+========================================================= */
+
+.kadiv-detail-page .kadiv-reject-panel {
+  width: 100%;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #f0d4d7;
+  border-radius: 10px;
+  background: #fffafa;
+}
+
+.kadiv-detail-page .kadiv-reject-panel > label {
+  display: block;
+  margin-bottom: 7px;
+  color: #455367;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.kadiv-detail-page .kadiv-reject-panel textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  padding: 9px 10px;
+  border: 1px solid #d9e1eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #273548;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.kadiv-detail-page .kadiv-reject-panel textarea::placeholder {
+  color: #a0aaba;
+}
+
+.kadiv-detail-page .kadiv-reject-panel textarea:focus {
+  border-color: #3979d6;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(57, 121, 214, 0.1);
+}
+
+.kadiv-detail-page .kadiv-reject-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 13px;
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.kadiv-detail-page .procurement-detail-loading {
+  padding: 32px 16px;
+  color: #8290a3;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* =========================================================
+   ALERT
+========================================================= */
+
+.kadiv-detail-page .alert {
+  margin-bottom: 16px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
+@keyframes kadivFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 991px) {
+  .kadiv-detail-page {
+    padding: 20px 16px;
+  }
+
+  .kadiv-detail-page .procurement-detail-card {
+    padding: 20px;
+  }
+
+  .kadiv-detail-page .procurement-section,
+  .kadiv-detail-page .procurement-document-section {
+    padding: 17px;
+  }
+
+  .kadiv-detail-page .procurement-detail-row,
+  .kadiv-detail-page .procurement-document-section > .row {
+    --bs-gutter-x: 14px;
+    --bs-gutter-y: 14px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-fields-row {
+    --bs-gutter-x: 13px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 767px) {
+  .kadiv-detail-page {
+    padding: 14px 10px;
+  }
+
+  .kadiv-detail-page .procurement-detail-card {
+    padding: 15px;
+    border-radius: 9px;
+  }
+
+  .kadiv-detail-page .procurement-detail-header {
+    margin-bottom: 17px;
+    padding-bottom: 14px;
+  }
+
+  .kadiv-detail-page .procurement-detail-header h4 {
+    font-size: 18px;
+  }
+
+  .kadiv-detail-page .procurement-detail-header p {
+    font-size: 11px;
+  }
+
+  .kadiv-detail-page .procurement-request-info {
+    gap: 10px 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+  }
+
+  .kadiv-detail-page .procurement-request-item {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .kadiv-detail-page .procurement-section,
+  .kadiv-detail-page .procurement-document-section {
+    margin-bottom: 14px;
+    padding: 15px;
+  }
+
+  .kadiv-detail-page .procurement-section-title {
+    font-size: 13px;
+  }
+
+  .kadiv-detail-page .procurement-section-description {
+    margin-bottom: 14px;
+    font-size: 11px;
+  }
+
+  .kadiv-detail-page .procurement-detail-row,
+  .kadiv-detail-page .procurement-document-section > .row {
+    --bs-gutter-x: 11px;
+    --bs-gutter-y: 13px;
+  }
+
+  /* Bank */
+
+  .kadiv-detail-page .kadiv-bank-section-heading {
+    margin-bottom: 14px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-account-list {
+    gap: 11px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-card-heading {
+    padding: 11px 12px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-card-title-wrap {
+    gap: 8px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-card-icon {
+    flex-basis: 31px;
+    width: 31px;
+    height: 31px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-card-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-fields-row {
+    padding: 13px 12px;
+    --bs-gutter-x: 11px;
+    --bs-gutter-y: 12px;
+  }
+
+  /* Documents */
+
+  .kadiv-detail-page .procurement-existing-file {
+    flex-wrap: wrap;
+  }
+
+  /* Actions */
+
+  .kadiv-detail-page .procurement-detail-actions {
+    gap: 8px;
+    margin-top: 17px;
+    padding-top: 15px;
+  }
+
+  .kadiv-detail-page .procurement-detail-actions > button {
+    flex: 1;
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+
+  .kadiv-detail-page .kadiv-reject-panel {
+    margin-top: 14px;
+    padding: 14px;
+  }
+
+  .kadiv-detail-page .kadiv-reject-actions {
+    gap: 8px;
+  }
+
+  .kadiv-detail-page .kadiv-reject-actions > button {
+    flex: 1;
+    min-width: 0;
+    padding: 0 10px;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 420px) {
+  .kadiv-detail-page {
+    padding: 10px 7px;
+  }
+
+  .kadiv-detail-page .procurement-detail-card {
+    padding: 12px;
+  }
+
+  .kadiv-detail-page .procurement-detail-header h4 {
+    font-size: 17px;
+  }
+
+  .kadiv-detail-page .procurement-request-info {
+    gap: 10px 12px;
+  }
+
+  .kadiv-detail-page .procurement-request-label {
+    font-size: 10px;
+  }
+
+  .kadiv-detail-page .procurement-request-value {
+    min-height: 25px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .kadiv-detail-page .procurement-section,
+  .kadiv-detail-page .procurement-document-section {
+    padding: 12px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-card-heading {
+    padding: 10px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-card-title {
+    font-size: 11px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-card-subtitle {
+    font-size: 10px;
+  }
+
+  .kadiv-detail-page .kadiv-bank-fields-row {
+    padding: 12px 10px;
+  }
+
+  .kadiv-detail-page .procurement-existing-file {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .kadiv-detail-page .procurement-view-file {
+    align-self: flex-start;
+  }
+
+  .kadiv-detail-page .procurement-detail-actions,
+  .kadiv-detail-page .kadiv-reject-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kadiv-detail-page .procurement-detail-actions > button,
+  .kadiv-detail-page .kadiv-reject-actions > button {
+    width: 100%;
+    flex: auto;
+  }
+}
+
+/* =========================================================
+   REDUCE MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .kadiv-detail-page,
+  .kadiv-detail-page *,
+  .kadiv-detail-page *::before,
+  .kadiv-detail-page *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

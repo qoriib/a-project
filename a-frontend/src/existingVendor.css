@@ -1,0 +1,1225 @@
+/* =========================================================
+   EXISTING VENDOR / NEW VENDOR PAGE
+========================================================= */
+
+.existing-vendor-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.existing-vendor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  margin-bottom: 22px;
+}
+
+.existing-vendor-header h2 {
+  margin: 0;
+  color: #252525;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.existing-vendor-header p {
+  margin: 6px 0 0;
+  color: #777;
+  font-size: 14px;
+}
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.existing-vendor-search {
+  width: 330px;
+  flex-shrink: 0;
+}
+
+.existing-vendor-search label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.existing-search-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.existing-search-wrapper input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #dcdcdc;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  outline: none;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.existing-search-wrapper input:focus {
+  border-color: #ea667e;
+}
+
+.existing-search-wrapper button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 45px;
+  width: 45px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  background: #ea667e;
+  color: #fff;
+  cursor: pointer;
+}
+
+.existing-vendor-search small {
+  display: block;
+  margin-top: 5px;
+  color: #999;
+  font-size: 11px;
+}
+
+/* =========================================================
+   ACTION CARDS
+========================================================= */
+
+.existing-vendor-actions-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+
+.existing-vendor-actions-row .existing-action-card {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 170px;
+  padding: 20px;
+
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.035);
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.existing-vendor-actions-row .existing-action-card:hover {
+  border-color: #d7dce4;
+  box-shadow: 0 5px 14px rgba(16, 24, 40, 0.06);
+}
+
+/* =========================================================
+   CARD ICONS
+========================================================= */
+
+.existing-vendor-actions-row .existing-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+
+  box-sizing: border-box;
+  border-radius: 10px;
+  font-size: 25px;
+  font-weight: 600;
+}
+
+.existing-vendor-actions-row .existing-action-icon.manual {
+  background: #fff0f3;
+  color: #d94f6a;
+}
+
+.existing-vendor-actions-row .existing-action-icon.excel {
+  background: #e9f7ee;
+  color: #16834a;
+}
+
+.existing-vendor-actions-row .existing-action-icon.excel span {
+  font-size: 24px;
+}
+
+/* =========================================================
+   CARD CONTENT
+========================================================= */
+
+.existing-vendor-actions-row .existing-action-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+
+  min-width: 0;
+}
+
+.existing-vendor-actions-row .existing-action-content h5 {
+  margin: 1px 0 5px;
+  color: #252b36;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.existing-vendor-actions-row .existing-action-content p {
+  margin: 0 0 20px;
+  color: #737b88;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   BUTTON BASE
+   Semua tombol memiliki tinggi 40px
+========================================================= */
+
+.existing-vendor-actions-row .existing-action-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 7px;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.existing-vendor-actions-row .existing-action-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   MANUAL BUTTON
+   Lebar disamakan dengan tombol Import Excel
+========================================================= */
+
+.existing-vendor-actions-row .manual-primary {
+  align-self: flex-start;
+  width: calc((100% - 10px) / 2);
+  min-width: 0;
+  margin-top: 0;
+
+  background: #d94f6a;
+  color: #fff;
+}
+
+.existing-vendor-actions-row .manual-primary:hover:not(:disabled) {
+  background: #c43f5a;
+}
+
+/* =========================================================
+   EXCEL ACTIONS
+========================================================= */
+
+.existing-vendor-actions-row .excel-actions-inline {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+
+  width: 100%;
+  min-width: 0;
+  margin-top: 0;
+  padding-top: 0;
+
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   CHOOSE EXCEL FILE
+========================================================= */
+
+.existing-vendor-actions-row .excel-file-picker {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  padding: 4px 9px;
+  margin: 0;
+
+  box-sizing: border-box;
+  gap: 7px;
+  overflow: hidden;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 7px;
+  background: #f9fafb;
+
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.existing-vendor-actions-row .excel-file-picker:hover {
+  border-color: #16834a;
+  background: #f2faf5;
+}
+
+.existing-vendor-actions-row .excel-file-picker.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* File icon */
+
+.existing-vendor-actions-row .excel-file-picker-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+
+  border-radius: 6px;
+  background: #e4f4e9;
+  color: #16834a;
+  font-size: 19px;
+  line-height: 1;
+}
+
+/* File name and format */
+
+.existing-vendor-actions-row .excel-file-picker-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+
+  min-width: 0;
+  overflow: hidden;
+}
+
+.existing-vendor-actions-row .excel-file-picker-text strong,
+.existing-vendor-actions-row .excel-file-picker-text small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.existing-vendor-actions-row .excel-file-picker-text strong {
+  color: #344054;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.existing-vendor-actions-row .excel-file-picker-text small {
+  color: #8a929e;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+/* Hide original file input */
+
+.existing-vendor-actions-row .excel-hidden-input,
+#new-vendor-excel-input {
+  display: none !important;
+}
+
+/* =========================================================
+   IMPORT BUTTON
+========================================================= */
+
+.existing-vendor-actions-row .excel-actions-inline .import-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  flex: 1 1 0;
+  align-self: stretch;
+
+  width: 0;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 8px;
+
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 7px;
+
+  background: #16834a;
+  color: #fff;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.existing-vendor-actions-row .import-primary:hover:not(:disabled) {
+  background: #116b3b;
+}
+
+/* Loading spinner */
+
+.existing-vendor-actions-row .import-button-spinner {
+  display: inline-block;
+  flex: 0 0 14px;
+
+  width: 14px;
+  height: 14px;
+
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+
+  animation: import-spin 0.7s linear infinite;
+}
+
+@keyframes import-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   VENDOR LIST
+========================================================= */
+
+.existing-vendor-list-card {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+}
+
+.existing-vendor-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.existing-vendor-list-header h4 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.existing-vendor-list-header p {
+  margin: 4px 0 0;
+  color: #888;
+  font-size: 13px;
+}
+
+.existing-vendor-total {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 18px;
+  background: #fce8ed;
+  color: #ea667e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.existing-vendor-table {
+  width: 100%;
+  margin: 0;
+}
+
+.existing-vendor-table th {
+  padding: 12px 16px;
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+  color: #666;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.existing-vendor-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.existing-vendor-table tbody tr:hover {
+  background: #fffafa;
+}
+
+/* =========================================================
+   VENDOR STATUS
+========================================================= */
+
+.vendor-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vendor-status.pending {
+  background: #fff7df;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.vendor-status.review {
+  background: #e8f1ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.vendor-status.approved {
+  background: #e8f7ed;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.vendor-status.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.vendor-status.active {
+  background: #e7f6ec;
+  border-color: #238442;
+  color: #238442;
+}
+
+.vendor-status.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+
+/* =========================================================
+   DETAIL BUTTON
+========================================================= */
+
+.existing-detail-button {
+  padding: 6px 12px;
+  border: 1px solid #764ba2;
+  border-radius: 6px;
+  background: #eee9f8;
+  color: #764ba2;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.existing-detail-button:hover {
+   background: #764ba2;
+  color: #ffffff;
+}
+
+/* =========================================================
+   EDIT BUTTON
+========================================================= */
+
+.existing-edit-button {
+  padding: 6px 12px;
+  border: 1px solid #c6535d;
+  border-radius: 6px;
+  background: #fdebec;
+  color: #cd434f;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.existing-edit-button:hover {
+  background: #cd434f;
+  color: #ffffff;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.existing-vendor-empty {
+  padding: 50px 20px;
+  color: #888;
+  text-align: center;
+}
+
+.empty-icon {
+  margin-bottom: 10px;
+  font-size: 34px;
+}
+
+.existing-vendor-empty h5 {
+  margin-bottom: 6px;
+  color: #444;
+  font-size: 16px;
+}
+
+.existing-vendor-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* =========================================================
+   APPROVAL DETAIL
+========================================================= */
+
+.approval-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #f1f1f1;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.under-review {
+  background: #cfe2ff;
+  color: #084298;
+}
+
+.status-badge.approved {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.approval-action-box {
+  padding: 18px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.approval-action-box strong {
+  color: #333;
+}
+
+.approval-action-box p {
+  margin-top: 6px;
+  color: #666;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 30px;
+  padding: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-item label {
+  color: #777;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.detail-item span {
+  color: #333;
+  font-size: 14px;
+}
+
+/* =========================================================
+   DUPLICATE VENDOR MODAL
+========================================================= */
+
+.duplicate-vendor-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  background: rgba(20, 30, 45, 0.48);
+  backdrop-filter: blur(3px);
+}
+
+.duplicate-vendor-modal {
+  width: 100%;
+  max-width: 460px;
+  padding: 32px;
+
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+
+  text-align: center;
+  animation: duplicateModalEnter 0.2s ease-out;
+}
+
+.duplicate-vendor-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 18px;
+
+  border: 1px solid #f2d38a;
+  border-radius: 50%;
+  background: #fff7df;
+  color: #9a6700;
+}
+
+.duplicate-vendor-icon span {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.duplicate-vendor-modal h4 {
+  margin: 0 0 8px;
+  color: #253247;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.duplicate-vendor-subtitle {
+  margin-bottom: 20px;
+  color: #697586;
+  font-size: 14px;
+}
+
+.duplicate-vendor-detail {
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 14px 16px;
+
+  border: 1px solid #f0dca7;
+  border-radius: 10px;
+  background: #fffbef;
+  color: #775a13;
+
+  font-size: 13px;
+  line-height: 1.7;
+  text-align: left;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.duplicate-vendor-info {
+  margin: 16px 0 22px;
+  color: #697586;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.duplicate-vendor-close {
+  width: 100%;
+  padding: 11px 18px;
+
+  border: none;
+  border-radius: 9px;
+  background: #244b7a;
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.duplicate-vendor-close:hover {
+  background: #19385d;
+}
+
+.duplicate-vendor-close:focus-visible {
+  outline: 3px solid #a9c9f2;
+  outline-offset: 3px;
+}
+
+@keyframes duplicateModalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================================
+   IMPORT ALERT MODAL
+========================================================= */
+
+.import-alert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  background: rgba(16, 24, 40, 0.55);
+  backdrop-filter: blur(4px);
+
+  animation: import-overlay-in 0.2s ease-out;
+}
+
+.import-alert-modal {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 34px 30px 28px;
+
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(16, 24, 40, 0.2);
+
+  text-align: center;
+  animation: import-modal-in 0.25s ease-out;
+}
+
+.import-alert-close {
+  position: absolute;
+  top: 13px;
+  right: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 50%;
+  background: #f2f4f7;
+  color: #667085;
+
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.import-alert-close:hover {
+  background: #e4e7ec;
+  color: #101828;
+}
+
+/* Alert icon */
+.import-alert-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 20px;
+
+  border-radius: 50%;
+}
+
+.import-alert-icon svg {
+  width: 34px;
+  height: 34px;
+}
+
+.import-alert-success .import-alert-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.import-alert-error .import-alert-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Alert text */
+
+.import-alert-modal h3 {
+  margin: 0 0 12px;
+  color: #101828;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+
+.import-alert-message {
+  max-width: 360px;
+  margin: 0 auto;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+/* Success summary */
+
+.import-alert-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 24px;
+  padding: 20px 16px;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  background: #f0fdf4;
+}
+
+.import-alert-summary-label {
+  color: #166534;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.import-alert-summary strong {
+  color: #15803d;
+  font-size: 42px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.import-alert-summary-note {
+  color: #3f684b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Error details */
+
+.import-alert-error-details {
+  margin-top: 22px;
+  padding: 16px;
+
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff7f7;
+
+  text-align: left;
+}
+
+.import-alert-error-details h4 {
+  margin: 0 0 12px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.import-alert-error-details ul {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+
+  margin: 0;
+  padding-left: 20px;
+}
+
+.import-alert-error-details li {
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* Alert action */
+
+.import-alert-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.import-alert-primary-button {
+  min-width: 140px;
+  padding: 11px 26px;
+
+  border: none;
+  border-radius: 9px;
+  background: #175cd3;
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+
+.import-alert-primary-button:hover {
+  background: #1849a9;
+  transform: translateY(-1px);
+}
+
+.import-alert-success .import-alert-primary-button {
+  background: #15803d;
+}
+
+.import-alert-success .import-alert-primary-button:hover {
+  background: #166534;
+}
+
+@keyframes import-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes import-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+  .existing-vendor-header {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .existing-vendor-search {
+    width: 100%;
+  }
+
+  .existing-vendor-actions-row {
+    gap: 14px;
+  }
+
+  .existing-vendor-actions-row .existing-action-card {
+    gap: 11px;
+    padding: 16px;
+  }
+
+  .existing-vendor-actions-row .existing-action-icon {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .existing-vendor-actions-row .excel-actions-inline {
+    gap: 7px;
+  }
+
+  /* Lebar tombol manual mengikuti lebar tombol Import */
+  .existing-vendor-actions-row .manual-primary {
+    width: calc((100% - 7px) / 2);
+  }
+}
+
+@media (max-width: 700px) {
+  .existing-vendor-page {
+    padding: 18px;
+  }
+
+  .existing-vendor-actions-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .existing-vendor-actions-row .existing-action-card {
+    min-height: 160px;
+    padding: 18px;
+  }
+
+  .existing-vendor-list-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .approval-badge-wrapper {
+    margin-top: 10px;
+  }
+
+  .card-header-custom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Pada ukuran ini, kedua kontrol Excel berbagi ruang yang sama */
+  .existing-vendor-actions-row .excel-actions-inline {
+    gap: 10px;
+  }
+
+  .existing-vendor-actions-row .manual-primary {
+    width: calc((100% - 10px) / 2);
+  }
+}
+
+@media (max-width: 480px) {
+  .existing-vendor-page {
+    padding: 14px;
+  }
+
+  .existing-vendor-header h2 {
+    font-size: 22px;
+  }
+
+  .existing-vendor-actions-row .existing-action-card {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .existing-vendor-actions-row .existing-action-icon {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .existing-vendor-actions-row .excel-actions-inline {
+    gap: 7px;
+  }
+
+  .existing-vendor-actions-row .manual-primary {
+    width: calc((100% - 7px) / 2);
+  }
+
+  .existing-vendor-actions-row .excel-actions-inline .excel-file-picker {
+    gap: 5px;
+    padding: 4px 6px;
+  }
+
+  .existing-vendor-actions-row .excel-file-picker-icon {
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    font-size: 17px;
+  }
+
+  .existing-vendor-actions-row .excel-file-picker-text strong {
+    font-size: 10px;
+  }
+
+  .existing-vendor-actions-row .excel-file-picker-text small {
+    font-size: 9px;
+  }
+
+  .existing-vendor-actions-row .excel-actions-inline .import-primary {
+    padding: 0 6px;
+    font-size: 11px;
+  }
+
+  .duplicate-vendor-modal {
+    padding: 24px 20px;
+  }
+
+  .duplicate-vendor-modal h4 {
+    font-size: 19px;
+  }
+
+  .import-alert-modal {
+    padding: 30px 20px 22px;
+    border-radius: 16px;
+  }
+
+  .import-alert-modal h3 {
+    font-size: 21px;
+  }
+
+  .import-alert-summary strong {
+    font-size: 36px;
+  }
+}

@@ -1,0 +1,856 @@
+
+/* =========================================================
+   APPROVAL PAGE
+========================================================= */
+
+.approval-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 30px 34px 50px;
+  box-sizing: border-box;
+  background: #f6f7f9;
+  color: #343a40;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.approval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.approval-header-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+}
+
+.approval-header-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.approval-header h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.approval-header p {
+  margin: 5px 0 0;
+  color: #8a8f98;
+  font-size: 13px;
+}
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.approval-search {
+  width: 310px;
+  flex-shrink: 0;
+}
+
+.approval-search-box {
+  width: 100%;
+  height: 43px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-radius: 9px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.approval-search-box:focus-within {
+  border-color: #9ca3af;
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.12);
+}
+
+.approval-search-icon {
+  flex-shrink: 0;
+  margin-right: 9px;
+  color: #8b929b;
+  font-size: 14px;
+}
+
+.approval-search-box input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #333;
+  font-size: 13px;
+}
+
+.approval-search-box input::placeholder {
+  color: #a4a8ad;
+}
+
+.approval-search-clear {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #f0f1f3;
+  color: #666;
+  cursor: pointer;
+}
+
+.approval-search-clear:hover {
+  background: #e5e7eb;
+}
+
+/* =========================================================
+   WORKFLOW
+========================================================= */
+
+.approval-workflow {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.approval-workflow-card {
+  position: relative;
+  min-width: 0;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  padding: 14px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 11px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.approval-workflow-card {
+  position: relative;
+  overflow: visible;
+}
+
+.workflow-arrow {
+  position: absolute;
+  top: 50%;
+  right: -17px;
+  z-index: 5;
+
+  width: 22px;
+  height: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transform: translateY(-50%);
+
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+
+  background: #ffffff;
+  color: #9ca3af;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  pointer-events: none;
+}
+
+.approval-workflow-card:hover {
+  transform: translateY(-2px);
+  border-color: #c7cbd1;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.05);
+}
+
+.approval-workflow-card.active {
+  border-color: #1f2937;
+  box-shadow: 0 0 0 1px #1f2937, 0 5px 16px rgba(0, 0, 0, 0.05);
+}
+
+.approval-workflow-card:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   WORKFLOW NUMBER
+========================================================= */
+
+.workflow-card-number {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 11px;
+  border-radius: 9px;
+  background: #f1f2f4;
+  color: #333;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.approval-workflow-card.active .workflow-card-number {
+  background: #1f2937;
+  color: #fff;
+}
+
+/* =========================================================
+   WORKFLOW CONTENT
+========================================================= */
+
+.workflow-card-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workflow-card-content strong {
+  color: #30343a;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.workflow-card-content span {
+  margin-top: 4px;
+  color: #969ba2;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+/* =========================================================
+   WORKFLOW ARROW
+========================================================= */
+
+.workflow-arrow {
+  position: absolute;
+  top: 50%;
+  right: -18px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: 1px solid #eef0f2;
+  border-radius: 50%;
+  background: #fff;
+  color: #9ca3af;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* =========================================================
+   STAGE ACCENTS
+========================================================= */
+
+.stage-procurement.active {
+  border-color: #d69e2e;
+  box-shadow: 0 0 0 1px #d69e2e;
+}
+
+.stage-kadiv.active {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+
+.stage-accounting.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.stage-tax.active {
+  border-color: #db2777;
+  box-shadow: 0 0 0 1px #db2777;
+}
+
+.stage-sap.active {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 1px #16a34a;
+}
+
+/* =========================================================
+   APPROVAL TABS
+========================================================= */
+
+.approval-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.approval-tab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 17px;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #858b92;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.approval-tab:hover {
+  color: #1f2937;
+}
+
+.approval-tab.active {
+  border-bottom-color: #1f2937;
+  color: #1f2937;
+}
+
+.approval-tab span {
+  min-width: 22px;
+  padding: 3px 7px;
+  border-radius: 20px;
+  background: #f0f1f3;
+  color: #555b63;
+  font-size: 11px;
+  text-align: center;
+}
+
+.approval-tab.active span {
+  background: #1f2937;
+  color: #fff;
+}
+
+/* =========================================================
+   LIST CARD
+========================================================= */
+
+.approval-list-card {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+/* =========================================================
+   LIST HEADER
+========================================================= */
+
+.approval-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 21px 24px;
+  border-bottom: 1px solid #eef0f2;
+}
+
+.approval-list-header h4 {
+  margin: 0;
+  color: #252a31;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.approval-list-header p {
+  margin: 5px 0 0;
+  color: #92979e;
+  font-size: 12px;
+}
+
+.approval-list-total {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 7px;
+  background: #f5f6f7;
+}
+
+.approval-list-total strong {
+  color: #252a31;
+  font-size: 17px;
+}
+
+.approval-list-total span {
+  color: #858b92;
+  font-size: 11px;
+}
+
+/* =========================================================
+   TABLE
+========================================================= */
+
+.approval-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.approval-table {
+  width: 100%;
+  min-width: 900px;
+  margin: 0;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.approval-table thead th {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e9ebee;
+  background: #fafafa;
+  color: #858a91;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.approval-table tbody td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #f0f1f3;
+  color: #555b63;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.approval-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.approval-table tbody tr:hover {
+  background: #fafbfc;
+}
+
+.approval-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.approval-table td strong {
+  color: #30343a;
+  font-weight: 600;
+}
+
+/* =========================================================
+   REQUEST NUMBER
+========================================================= */
+
+.approval-number {
+  color: #9da2a8;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   VENDOR
+========================================================= */
+
+.approval-vendor {
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.approval-vendor strong {
+  color: #30343a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.approval-vendor span {
+  color: #a0a5ab;
+  font-size: 10px;
+}
+
+/* =========================================================
+   PDF BUTTON
+========================================================= */
+
+.approval-pdf-button {
+  min-width: 82px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.approval-pdf-button:hover {
+  transform: translateY(-1px);
+  border-color: #bfc7d4;
+  background: #f8fafc;
+  color: #1f2937;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.approval-pdf-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.approval-pdf-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.15);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   STAGE BADGE
+========================================================= */
+
+.approval-stage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.approval-stage.procurement {
+  background: #fff7df;
+  color: #a16207;
+}
+
+.approval-stage.kadiv {
+  background: #eeedff;
+  color: #5145cd;
+}
+
+.approval-stage.accounting {
+  background: #e8f1ff;
+  color: #1d4ed8;
+}
+
+.approval-stage.tax {
+  background: #fdebf4;
+  color: #be185d;
+}
+
+.approval-stage.sap {
+  background: #e8f7ed;
+  color: #15803d;
+}
+
+/* =========================================================
+   STATUS BADGE
+========================================================= */
+
+.approval-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.approval-status.pending {
+  background: #fff7df;
+  color: #a16207;
+}
+
+.approval-status.review {
+  background: #e8f1ff;
+  color: #1d4ed8;
+}
+
+.approval-status.approved {
+  background: #e8f7ed;
+  color: #15803d;
+}
+
+.approval-status.rejected {
+  border-color: #fecaca;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* =========================================================
+   PROCESS BUTTON
+========================================================= */
+
+.approval-process-button {
+  min-width: 85px;
+  min-height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid #dfe2e6;
+  border-radius: 7px;
+  background: #fff;
+  color: #333;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.approval-process-button span {
+  font-size: 13px;
+  transition: transform 0.2s ease;
+}
+
+.approval-process-button:hover {
+  border-color: #1f2937;
+  background: #1f2937;
+  color: #fff;
+}
+
+.approval-process-button:hover span {
+  transform: translateX(2px);
+}
+
+.approval-process-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.15);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.approval-empty {
+  padding: 75px 20px;
+  text-align: center;
+}
+
+.approval-empty-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #edf8f0;
+  color: #22c55e;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.approval-empty h5 {
+  margin: 0 0 6px;
+  color: #3b4046;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.approval-empty p {
+  margin: 0;
+  color: #9ca1a7;
+  font-size: 12px;
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.approval-loading {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #858b92;
+}
+
+.approval-loading-spinner {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #374151;
+  border-radius: 50%;
+  animation: approval-spin 0.8s linear infinite;
+}
+
+.approval-loading p {
+  margin: 0;
+  font-size: 12px;
+}
+
+@keyframes approval-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   HISTORY SEARCH
+========================================================= */
+
+.approval-history-search {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px 0;
+}
+
+.approval-history-search .approval-search-box {
+  width: 310px;
+  max-width: 100%;
+}
+
+/* =========================================================
+   RESPONSIVE - TABLET
+========================================================= */
+
+@media (max-width: 1250px) {
+  .approval-workflow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .workflow-arrow {
+    display: none;
+  }
+}
+
+@media (max-width: 850px) {
+  .approval-page {
+    padding: 22px 18px 40px;
+  }
+
+  .approval-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+  }
+
+  .approval-search {
+    width: 100%;
+  }
+
+  .approval-workflow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .approval-list-header {
+    padding: 18px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE - MOBILE
+========================================================= */
+
+@media (max-width: 550px) {
+  .approval-page {
+    padding: 18px 12px 30px;
+  }
+
+  .approval-header h2 {
+    font-size: 21px;
+  }
+
+  .approval-header-icon {
+    width: 43px;
+    height: 43px;
+    font-size: 19px;
+  }
+
+  .approval-workflow {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .approval-workflow-card {
+    min-height: 76px;
+  }
+
+  .approval-list-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .approval-list-header h4 {
+    font-size: 15px;
+  }
+
+  .approval-tabs {
+    gap: 2px;
+    margin-bottom: 18px;
+  }
+
+  .approval-tab {
+    padding: 11px 12px;
+    font-size: 12px;
+  }
+
+  .approval-history-search {
+    padding: 14px 16px 0;
+  }
+
+  .approval-history-search .approval-search-box {
+    width: 100%;
+  }
+
+  .approval-empty {
+    padding: 55px 16px;
+  }
+}
