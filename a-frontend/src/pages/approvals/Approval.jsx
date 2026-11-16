@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import "./Approval.css";
 import { API_BASE_URL, getAuthHeaders } from "../../api/config";
 
 function Approval() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [requests, setRequests] = useState([]);
   const [historyRequests, setHistoryRequests] = useState([]);
 
-  const [activeTab, setActiveTab] = useState("PROCESS");
+  const tabParam = (searchParams.get("tab") || "").toUpperCase();
+  const [activeTab, setActiveTab] = useState(
+    tabParam === "HISTORY" ? "HISTORY" : "PROCESS"
+  );
   const [search, setSearch] = useState("");
   const [cardFilter, setCardFilter] = useState("ALL");
 
@@ -269,11 +273,17 @@ function Approval() {
         if (cancelled) return;
 
         const completedRequests = (Array.isArray(data) ? data : []).filter(
-          (request) =>
-            request.current_stage === "COMPLETED" &&
-            request.status === "Approved" &&
-            (!request.vendor?.source_type ||
-              request.vendor.source_type === "NEW"),
+          (request) => {
+            const stage = String(request.current_stage || "").toUpperCase().trim();
+            const status = String(request.status || "").toUpperCase().trim();
+
+            return (
+              stage === "COMPLETED" ||
+              status === "COMPLETED" ||
+              status === "APPROVED" ||
+              status === "DONE"
+            );
+          },
         );
 
         setHistoryRequests(completedRequests);
@@ -636,6 +646,7 @@ function Approval() {
             setActiveTab("PROCESS");
             setSearch("");
             setCardFilter("ALL");
+            setSearchParams({});
           }}
         >
           Dalam Proses
@@ -649,6 +660,7 @@ function Approval() {
             setActiveTab("HISTORY");
             setSearch("");
             setCardFilter("ALL");
+            setSearchParams({ tab: "HISTORY" });
           }}
         >
           History Approved

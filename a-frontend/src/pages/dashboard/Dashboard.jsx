@@ -276,57 +276,171 @@ function Dashboard() {
   };
 
   /*
-|--------------------------------------------------------------------------
-| CARD STATISTIK
-|--------------------------------------------------------------------------
-*/
+  |--------------------------------------------------------------------------
+  | CARD STATISTIK (SESUAI ROLE USER)
+  |--------------------------------------------------------------------------
+  */
 
-  // Gabungkan vendor yang sudah terdaftar dan seluruh pengajuan CREATE.
-  // Gunakan vendor_id agar satu vendor tidak dihitung berkali-kali.
+  // 1. Cek apakah pengajuan sudah disetujui / completed
+  const isRequestApproved = (request) => {
+    const stage = String(request.current_stage || "").toUpperCase().trim();
+    const status = String(request.status || "").toUpperCase().trim();
 
+    return (
+      stage === "COMPLETED" ||
+      status === "COMPLETED" ||
+      status === "APPROVED" ||
+      status === "DONE"
+    );
+  };
+
+  // 2. Cek apakah pengajuan sedang aktif dalam antrean approval
+  const isRequestPending = (request) => {
+    const stage = String(request.current_stage || "").toUpperCase().trim();
+    const status = String(request.status || "").toUpperCase().trim();
+
+    if (isRequestApproved(request)) return false;
+    if (stage === "REJECTED" || status === "REJECTED") return false;
+
+    return (
+      [
+        "REQUESTER",
+        "ASISTEN_KADIV",
+        "KADIV",
+        "ACCOUNTING",
+        "TAX",
+        "SAP",
+      ].includes(stage) ||
+      [
+        "PENDING_L1",
+        "PENDING_L2",
+        "PENDING_L3",
+        "PENDING_L4",
+        "PENDING_L5",
+        "FORM_APPROVED",
+        "DRAFT",
+        "IN_PROGRESS",
+        "PENDING",
+        "UNDER REVIEW",
+      ].includes(status)
+    );
+  };
+
+  // 3. Cek apakah pengajuan diajukan oleh user saat ini
+  const isUserRequest = (request) => {
+    if (!user) return false;
+
+    const userEmail = String(user.email || "").toLowerCase().trim();
+    const userNik = String(user.nik || "").replace(/\D/g, "");
+    const userId = Number(user.id);
+
+    const reqEmail = String(
+      request.requested_by_email || request.requester?.email || ""
+    )
+      .toLowerCase()
+      .trim();
+    const reqNik = String(
+      request.requested_by_nik || request.requester?.nik || ""
+    ).replace(/\D/g, "");
+    const creatorId = Number(request.vendor?.created_by);
+
+    if (userEmail && reqEmail && userEmail === reqEmail) return true;
+    if (userNik && reqNik && userNik === reqNik) return true;
+    if (userId && creatorId && userId === creatorId) return true;
+
+    if (
+      user.division &&
+      request.requester?.division &&
+      user.division === request.requester?.division
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // 4. Identifikasi stage approver
+  const roleStageMap = {
+    ASISTEN_KADIV: "ASISTEN_KADIV",
+    KADIV: "KADIV",
+    ACCOUNTING: "ACCOUNTING",
+    TAX: "TAX",
+    SAP: "SAP",
+  };
+
+  const approverStage = roleStageMap[userRole] || null;
+
+  // 5. Kumpulan data pengajuan
+  const allPendingRequests = vendorRequests.filter(isRequestPending);
+  const allApprovedRequests = vendorRequests.filter(isRequestApproved);
+
+  const myRequests = vendorRequests.filter(isUserRequest);
+  const myPendingRequests = myRequests.filter(isRequestPending);
+  const myApprovedRequests = myRequests.filter(isRequestApproved);
+
+  const stagePendingRequests = approverStage
+    ? allPendingRequests.filter(
+        (req) =>
+          String(req.current_stage || "").toUpperCase().trim() === approverStage
+      )
+    : [];
+
+  // 6. Hitung Total Vendor & Existing Vendor
   const allVendorIds = new Set();
-
-  // Vendor dari tabel vendors
   vendors.forEach((vendor) => {
     if (vendor.id) {
       allVendorIds.add(`vendor-${vendor.id}`);
     }
   });
 
-  // Vendor dari seluruh pengajuan
   vendorRequests.forEach((request) => {
     if (request.request_type !== "CREATE") return;
-
     if (request.vendor_id) {
       allVendorIds.add(`vendor-${request.vendor_id}`);
     } else {
-      // Cadangan jika request belum memiliki vendor_id
       allVendorIds.add(`request-${request.id}`);
     }
   });
 
   const totalVendor = allVendorIds.size;
-
   const existingVendor = existingVendors.length;
 
-  const pendingVendor = vendorRequests.filter((request) => {
-    const status = (request.status || "").toLowerCase().trim();
-    const stage = (request.current_stage || "").toUpperCase().trim();
+  // 7. Hitung Pending & Approved berdasarkan role user
+  let pendingVendor = allPendingRequests.length;
+  let pendingSubtitle = "Seluruh vendor dalam proses";
+  let approvedVendor = allApprovedRequests.length;
+  let approvedSubtitle = "Vendor yang disetujui";
 
-    return (
-      request.request_type === "CREATE" &&
-      stage !== "COMPLETED" &&
-      (status === "pending" || status === "under review")
-    );
-  }).length;
-
-  const approvedVendor = vendorRequests.filter((request) => {
-    return (
-      request.request_type === "CREATE" &&
-      (request.status || "").toLowerCase().trim() === "approved" &&
-      (request.current_stage || "").toUpperCase().trim() === "COMPLETED"
-    );
-  }).length;
+  if (isAdmin) {
+    pendingVendor = allPendingRequests.length;
+    pendingSubtitle = "Seluruh antrean workflow";
+    approvedVendor = allApprovedRequests.length;
+    approvedSubtitle = "Seluruh vendor disetujui";
+  } else if (approverStage) {
+    // Role Approver: Menampilkan antrean yang menunggu di tahapan approver bersangkutan
+    pendingVendor = stagePendingRequests.length;
+    pendingSubtitle =
+      stagePendingRequests.length > 0
+        ? `Menunggu approval Anda (${stagePendingRequests.length} dari ${allPendingRequests.length} antrean)`
+        : `Tidak ada antrean tahap Anda (${allPendingRequests.length} total antrean)`;
+    approvedVendor = allApprovedRequests.length;
+    approvedSubtitle = "Total vendor disetujui";
+  } else if (isRequester) {
+    // Role Requester: Menampilkan pengajuan milik requester yang sedang dalam proses
+    const hasMyRequests = myRequests.length > 0;
+    pendingVendor = hasMyRequests
+      ? myPendingRequests.length
+      : allPendingRequests.length;
+    pendingSubtitle = hasMyRequests
+      ? `Pengajuan Anda dalam proses (${myPendingRequests.length} dari ${allPendingRequests.length} antrean)`
+      : `Vendor dalam proses (${allPendingRequests.length} antrean)`;
+    approvedVendor = hasMyRequests
+      ? myApprovedRequests.length
+      : allApprovedRequests.length;
+    approvedSubtitle = hasMyRequests
+      ? `Pengajuan Anda disetujui (${allApprovedRequests.length} total vendor)`
+      : `Vendor yang disetujui`;
+  }
 
   /*
   |--------------------------------------------------------------------------
@@ -553,7 +667,11 @@ function Dashboard() {
         {/* TOTAL VENDOR */}
 
         <div className="col-xl-3 col-md-6">
-          <div className="stat-box">
+          <div
+            className="stat-box"
+            onClick={() => navigate("/vendors")}
+            title="Klik untuk melihat daftar vendor"
+          >
             <div className="stat-top">
               <span className="stat-title">Total Vendor</span>
 
@@ -569,7 +687,11 @@ function Dashboard() {
         {/* EXISTING VENDOR */}
 
         <div className="col-xl-3 col-md-6">
-          <div className="stat-box">
+          <div
+            className="stat-box"
+            onClick={() => navigate("/vendors/existing")}
+            title="Klik untuk melihat existing vendor"
+          >
             <div className="stat-top">
               <span className="stat-title">Existing Vendor</span>
 
@@ -585,7 +707,11 @@ function Dashboard() {
         {/* PENDING APPROVAL */}
 
         <div className="col-xl-3 col-md-6">
-          <div className="stat-box">
+          <div
+            className="stat-box"
+            onClick={() => navigate("/approval")}
+            title="Klik untuk melihat antrean approval"
+          >
             <div className="stat-top">
               <span className="stat-title">Pending Approval</span>
 
@@ -594,14 +720,18 @@ function Dashboard() {
 
             <div className="stat-value">{pendingVendor}</div>
 
-            <div className="stat-bottom">Vendor dalam proses</div>
+            <div className="stat-bottom">{pendingSubtitle}</div>
           </div>
         </div>
 
         {/* APPROVED */}
 
         <div className="col-xl-3 col-md-6">
-          <div className="stat-box">
+          <div
+            className="stat-box"
+            onClick={() => navigate("/approval?tab=HISTORY")}
+            title="Klik untuk melihat riwayat vendor disetujui"
+          >
             <div className="stat-top">
               <span className="stat-title">Approved Vendor</span>
 
@@ -610,7 +740,7 @@ function Dashboard() {
 
             <div className="stat-value">{approvedVendor}</div>
 
-            <div className="stat-bottom">Vendor yang disetujui</div>
+            <div className="stat-bottom">{approvedSubtitle}</div>
           </div>
         </div>
       </div>

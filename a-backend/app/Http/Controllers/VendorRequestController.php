@@ -1991,19 +1991,40 @@ class VendorRequestController extends Controller
         return $finalRequest;
     }
 
-    public function completed()
+    public function completed(Request $request)
     {
-        $requests = VendorRequest::with([
+        $user = $request->user();
+
+        $query = VendorRequest::with([
             'vendor.kategori',
             'vendor.vendorSubcategories.category',
             'requester',
             'approvalHistories.actor',
         ])
-            ->where('request_type', 'CREATE')
+            ->whereIn('request_type', ['CREATE', 'UPDATE', 'NEW', 'EXISTING', 'IMPORT_EXISTING'])
             ->where('current_stage', 'COMPLETED')
-            ->where('status', 'Approved')
-            ->latest('completed_at')
-            ->get();
+            ->whereIn('status', ['COMPLETED', 'Approved', 'APPROVED', 'DONE']);
+
+        if ($user && !$user->isAdmin()) {
+            $roleName = strtoupper($user->role?->name ?? '');
+            if (in_array($roleName, ['REQUESTER', 'PROCUREMENT'])) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('requested_by_nik', $user->nik)
+                        ->orWhere('requested_by_email', $user->email)
+                        ->orWhereHas('vendor', function ($vq) use ($user) {
+                            $vq->where('created_by', $user->id);
+                        });
+
+                    if (!empty($user->division)) {
+                        $q->orWhereHas('requester', function ($rq) use ($user) {
+                            $rq->where('division', $user->division);
+                        });
+                    }
+                });
+            }
+        }
+
+        $requests = $query->latest('completed_at')->latest('updated_at')->get();
 
         return response()->json($requests);
     }
