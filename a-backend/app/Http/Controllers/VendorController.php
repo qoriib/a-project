@@ -114,16 +114,31 @@ class VendorController extends Controller
         Vendor $vendor,
         Request $request
     ): void {
+        $typeAliases = [
+            'NPWP_SPPKP' => ['NPWP_SPPKP', 'NPWP', 'SPPKP'],
+            'IDENTITAS_PENGURUS' => ['IDENTITAS_PENGURUS', 'KTP', 'PASPOR'],
+            'DOKUMENTASI_LOKASI' => ['DOKUMENTASI_LOKASI', 'SURAT_KETERANGAN_DOMISILI', 'FOTO_TEMPAT_USAHA', 'DOMISILI'],
+            'PERIZINAN_PEKERJAAN' => ['PERIZINAN_PEKERJAAN', 'SIUP', 'SBU'],
+            'SERTIFIKASI_KOMPETENSI' => ['SERTIFIKASI_KOMPETENSI', 'SERTIFIKAT'],
+            'DOKUMEN_PENDUKUNG' => ['DOKUMEN_PENDUKUNG', 'LAINNYA'],
+        ];
+
         foreach (self::GENERAL_DOCUMENTS as $field => $documentType) {
             $files = $request->file($field, []);
             if (!is_array($files)) {
                 $files = $files ? [$files] : [];
             }
 
-            // Juga periksa jika file dikirim via format documents[TYPE]
-            $docTypeFile = $request->file("documents.{$documentType}");
-            if ($docTypeFile) {
-                $files[] = $docTypeFile;
+            // Jika field kosong, periksa format documents[TYPE] dan aliasnya
+            if (empty($files)) {
+                $aliases = $typeAliases[$documentType] ?? [$documentType];
+                foreach ($aliases as $alias) {
+                    $docFile = $request->file("documents.{$alias}");
+                    if ($docFile) {
+                        $files = is_array($docFile) ? $docFile : [$docFile];
+                        break;
+                    }
+                }
             }
 
             foreach ($files as $file) {
@@ -135,6 +150,38 @@ class VendorController extends Controller
                         null,
                         $request
                     );
+                }
+            }
+        }
+
+        // Tangani dokumen tambahan jika ada di format documents[CUSTOM_TYPE]
+        $processedTypes = array_values(self::GENERAL_DOCUMENTS);
+        $allDocFiles = $request->file('documents', []);
+        if (is_array($allDocFiles)) {
+            foreach ($allDocFiles as $customType => $fileList) {
+                $customTypeUpper = strtoupper((string) $customType);
+                $isHandled = false;
+                foreach ($typeAliases as $mainType => $aliasList) {
+                    if (in_array($customTypeUpper, $aliasList, true)) {
+                        $isHandled = true;
+                        break;
+                    }
+                }
+                if ($isHandled || in_array($customTypeUpper, $processedTypes, true)) {
+                    continue;
+                }
+
+                $files = is_array($fileList) ? $fileList : [$fileList];
+                foreach ($files as $f) {
+                    if ($f && $f->isValid()) {
+                        $this->saveDocument(
+                            $vendor,
+                            $f,
+                            $customTypeUpper,
+                            null,
+                            $request
+                        );
+                    }
                 }
             }
         }

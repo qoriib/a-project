@@ -522,7 +522,7 @@ class VendorRequestController extends Controller
             'requester',
             'approvalHistories.actor',
         ])
-            ->whereIn('request_type', ['CREATE', 'UPDATE'])
+            ->whereIn('request_type', ['CREATE', 'UPDATE', 'NEW', 'EXISTING'])
             ->where('current_stage', $stage);
 
         // Jika bukan admin, jangan tampilkan request yang sudah selesai di tahap lain

@@ -42,6 +42,16 @@ Route::get(
     [VendorVerificationController::class, 'show']
 )->name('vendor-verifications.show');
 
+Route::get('/vendors/template/new', [
+    VendorTemplateController::class,
+    'downloadNewVendorTemplate'
+]);
+
+Route::get('/vendors/template/existing', [
+    VendorTemplateController::class,
+    'downloadExistingVendorTemplate'
+]);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -174,16 +184,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/import', [
             NewVendorImportController::class,
             'import'
-        ]);
-
-        Route::get('/template/new', [
-            VendorTemplateController::class,
-            'downloadNewVendorTemplate'
-        ]);
-
-        Route::get('/template/existing', [
-            VendorTemplateController::class,
-            'downloadExistingVendorTemplate'
         ]);
 
         Route::get('/{id}', [

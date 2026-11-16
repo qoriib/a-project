@@ -218,6 +218,30 @@ function ExistingVendor() {
     }
   };
 
+  // Download Template Excel
+  const handleDownloadTemplate = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/vendors/template/existing`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Gagal mengunduh template Excel");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "template-existing-vendor.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error(err);
+      window.location.href = `${API_URL}/vendors/template/existing`;
+    }
+  };
+
   return (
     <div className="existing-vendor-page">
       {/* HEADER */}
@@ -323,6 +347,7 @@ function ExistingVendor() {
 
               <a
                 href={`${API_URL}/vendors/template/existing`}
+                onClick={handleDownloadTemplate}
                 className="btn btn-outline-secondary"
                 download="template-existing-vendor.xlsx"
                 style={{ padding: "8px 14px", fontSize: "13px", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}

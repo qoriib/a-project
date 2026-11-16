@@ -295,14 +295,31 @@ class VendorTemplateController extends Controller
             '01.999.888.7-011.000',
             'Swasta',
             'VMS_001',
-            'Z001',
-            '110100',
+            'Z010',
+            '31000310',
             'Transfer',
             '1200 / 1300 (PROJECT BAKTI)',
-            'Z001',
+            'AP04',
             'IDR',
         ];
         $vendorSheet->fromArray($vendorSample, null, 'A2');
+
+        $vendorSheet->getStyle('A1:U1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '17385F'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $vendorSheet->getRowDimension(1)->setRowHeight(28);
+
+        foreach (range('A', 'U') as $col) {
+            $vendorSheet->getColumnDimension($col)->setAutoSize(true);
+        }
 
         // Sheet 2: BankAccounts
         $bankSheet = $spreadsheet->createSheet();
@@ -324,6 +341,22 @@ class VendorTemplateController extends Controller
         ];
         $bankSheet->fromArray($bankSample, null, 'A2');
 
+        $bankSheet->getStyle('A1:D1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '17385F'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $bankSheet->getRowDimension(1)->setRowHeight(28);
+        foreach (range('A', 'D') as $col) {
+            $bankSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // Sheet 3: WithholdingTaxes
         $taxSheet = $spreadsheet->createSheet();
         $taxSheet->setTitle('WithholdingTaxes');
@@ -336,9 +369,90 @@ class VendorTemplateController extends Controller
 
         $taxSample = [
             'VEND001',
-            'L1',
+            'W3',
         ];
         $taxSheet->fromArray($taxSample, null, 'A2');
+
+        $taxSheet->getStyle('A1:B1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '17385F'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+        $taxSheet->getRowDimension(1)->setRowHeight(28);
+        foreach (range('A', 'B') as $col) {
+            $taxSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Sheet 4: Panduan_Master_Data
+        $refSheet = $spreadsheet->createSheet();
+        $refSheet->setTitle('Panduan_Master_Data');
+
+        $refSheet->setCellValue('A1', 'KATEGORI VENDOR');
+        $refSheet->setCellValue('A2', 'kategori_code');
+        $refSheet->setCellValue('B2', 'Kategori');
+
+        $cats = \Illuminate\Support\Facades\DB::table('vendor_categories')->get();
+        $r = 3;
+        foreach ($cats as $cat) {
+            $refSheet->setCellValue("A{$r}", $cat->cat_code);
+            $refSheet->setCellValue("B{$r}", $cat->category_desc);
+            $r++;
+        }
+
+        $refSheet->setCellValue('D1', 'ACCOUNT GROUP');
+        $refSheet->setCellValue('D2', 'account_group');
+        $refSheet->setCellValue('E2', 'Nama');
+        $groups = \Illuminate\Support\Facades\DB::table('account_groups')->whereNotNull('code')->get();
+        $r = 3;
+        foreach ($groups as $g) {
+            $refSheet->setCellValue("D{$r}", $g->code);
+            $refSheet->setCellValue("E{$r}", $g->name);
+            $r++;
+        }
+
+        $refSheet->setCellValue('G1', 'RECON ACCOUNT');
+        $refSheet->setCellValue('G2', 'recon_account');
+        $refSheet->setCellValue('H2', 'Nama');
+        $recons = \Illuminate\Support\Facades\DB::table('recon_accounts')->whereNotNull('code')->get();
+        $r = 3;
+        foreach ($recons as $rec) {
+            $refSheet->setCellValue("G{$r}", $rec->code);
+            $refSheet->setCellValue("H{$r}", $rec->name);
+            $r++;
+        }
+
+        $refSheet->setCellValue('J1', 'PAYMENT TERM');
+        $refSheet->setCellValue('J2', 'payment_term');
+        $refSheet->setCellValue('K2', 'Deskripsi');
+        $terms = \Illuminate\Support\Facades\DB::table('payment_terms')->whereNotNull('code')->where('code', '!=', '')->get();
+        $r = 3;
+        foreach ($terms as $pt) {
+            $refSheet->setCellValue("J{$r}", $pt->code);
+            $refSheet->setCellValue("K{$r}", $pt->name);
+            $r++;
+        }
+
+        $refSheet->setCellValue('M1', 'WITHHOLDING TAX (PPh)');
+        $refSheet->setCellValue('M2', 'wht_code');
+        $refSheet->setCellValue('N2', 'Deskripsi Pajak');
+        $taxes = \Illuminate\Support\Facades\DB::table('withholding_taxes')->get();
+        $r = 3;
+        foreach ($taxes as $tx) {
+            $firstWord = explode(' ', trim($tx->name))[0] ?? 'W1';
+            $refSheet->setCellValue("M{$r}", $firstWord);
+            $refSheet->setCellValue("N{$r}", $tx->name);
+            $r++;
+        }
+
+        foreach (['A', 'B', 'D', 'E', 'G', 'H', 'J', 'K', 'M', 'N'] as $col) {
+            $refSheet->getColumnDimension($col)->setAutoSize(true);
+        }
 
         // Set active sheet back to first sheet
         $spreadsheet->setActiveSheetIndex(0);

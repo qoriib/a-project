@@ -127,30 +127,28 @@ class ExistingVendorImportController extends Controller
 
             /*
              * 2. Validasi kategori dan master data vendor.
-             *
-             * kategori_id harus berisi ID dari vendor_categories.
              */
             foreach ($vendorMap as $code => $vendorData) {
                 $row = $vendorData['row'];
                 $rowNumber = $vendorData['row_number'];
 
-                $categoryId = trim(
-                    (string) ($row['kategori_id'] ?? '')
+                $categoryVal = trim(
+                    (string) ($row['kategori_code'] ?? $row['kategori_id'] ?? '')
                 );
 
-                if ($categoryId === '') {
+                if ($categoryVal === '') {
                     $errors[] =
-                        "Vendors baris {$rowNumber}: kategori_id wajib diisi.";
+                        "Vendors baris {$rowNumber}: kategori_code atau kategori_id wajib diisi.";
                 } else {
-                    $this->validateMaster(
-                        $row,
-                        'kategori_id',
-                        'vendor_categories',
-                        'id',
-                        'Vendors',
-                        $rowNumber,
-                        $errors
-                    );
+                    $catExists = DB::table('vendor_categories')
+                        ->whereRaw('LOWER(TRIM(cat_code)) = ?', [mb_strtolower($categoryVal)])
+                        ->orWhere('id', $categoryVal)
+                        ->exists();
+
+                    if (!$catExists) {
+                        $errors[] =
+                            "Vendors baris {$rowNumber}: kategori '{$categoryVal}' tidak ditemukan di master vendor_categories.";
+                    }
                 }
 
                 $this->validateMaster(
@@ -266,8 +264,8 @@ class ExistingVendorImportController extends Controller
                     (string) ($row['vendor_code'] ?? '')
                 );
 
-                $taxName = trim(
-                    (string) ($row['withholding_tax'] ?? '')
+                $taxInput = trim(
+                    (string) ($row['withholding_tax'] ?? $row['wht_code'] ?? $row['wht'] ?? $row['code'] ?? '')
                 );
 
                 // Tax milik vendor yang sudah ada ikut dilewati.
@@ -284,31 +282,21 @@ class ExistingVendorImportController extends Controller
                     continue;
                 }
 
-                $taxCode = strtoupper($taxName);
-
-                if (!in_array($taxCode, ['L1', 'L2', 'L3', 'L4'], true)) {
-                    $errors[] =
-                        "WithholdingTaxes baris {$rowNumber}: kode '{$taxCode}' tidak valid. Gunakan L1, L2, L3, atau L4.";
+                if ($taxInput === '') {
                     continue;
                 }
 
-                // Cari nama lengkap yang diawali kode tax.
+                // Cari berdasarkan ID atau nama lengkap yang diawali kode tax (W1, W2, dll)
                 $matches = DB::table('withholding_taxes')
-                    ->whereRaw(
-                        'UPPER(TRIM(name)) LIKE ?',
-                        [$taxCode . ' %']
-                    )
+                    ->where('id', $taxInput)
+                    ->orWhereRaw('UPPER(TRIM(name)) LIKE ?', [strtoupper($taxInput) . ' %'])
+                    ->orWhereRaw('UPPER(TRIM(name)) LIKE ?', [strtoupper($taxInput) . '-%'])
+                    ->orWhereRaw('UPPER(TRIM(name)) LIKE ?', ['%' . strtoupper($taxInput) . '%'])
                     ->get();
 
-                if ($matches->count() !== 1) {
-                    if ($matches->isEmpty()) {
-                        $errors[] =
-                            "WithholdingTaxes baris {$rowNumber}: master withholding tax '{$taxCode}' tidak ditemukan.";
-                    } else {
-                        $errors[] =
-                            "WithholdingTaxes baris {$rowNumber}: kode '{$taxCode}' cocok dengan lebih dari satu master withholding tax. Periksa data master.";
-                    }
-
+                if ($matches->isEmpty()) {
+                    $errors[] =
+                        "WithholdingTaxes baris {$rowNumber}: master withholding tax '{$taxInput}' tidak ditemukan.";
                     continue;
                 }
 
@@ -342,12 +330,13 @@ class ExistingVendorImportController extends Controller
                 foreach ($vendorMap as $code => $vendorData) {
                     $row = $vendorData['row'];
 
-                    $categoryId = trim(
-                        (string) ($row['kategori_id'] ?? '')
+                    $categoryVal = trim(
+                        (string) ($row['kategori_code'] ?? $row['kategori_id'] ?? '')
                     );
 
                     $category = DB::table('vendor_categories')
-                        ->where('id', $categoryId)
+                        ->whereRaw('LOWER(TRIM(cat_code)) = ?', [mb_strtolower($categoryVal)])
+                        ->orWhere('id', $categoryVal)
                         ->first();
 
                     $accountGroup = $this->findMaster(
