@@ -35,7 +35,13 @@ function Sap() {
 
         console.log("Data Sap:", data);
 
-        setRequests(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        setRequests(list);
       } catch (error) {
         console.error("Error mengambil vendor request:", error);
 

@@ -124,6 +124,10 @@ function Dashboard() {
     ["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(userRole) ||
     user?.has_approval_access === true;
 
+  const isAccounting = userRole === "ACCOUNTING";
+  const isTax = userRole === "TAX";
+  const isSap = userRole === "SAP";
+
   /*
   |--------------------------------------------------------------------------
   | WARNA DONUT CHART
@@ -490,6 +494,51 @@ function Dashboard() {
                 <i className="bi bi-check2-circle"></i>
               </span>
               <span>Proses Approval</span>
+              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+            </button>
+          )}
+
+          {/* Untuk Accounting Lead: Tombol Cepat ke Accounting */}
+          {(isAdmin || isAccounting) && (
+            <button
+              type="button"
+              className="dashboard-action-btn approval-vendor-button"
+              onClick={() => navigate("/account")}
+            >
+              <span className="dashboard-btn-icon">
+                <i className="bi bi-cash-stack"></i>
+              </span>
+              <span>Proses Accounting</span>
+              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+            </button>
+          )}
+
+          {/* Untuk Tax Specialist: Tombol Cepat ke Tax */}
+          {(isAdmin || isTax) && (
+            <button
+              type="button"
+              className="dashboard-action-btn approval-vendor-button"
+              onClick={() => navigate("/tax")}
+            >
+              <span className="dashboard-btn-icon">
+                <i className="bi bi-receipt-cutoff"></i>
+              </span>
+              <span>Proses Tax</span>
+              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+            </button>
+          )}
+
+          {/* Untuk SAP Team: Tombol Cepat ke SAP */}
+          {(isAdmin || isSap) && (
+            <button
+              type="button"
+              className="dashboard-action-btn approval-vendor-button"
+              onClick={() => navigate("/sap")}
+            >
+              <span className="dashboard-btn-icon">
+                <i className="bi bi-laptop"></i>
+              </span>
+              <span>Proses SAP</span>
               <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
             </button>
           )}

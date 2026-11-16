@@ -60,6 +60,18 @@ export function DashboardLayout() {
     if (menu === "approval") {
       return path === "/approval" || path.startsWith("/approval/");
     }
+    if (menu === "account") {
+      return path === "/account" || path.startsWith("/account/");
+    }
+    if (menu === "tax") {
+      return path === "/tax" || path.startsWith("/tax/");
+    }
+    if (menu === "sap") {
+      return path === "/sap" || path.startsWith("/sap/");
+    }
+    if (menu === "sap-history") {
+      return path === "/sap-history" || path.startsWith("/sap-history/");
+    }
     if (menu === "master-approval") {
       return (
         path === "/master-approvals" || path.startsWith("/master-approvals/")
@@ -108,6 +120,30 @@ export function DashboardLayout() {
         description: "Kelola proses approval vendor",
       };
     }
+    if (path === "/account" || path.startsWith("/account/")) {
+      return {
+        title: "Accounting",
+        description: "Kelola data akun dan proses accounting vendor",
+      };
+    }
+    if (path === "/tax" || path.startsWith("/tax/")) {
+      return {
+        title: "Tax",
+        description: "Kelola data perpajakan dan PPh vendor",
+      };
+    }
+    if (path === "/sap" || path.startsWith("/sap/")) {
+      return {
+        title: "SAP Team",
+        description: "Kelola pengisian Vendor Code SAP dan approval form",
+      };
+    }
+    if (path === "/sap-history" || path.startsWith("/sap-history/")) {
+      return {
+        title: "History SAP",
+        description: "Riwayat vendor yang telah selesai diproses SAP",
+      };
+    }
     if (path === "/master-approvals" || path.startsWith("/master-approvals/")) {
       return {
         title: "Master Approval",
@@ -149,17 +185,29 @@ export function DashboardLayout() {
     ["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(userRole) ||
     user?.has_approval_access === true;
 
+  const isAccounting = userRole === "ACCOUNTING";
+  const isTax = userRole === "TAX";
+  const isSap = userRole === "SAP";
+
   // Pembatasan menu sesuai role:
   // - Dashboard: Seluruh pengguna
   // - All Vendor: Seluruh pengguna (master daftar vendor IBS)
   // - New Vendor: Admin dan Requester/Procurement
   // - Existing Vendor: Admin dan Requester/Procurement
   // - Approval: Admin dan Approver (Asisten Kadiv, Kadiv, Accounting, Tax, SAP)
+  // - Accounting: Admin dan Accounting Lead (L3)
+  // - Tax: Admin dan Tax Specialist (L4)
+  // - SAP Team: Admin dan SAP Team (L5)
+  // - History SAP: Admin dan SAP Team (L5)
   // - User Management: Khusus Administrator
   const canSeeAllVendor = true;
   const canSeeNewVendor = isAdmin || isRequester;
   const canSeeExistingVendor = isAdmin || isRequester;
   const canSeeApproval = isAdmin || isApprover;
+  const canSeeAccounting = isAdmin || isAccounting;
+  const canSeeTax = isAdmin || isTax;
+  const canSeeSap = isAdmin || isSap;
+  const canSeeSapHistory = isAdmin || isSap;
   const canSeeUserManagement = isAdmin;
 
   const getRoleDisplayName = (role, admin) => {
@@ -265,6 +313,54 @@ export function DashboardLayout() {
             >
               <span className="nav-icon">✅</span>
               {sidebarOpen && <span>Approval</span>}
+            </button>
+          )}
+
+          {/* ACCOUNTING (Role Accounting & Admin) */}
+          {canSeeAccounting && (
+            <button
+              type="button"
+              className={`nav-item ${isActive("account") ? "active" : ""}`}
+              onClick={() => navigate("/account")}
+            >
+              <span className="nav-icon">💰</span>
+              {sidebarOpen && <span>Accounting</span>}
+            </button>
+          )}
+
+          {/* TAX (Role Tax & Admin) */}
+          {canSeeTax && (
+            <button
+              type="button"
+              className={`nav-item ${isActive("tax") ? "active" : ""}`}
+              onClick={() => navigate("/tax")}
+            >
+              <span className="nav-icon">⚖️</span>
+              {sidebarOpen && <span>Tax</span>}
+            </button>
+          )}
+
+          {/* SAP TEAM (Role SAP & Admin) */}
+          {canSeeSap && (
+            <button
+              type="button"
+              className={`nav-item ${isActive("sap") ? "active" : ""}`}
+              onClick={() => navigate("/sap")}
+            >
+              <span className="nav-icon">💻</span>
+              {sidebarOpen && <span>SAP Team</span>}
+            </button>
+          )}
+
+          {/* HISTORY SAP (Role SAP & Admin) */}
+          {canSeeSapHistory && (
+            <button
+              type="button"
+              className={`nav-item ${isActive("sap-history") ? "active" : ""}`}
+              onClick={() => navigate("/sap-history")}
+            >
+              <span className="nav-icon">📜</span>
+              {sidebarOpen && <span>History SAP</span>}
             </button>
           )}
 

@@ -30,7 +30,13 @@ function SapHistory() {
           return;
         }
 
-        setRequests(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        setRequests(list);
       } catch (error) {
         console.error("Error mengambil riwayat SAP:", error);
         setRequests([]);

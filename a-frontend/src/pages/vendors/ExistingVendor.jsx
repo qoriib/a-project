@@ -49,11 +49,17 @@ function ExistingVendor() {
           );
         }
 
-        if (!Array.isArray(data)) {
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+          ? data.data
+          : null;
+
+        if (!list) {
           throw new Error("Format data dari server tidak sesuai.");
         }
 
-        setVendors(data);
+        setVendors(list);
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Gagal mengambil Existing Vendor:", err);
