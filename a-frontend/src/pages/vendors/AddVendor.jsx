@@ -75,6 +75,9 @@ function AddVendor() {
     dokumenPendukungFiles: [],
   });
 
+  // State Error Validasi Frontend
+  const [fieldErrors, setFieldErrors] = useState({});
+
   // ==========================================
   // MODAL ALERT
   // ==========================================
@@ -155,6 +158,14 @@ function AddVendor() {
       ...prev,
       [name]: value,
     }));
+
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
   };
 
   // ==========================================
@@ -249,6 +260,14 @@ function AddVendor() {
       },
     ]);
 
+    if (fieldErrors.vendorSubcategories) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.vendorSubcategories;
+        return next;
+      });
+    }
+
     closeCategoryModal();
   };
 
@@ -292,6 +311,15 @@ function AddVendor() {
         i === index ? { ...bank, [field]: value } : bank
       ),
     }));
+
+    const key = `bankAccounts.${index}.${field}`;
+    if (fieldErrors[key]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
   };
 
   const addBankAccount = () => {
@@ -495,50 +523,237 @@ function AddVendor() {
   };
 
   // ==========================================
+  // VALIDASI FORM DI FRONTEND
+  // ==========================================
+
+  const validateForm = (action = "submit") => {
+    const errors = {};
+
+    const isValidEmail = (email) => {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
+
+    // Validasi untuk Draft
+    if (action === "draft") {
+      if (!formData.namaPerusahaan || !formData.namaPerusahaan.trim()) {
+        errors.namaPerusahaan = "Nama Perusahaan wajib diisi untuk menyimpan draft.";
+      }
+      if (
+        formData.email &&
+        formData.email.trim() &&
+        !isValidEmail(formData.email.trim())
+      ) {
+        errors.email = "Format email PIC Vendor tidak valid.";
+      }
+      return errors;
+    }
+
+    // Validasi untuk Submit (Simpan & Kirim)
+    if (!formData.namaPerusahaan || !formData.namaPerusahaan.trim()) {
+      errors.namaPerusahaan = "Nama Perusahaan wajib diisi.";
+    }
+
+    if (!formData.city || !formData.city.trim()) {
+      errors.city = "Kota wajib diisi.";
+    }
+
+    if (!formData.postalCode || !formData.postalCode.trim()) {
+      errors.postalCode = "Kode Pos wajib diisi.";
+    }
+
+    if (!formData.country || !formData.country.trim()) {
+      errors.country = "Negara wajib diisi.";
+    }
+
+    if (!formData.phone || !formData.phone.trim()) {
+      errors.phone = "Nomor Telepon wajib diisi.";
+    }
+
+    if (!formData.mobilePhone || !formData.mobilePhone.trim()) {
+      errors.mobilePhone = "Nomor Handphone wajib diisi.";
+    }
+
+    if (!formData.picVendor || !formData.picVendor.trim()) {
+      errors.picVendor = "Nama PIC Vendor / Contact Person wajib diisi.";
+    }
+
+    if (!formData.email || !formData.email.trim()) {
+      errors.email = "Email PIC Vendor wajib diisi.";
+    } else if (!isValidEmail(formData.email.trim())) {
+      errors.email = "Format email PIC Vendor tidak valid.";
+    }
+
+    if (!formData.address || !formData.address.trim()) {
+      errors.address = "Street Address (Alamat Perusahaan) wajib diisi.";
+    }
+
+    if (!formData.npwp || !formData.npwp.trim()) {
+      errors.npwp = "Nomor NPWP wajib diisi.";
+    }
+
+    if (selectedVendorSubcategories.length === 0) {
+      errors.vendorSubcategories = "Pilih minimal satu Kategori dan Subkategori Vendor.";
+    }
+
+    if (!formData.dueDatePayment) {
+      errors.dueDatePayment = "Pilih Due Date Payment.";
+    } else if (
+      isPaymentTermOther &&
+      (!formData.paymentTermOther || !formData.paymentTermOther.trim())
+    ) {
+      errors.paymentTermOther = "Keterangan Due Date Payment Other wajib diisi.";
+    }
+
+    if (!formData.orderCurrency) {
+      errors.orderCurrency = "Pilih Order Currency.";
+    } else if (
+      formData.orderCurrency === "OTHER" &&
+      (!formData.orderCurrencyOther || !formData.orderCurrencyOther.trim())
+    ) {
+      errors.orderCurrencyOther = "Keterangan Order Currency Other wajib diisi.";
+    }
+
+    if (!formData.bankAccounts || formData.bankAccounts.length === 0) {
+      errors.bankAccounts = "Minimal satu data Rekening Bank wajib diisi.";
+    } else {
+      formData.bankAccounts.forEach((bank, index) => {
+        if (!bank.bank_name || !bank.bank_name.trim()) {
+          errors[`bankAccounts.${index}.bank_name`] = `Nama Bank ke-${index + 1} wajib diisi.`;
+        }
+        if (!bank.account_number || !bank.account_number.trim()) {
+          errors[`bankAccounts.${index}.account_number`] = `Nomor Rekening ke-${index + 1} wajib diisi.`;
+        }
+        if (!bank.account_name || !bank.account_name.trim()) {
+          errors[`bankAccounts.${index}.account_name`] = `Nama Pemilik Rekening ke-${index + 1} wajib diisi.`;
+        }
+      });
+    }
+
+    return errors;
+  };
+
+  const handleDraftClick = () => {
+    const errors = validateForm("draft");
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      openAlertModal({
+        type: "error",
+        title: "Nama Perusahaan Diperlukan",
+        message:
+          errors.namaPerusahaan ||
+          errors.email ||
+          "Mohon isi Nama Perusahaan terlebih dahulu untuk menyimpan sebagai draft.",
+        confirmText: "Lengkapi Draft",
+      });
+
+      const el = document.querySelector('[name="namaPerusahaan"]');
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.focus();
+      }
+      return;
+    }
+
+    openConfirmModal({
+      type: "draft",
+      title: "Simpan sebagai Draft?",
+      message:
+        "Data vendor akan disimpan sebagai draft agar bisa dilanjutkan nanti. Pastikan informasi yang diperlukan sudah diisi.",
+      confirmText: "Ya, Simpan Draft",
+      onConfirm: async () => {
+        setModal((prev) => ({
+          ...prev,
+          loading: true,
+        }));
+
+        await handleSubmit("draft");
+      },
+    });
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+
+    const errors = validateForm("submit");
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const errorList = Object.values(errors);
+      const previewErrors = errorList.slice(0, 5);
+      const remaining = errorList.length - previewErrors.length;
+
+      openAlertModal({
+        type: "error",
+        title: "Data Belum Lengkap",
+        message: `Terdapat ${errorList.length} kolom yang wajib dilengkapi sebelum mengirim vendor:\n\n${previewErrors.map((err) => `• ${err}`).join("\n")}${remaining > 0 ? `\n• ...dan ${remaining} kolom lainnya.` : ""}`,
+        confirmText: "Periksa Form",
+      });
+
+      const firstKey = Object.keys(errors)[0];
+      let targetInput = null;
+      if (firstKey.startsWith("bankAccounts.")) {
+        const parts = firstKey.split(".");
+        const idx = Number(parts[1]);
+        const bankCards = document.querySelectorAll(".bank-account-card");
+        if (bankCards[idx]) {
+          targetInput = bankCards[idx].querySelector("input");
+        }
+      } else if (firstKey === "vendorSubcategories") {
+        targetInput = document.querySelector(".table-responsive");
+      } else {
+        targetInput = document.querySelector(`[name="${firstKey}"]`);
+      }
+      if (targetInput) {
+        targetInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (targetInput.focus) targetInput.focus();
+      }
+      return;
+    }
+
+    openConfirmModal({
+      type: "send",
+      title: "Kirim Data Vendor?",
+      message:
+        "Pastikan seluruh informasi dan dokumen vendor sudah benar. Setelah dikirim, data akan masuk ke proses approval Kadiv Requester.",
+      confirmText: "Ya, Kirim Vendor",
+      onConfirm: async () => {
+        setModal((prev) => ({
+          ...prev,
+          loading: true,
+        }));
+
+        await handleSubmit("submit");
+      },
+    });
+  };
+
+  // ==========================================
   // SUBMIT VENDOR
   // ==========================================
 
   const handleSubmit = async (action = "submit") => {
-    if (
-      action === "submit" &&
-      selectedVendorSubcategories.length === 0
-    ) {
-      setModal((prev) => ({ ...prev, loading: false }));
-
-      openAlertModal({
-        type: "error",
-        title: "Kategori Belum Dipilih",
-        message:
-          "Pilih minimal satu kategori dan subkategori sebelum mengirim vendor.",
-        confirmText: "Mengerti",
-      });
-
-      return;
-    }
-
     const data = new FormData();
 
     // ACTION
     data.append("action", action);
 
     // DATA PERUSAHAAN
-    data.append("nama_perusahaan", formData.namaPerusahaan);
-    data.append("search_term", formData.searchTerm);
-    data.append("address", formData.address);
-    data.append("city", formData.city);
-    data.append("postal_code", formData.postalCode);
-    data.append("country", formData.country);
+    data.append("nama_perusahaan", formData.namaPerusahaan || "");
+    data.append("search_term", formData.searchTerm || "");
+    data.append("address", formData.address || "");
+    data.append("city", formData.city || "");
+    data.append("postal_code", formData.postalCode || "");
+    data.append("country", formData.country || "");
 
     // CONTACT
-    data.append("phone", formData.phone);
-    data.append("mobile_phone", formData.mobilePhone);
-    data.append("fax", formData.fax);
-    data.append("pic_vendor", formData.picVendor);
-    data.append("email", formData.email);
+    data.append("phone", formData.phone || "");
+    data.append("mobile_phone", formData.mobilePhone || "");
+    data.append("fax", formData.fax || "");
+    data.append("pic_vendor", formData.picVendor || "");
+    data.append("email", formData.email || "");
 
     // PROCUREMENT
-    data.append("npwp", formData.npwp);
-    data.append("business_type", formData.businessType);
+    data.append("npwp", formData.npwp || "");
+    data.append("business_type", formData.businessType || "");
 
     // KATEGORI DAN SUBKATEGORI
     // Satu kategori dengan dua subkategori dikirim sebagai dua record.
@@ -588,22 +803,10 @@ function AddVendor() {
 
     // BANK ACCOUNTS
     formData.bankAccounts.forEach((bank, index) => {
-      data.append(`bank_accounts[${index}][bank_name]`, bank.bank_name);
-
-      data.append(
-        `bank_accounts[${index}][account_number]`,
-        bank.account_number
-      );
-
-      data.append(
-        `bank_accounts[${index}][account_name]`,
-        bank.account_name
-      );
-
-      data.append(
-        `bank_accounts[${index}][swift_code]`,
-        bank.swift_code || ""
-      );
+      data.append(`bank_accounts[${index}][bank_name]`, bank.bank_name || "");
+      data.append(`bank_accounts[${index}][account_number]`, bank.account_number || "");
+      data.append(`bank_accounts[${index}][account_name]`, bank.account_name || "");
+      data.append(`bank_accounts[${index}][swift_code]`, bank.swift_code || "");
 
       bank.documents.forEach((file, fileIndex) => {
         data.append(
@@ -649,8 +852,30 @@ function AddVendor() {
       if (!response.ok) {
         console.error("Error menyimpan vendor:", result);
 
+        if (result.errors) {
+          const mapped = {};
+          Object.entries(result.errors).forEach(([key, val]) => {
+            const msg = Array.isArray(val) ? val[0] : val;
+            if (key === "nama_perusahaan") mapped.namaPerusahaan = msg;
+            else if (key === "pic_vendor") mapped.picVendor = msg;
+            else if (key === "mobile_phone") mapped.mobilePhone = msg;
+            else if (key === "postal_code") mapped.postalCode = msg;
+            else if (key === "vendor_subcategories") mapped.vendorSubcategories = msg;
+            else if (key.startsWith("bank_accounts.")) {
+              const parts = key.split(".");
+              mapped[`bankAccounts.${parts[1]}.${parts[2]}`] = msg;
+            } else {
+              mapped[key] = msg;
+            }
+          });
+          setFieldErrors((prev) => ({ ...prev, ...mapped }));
+        }
+
         const validationMessages = result.errors
-          ? Object.values(result.errors).flat().join("\n")
+          ? Object.values(result.errors)
+              .flat()
+              .map((msg) => `• ${msg}`)
+              .join("\n")
           : "";
 
         setModal((prev) => ({ ...prev, loading: false }));
@@ -781,25 +1006,8 @@ function AddVendor() {
 
         <form
           className="add-vendor-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-
-            openConfirmModal({
-              type: "send",
-              title: "Kirim Data Vendor?",
-              message:
-                "Pastikan seluruh informasi dan dokumen vendor sudah benar. Setelah dikirim, data akan masuk ke proses approval Kadiv Requester.",
-              confirmText: "Ya, Kirim Vendor",
-              onConfirm: async () => {
-                setModal((prev) => ({
-                  ...prev,
-                  loading: true,
-                }));
-
-                await handleSubmit("submit");
-              },
-            });
-          }}
+          noValidate
+          onSubmit={handleFormSubmit}
         >
 
           {/* DATA PERUSAHAAN */}
@@ -819,12 +1027,16 @@ function AddVendor() {
                 <input
                   type="text"
                   name="namaPerusahaan"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.namaPerusahaan ? "is-invalid" : ""}`}
                   value={formData.namaPerusahaan}
                   onChange={handleChange}
                   placeholder="Masukkan nama perusahaan"
-                  required
                 />
+                {fieldErrors.namaPerusahaan && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.namaPerusahaan}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -846,12 +1058,16 @@ function AddVendor() {
                 <input
                   type="text"
                   name="city"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.city ? "is-invalid" : ""}`}
                   value={formData.city}
                   onChange={handleChange}
                   placeholder="Masukkan city"
-                  required
                 />
+                {fieldErrors.city && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.city}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -861,12 +1077,16 @@ function AddVendor() {
                 <input
                   type="text"
                   name="postalCode"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.postalCode ? "is-invalid" : ""}`}
                   value={formData.postalCode}
                   onChange={handleChange}
                   placeholder="Masukkan postal code"
-                  required
                 />
+                {fieldErrors.postalCode && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.postalCode}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -876,12 +1096,16 @@ function AddVendor() {
                 <input
                   type="text"
                   name="country"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.country ? "is-invalid" : ""}`}
                   value={formData.country}
                   onChange={handleChange}
                   placeholder="Masukkan country"
-                  required
                 />
+                {fieldErrors.country && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.country}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -891,12 +1115,16 @@ function AddVendor() {
                 <input
                   type="text"
                   name="phone"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.phone ? "is-invalid" : ""}`}
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Masukkan nomor telepon"
-                  required
                 />
+                {fieldErrors.phone && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.phone}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -906,26 +1134,27 @@ function AddVendor() {
                 <input
                   type="text"
                   name="mobilePhone"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.mobilePhone ? "is-invalid" : ""}`}
                   value={formData.mobilePhone}
                   onChange={handleChange}
                   placeholder="Masukkan mobile phone"
-                  required
                 />
+                {fieldErrors.mobilePhone && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.mobilePhone}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">
-                  Fax <span className="text-danger">*</span>
-                </label>
+                <label className="add-vendor-label">Fax</label>
                 <input
                   type="text"
                   name="fax"
                   className="add-vendor-input"
                   value={formData.fax}
                   onChange={handleChange}
-                  placeholder="Masukkan nomor fax"
-                  required
+                  placeholder="Masukkan nomor fax (opsional)"
                 />
               </div>
 
@@ -936,12 +1165,16 @@ function AddVendor() {
                 <input
                   type="text"
                   name="picVendor"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.picVendor ? "is-invalid" : ""}`}
                   value={formData.picVendor}
                   onChange={handleChange}
                   placeholder="Masukkan nama contact person"
-                  required
                 />
+                {fieldErrors.picVendor && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.picVendor}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -951,12 +1184,16 @@ function AddVendor() {
                 <input
                   type="email"
                   name="email"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.email ? "is-invalid" : ""}`}
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="vendor@email.com"
-                  required
                 />
+                {fieldErrors.email && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.email}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -967,13 +1204,17 @@ function AddVendor() {
                 </label>
                 <textarea
                   name="address"
-                  className="add-vendor-input add-vendor-textarea"
+                  className={`add-vendor-input add-vendor-textarea ${fieldErrors.address ? "is-invalid" : ""}`}
                   rows="3"
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Masukkan street address"
-                  required
                 />
+                {fieldErrors.address && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.address}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -995,12 +1236,16 @@ function AddVendor() {
                 <input
                   type="text"
                   name="npwp"
-                  className="add-vendor-input"
+                  className={`add-vendor-input ${fieldErrors.npwp ? "is-invalid" : ""}`}
                   value={formData.npwp}
                   onChange={handleChange}
                   placeholder="Masukkan NPWP"
-                  required
                 />
+                {fieldErrors.npwp && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.npwp}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -1081,6 +1326,12 @@ function AddVendor() {
                     </tbody>
                   </table>
                 </div>
+
+                {fieldErrors.vendorSubcategories && (
+                  <div className="add-vendor-field-error mt-2">
+                    {fieldErrors.vendorSubcategories}
+                  </div>
+                )}
               </div>
 
               <div className="col-md-6 add-vendor-field">
@@ -1102,10 +1353,9 @@ function AddVendor() {
 
                 <select
                   name="dueDatePayment"
-                  className="add-vendor-input add-vendor-select"
+                  className={`add-vendor-input add-vendor-select ${fieldErrors.dueDatePayment ? "is-invalid" : ""}`}
                   value={formData.dueDatePayment}
                   onChange={handleChange}
-                  required
                 >
                   <option value="">Pilih Due Date Payment</option>
 
@@ -1117,17 +1367,28 @@ function AddVendor() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.dueDatePayment && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.dueDatePayment}
+                  </div>
+                )}
 
                 {isPaymentTermOther && (
-                  <input
-                    type="text"
-                    name="paymentTermOther"
-                    className="add-vendor-input add-vendor-other"
-                    value={formData.paymentTermOther}
-                    onChange={handleChange}
-                    placeholder="Masukkan due date payment"
-                    required
-                  />
+                  <>
+                    <input
+                      type="text"
+                      name="paymentTermOther"
+                      className={`add-vendor-input add-vendor-other ${fieldErrors.paymentTermOther ? "is-invalid" : ""}`}
+                      value={formData.paymentTermOther}
+                      onChange={handleChange}
+                      placeholder="Masukkan due date payment"
+                    />
+                    {fieldErrors.paymentTermOther && (
+                      <div className="add-vendor-field-error">
+                        {fieldErrors.paymentTermOther}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1138,27 +1399,37 @@ function AddVendor() {
 
                 <select
                   name="orderCurrency"
-                  className="add-vendor-input add-vendor-select"
+                  className={`add-vendor-input add-vendor-select ${fieldErrors.orderCurrency ? "is-invalid" : ""}`}
                   value={formData.orderCurrency}
                   onChange={handleChange}
-                  required
                 >
                   <option value="">Pilih Order Currency</option>
                   <option value="IDR">IDR</option>
                   <option value="USD">USD</option>
                   <option value="OTHER">Other</option>
                 </select>
+                {fieldErrors.orderCurrency && (
+                  <div className="add-vendor-field-error">
+                    {fieldErrors.orderCurrency}
+                  </div>
+                )}
 
                 {formData.orderCurrency === "OTHER" && (
-                  <input
-                    type="text"
-                    name="orderCurrencyOther"
-                    className="add-vendor-input add-vendor-other"
-                    value={formData.orderCurrencyOther}
-                    onChange={handleChange}
-                    placeholder="Masukkan order currency"
-                    required
-                  />
+                  <>
+                    <input
+                      type="text"
+                      name="orderCurrencyOther"
+                      className={`add-vendor-input add-vendor-other ${fieldErrors.orderCurrencyOther ? "is-invalid" : ""}`}
+                      value={formData.orderCurrencyOther}
+                      onChange={handleChange}
+                      placeholder="Masukkan order currency"
+                    />
+                    {fieldErrors.orderCurrencyOther && (
+                      <div className="add-vendor-field-error">
+                        {fieldErrors.orderCurrencyOther}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1247,7 +1518,7 @@ function AddVendor() {
                       </label>
                       <input
                         type="text"
-                        className="add-vendor-input bank-input"
+                        className={`add-vendor-input bank-input ${fieldErrors[`bankAccounts.${index}.bank_name`] ? "is-invalid" : ""}`}
                         placeholder="Contoh: Bank Mandiri"
                         value={bank.bank_name}
                         onChange={(event) =>
@@ -1257,8 +1528,12 @@ function AddVendor() {
                             event.target.value
                           )
                         }
-                        required
                       />
+                      {fieldErrors[`bankAccounts.${index}.bank_name`] && (
+                        <div className="add-vendor-field-error">
+                          {fieldErrors[`bankAccounts.${index}.bank_name`]}
+                        </div>
+                      )}
                     </div>
 
                     <div className="col-md-4 add-vendor-field">
@@ -1267,7 +1542,7 @@ function AddVendor() {
                       </label>
                       <input
                         type="text"
-                        className="add-vendor-input bank-input"
+                        className={`add-vendor-input bank-input ${fieldErrors[`bankAccounts.${index}.account_number`] ? "is-invalid" : ""}`}
                         placeholder="Masukkan nomor rekening"
                         value={bank.account_number}
                         onChange={(event) =>
@@ -1277,8 +1552,12 @@ function AddVendor() {
                             event.target.value
                           )
                         }
-                        required
                       />
+                      {fieldErrors[`bankAccounts.${index}.account_number`] && (
+                        <div className="add-vendor-field-error">
+                          {fieldErrors[`bankAccounts.${index}.account_number`]}
+                        </div>
+                      )}
                     </div>
 
                     <div className="col-md-4 add-vendor-field">
@@ -1288,7 +1567,7 @@ function AddVendor() {
                       </label>
                       <input
                         type="text"
-                        className="add-vendor-input bank-input"
+                        className={`add-vendor-input bank-input ${fieldErrors[`bankAccounts.${index}.account_name`] ? "is-invalid" : ""}`}
                         placeholder="Nama sesuai rekening"
                         value={bank.account_name}
                         onChange={(event) =>
@@ -1298,8 +1577,12 @@ function AddVendor() {
                             event.target.value
                           )
                         }
-                        required
                       />
+                      {fieldErrors[`bankAccounts.${index}.account_name`] && (
+                        <div className="add-vendor-field-error">
+                          {fieldErrors[`bankAccounts.${index}.account_name`]}
+                        </div>
+                      )}
                     </div>
 
                     <div className="col-md-4 add-vendor-field">
@@ -1550,23 +1833,7 @@ function AddVendor() {
             <button
               type="button"
               className="btn btn-secondary add-vendor-draft"
-              onClick={() => {
-                openConfirmModal({
-                  type: "draft",
-                  title: "Simpan sebagai Draft?",
-                  message:
-                    "Data vendor akan disimpan sebagai draft agar bisa dilanjutkan nanti. Pastikan informasi yang diperlukan sudah diisi.",
-                  confirmText: "Ya, Simpan Draft",
-                  onConfirm: async () => {
-                    setModal((prev) => ({
-                      ...prev,
-                      loading: true,
-                    }));
-
-                    await handleSubmit("draft");
-                  },
-                });
-              }}
+              onClick={handleDraftClick}
             >
               Simpan Draft
             </button>
@@ -1748,7 +2015,13 @@ function AddVendor() {
 
               <h4 id="vendor-alert-title">{modal.title}</h4>
 
-              <p className="vendor-alert-message">{modal.message}</p>
+              {modal.type === "error" && modal.message && modal.message.includes("•") ? (
+                <div className="vendor-alert-error-box">
+                  <p className="vendor-alert-message has-bullets">{modal.message}</p>
+                </div>
+              ) : (
+                <p className="vendor-alert-message">{modal.message}</p>
+              )}
 
               <div className="vendor-alert-actions">
                 {modal.showCancel && (

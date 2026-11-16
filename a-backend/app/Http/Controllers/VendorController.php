@@ -408,104 +408,199 @@ class VendorController extends Controller
             'action' => $action,
         ]);
 
-        $rules = [
-            'action' => ['required', 'in:draft,submit'],
+        if ($action === 'draft') {
+            $rules = [
+                'action' => ['required', 'in:draft,submit'],
 
-            // DATA PERUSAHAAN
-            'nama_perusahaan' => 'required_if:action,submit|string|max:255',
-            'search_term' => 'nullable|string|max:255',
-            'address' => 'required_if:action,submit|string',
-            'city' => 'required_if:action,submit|string|max:100',
-            'postal_code' => 'required_if:action,submit|string|max:20',
-            'country' => 'required_if:action,submit|string|max:100',
+                // DATA PERUSAHAAN (Untuk draft, hanya nama_perusahaan yang wajib)
+                'nama_perusahaan' => 'required|string|max:255',
+                'search_term' => 'nullable|string|max:255',
+                'address' => 'nullable|string',
+                'city' => 'nullable|string|max:100',
+                'postal_code' => 'nullable|string|max:20',
+                'country' => 'nullable|string|max:100',
 
-            // CONTACT
-            'phone' => 'required_if:action,submit|string|max:50',
-            'mobile_phone' => 'required_if:action,submit|string|max:50',
-            'fax' => 'required_if:action,submit|string|max:50',
-            'pic_vendor' => 'required_if:action,submit|string|max:255',
-            'email' => 'required_if:action,submit|email|max:255',
+                // CONTACT
+                'phone' => 'nullable|string|max:50',
+                'mobile_phone' => 'nullable|string|max:50',
+                'fax' => 'nullable|string|max:50',
+                'pic_vendor' => 'nullable|string|max:255',
+                'email' => 'nullable|email|max:255',
 
-            // DATA PROCUREMENT
-            'npwp' => 'required_if:action,submit|string|max:100',
-            'business_type' => 'nullable|string|max:255',
+                // DATA PROCUREMENT
+                'npwp' => 'nullable|string|max:100',
+                'business_type' => 'nullable|string|max:255',
 
-            // KATEGORI DAN SUBKATEGORI
-            'vendor_subcategories' => [
-                'required_if:action,submit',
-                'array',
-                'min:1',
-            ],
+                // KATEGORI DAN SUBKATEGORI
+                'vendor_subcategories' => [
+                    'nullable',
+                    'array',
+                ],
+                'vendor_subcategories.*.category_id' => [
+                    'nullable',
+                    'integer',
+                    'exists:vendor_categories,id',
+                ],
+                'vendor_subcategories.*.subcategory' => [
+                    'nullable',
+                    'in:Material,Jasa',
+                ],
+                'vendor_subcategories.*.category_other' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                ],
 
-            'vendor_subcategories.*.category_id' => [
-                'required',
-                'integer',
-                'exists:vendor_categories,id',
-            ],
+                // PAYMENT
+                'payment_term_id' => 'nullable|exists:payment_terms,id',
+                'payment_term_other' => 'nullable|string|max:255',
+                'order_currency' => 'nullable|in:IDR,USD,OTHER',
+                'order_currency_other' => 'nullable|string|max:255',
 
-            'vendor_subcategories.*.subcategory' => [
-                'required',
-                'in:Material,Jasa',
-            ],
+                // BANK ACCOUNTS
+                'bank_accounts' => [
+                    'nullable',
+                    'array',
+                ],
+                'bank_accounts.*.bank_name' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                ],
+                'bank_accounts.*.account_number' => [
+                    'nullable',
+                    'string',
+                    'max:100',
+                ],
+                'bank_accounts.*.account_name' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                ],
+                'bank_accounts.*.swift_code' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+                'bank_accounts.*.documents' => [
+                    'sometimes',
+                    'array',
+                ],
+                'bank_accounts.*.documents.*' => [
+                    'file',
+                    'mimes:pdf,jpg,jpeg,png',
+                    'max:10240',
+                ],
+            ];
+        } else {
+            $rules = [
+                'action' => ['required', 'in:draft,submit'],
 
-            'vendor_subcategories.*.category_other' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
+                // DATA PERUSAHAAN
+                'nama_perusahaan' => 'required|string|max:255',
+                'search_term' => 'nullable|string|max:255',
+                'address' => 'required|string',
+                'city' => 'required|string|max:100',
+                'postal_code' => 'required|string|max:20',
+                'country' => 'nullable|string|max:100',
 
-            // PAYMENT
-            'payment_term_id' => 'required_if:action,submit|exists:payment_terms,id',
-            'payment_term_other' => 'nullable|string|max:255',
+                // CONTACT
+                'phone' => 'required|string|max:50',
+                'mobile_phone' => 'required|string|max:50',
+                'fax' => 'nullable|string|max:50',
+                'pic_vendor' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
 
-            'order_currency' => 'required_if:action,submit|in:IDR,USD,OTHER',
-            'order_currency_other' => 'nullable|string|max:255',
+                // DATA PROCUREMENT
+                'npwp' => 'required|string|max:100',
+                'business_type' => 'nullable|string|max:255',
 
-            // BANK ACCOUNTS
-            'bank_accounts' => [
-                'required_if:action,submit',
-                'array',
-            ],
+                // KATEGORI DAN SUBKATEGORI
+                'vendor_subcategories' => [
+                    'required',
+                    'array',
+                    'min:1',
+                ],
+                'vendor_subcategories.*.category_id' => [
+                    'required',
+                    'integer',
+                    'exists:vendor_categories,id',
+                ],
+                'vendor_subcategories.*.subcategory' => [
+                    'required',
+                    'in:Material,Jasa',
+                ],
+                'vendor_subcategories.*.category_other' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                ],
 
-            'bank_accounts.*.bank_name' => [
-                'required_if:action,submit',
-                'string',
-                'max:255',
-            ],
+                // PAYMENT
+                'payment_term_id' => 'nullable|exists:payment_terms,id',
+                'payment_term_other' => 'nullable|string|max:255',
+                'order_currency' => 'nullable|in:IDR,USD,OTHER',
+                'order_currency_other' => 'nullable|string|max:255',
 
-            'bank_accounts.*.account_number' => [
-                'required_if:action,submit',
-                'string',
-                'max:100',
-            ],
+                // BANK ACCOUNTS
+                'bank_accounts' => [
+                    'required',
+                    'array',
+                    'min:1',
+                ],
+                'bank_accounts.*.bank_name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                ],
+                'bank_accounts.*.account_number' => [
+                    'required',
+                    'string',
+                    'max:100',
+                ],
+                'bank_accounts.*.account_name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                ],
+                'bank_accounts.*.swift_code' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+                'bank_accounts.*.documents' => [
+                    'sometimes',
+                    'array',
+                ],
+                'bank_accounts.*.documents.*' => [
+                    'file',
+                    'mimes:pdf,jpg,jpeg,png',
+                    'max:10240',
+                ],
+            ];
+        }
 
-            'bank_accounts.*.account_name' => [
-                'required_if:action,submit',
-                'string',
-                'max:255',
-            ],
-
-            'bank_accounts.*.swift_code' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
-
-            // DOKUMEN REKENING
-            'bank_accounts.*.documents' => [
-                'sometimes',
-                'array',
-            ],
-
-            'bank_accounts.*.documents.*' => [
-                'file',
-                'mimes:pdf,jpg,jpeg,png',
-                'max:10240',
-            ],
+        $messages = [
+            'nama_perusahaan.required' => 'Nama Perusahaan wajib diisi.',
+            'address.required' => 'Alamat (Street Address) wajib diisi.',
+            'city.required' => 'Kota wajib diisi.',
+            'postal_code.required' => 'Kode Pos wajib diisi.',
+            'phone.required' => 'Nomor Telepon wajib diisi.',
+            'mobile_phone.required' => 'Nomor Handphone wajib diisi.',
+            'pic_vendor.required' => 'Nama PIC Vendor wajib diisi.',
+            'email.required' => 'Email PIC Vendor wajib diisi.',
+            'email.email' => 'Format email PIC Vendor tidak valid.',
+            'npwp.required' => 'Nomor NPWP wajib diisi.',
+            'vendor_subcategories.required' => 'Pilih minimal satu Kategori dan Subkategori Vendor.',
+            'bank_accounts.required' => 'Minimal satu data Rekening Bank wajib diisi.',
+            'bank_accounts.*.bank_name.required' => 'Nama Bank wajib diisi.',
+            'bank_accounts.*.account_number.required' => 'Nomor Rekening wajib diisi.',
+            'bank_accounts.*.account_name.required' => 'Nama Pemilik Rekening wajib diisi.',
         ];
 
         $validated = $request->validate(
-            array_merge($rules, $this->generalDocumentRules())
+            array_merge($rules, $this->generalDocumentRules()),
+            $messages
         );
         $subcategoryError = $this->validateVendorSubcategories(
             $validated['vendor_subcategories'] ?? []
