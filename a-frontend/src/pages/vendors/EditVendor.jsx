@@ -950,14 +950,15 @@ function editVendor() {
                 ? messages
                 : [messages];
 
-              return `${field}: ${messageList.join(", ")}`;
+              return `• ${field}: ${messageList.join(", ")}`;
             })
             .join("\n");
 
           throw new Error(validationMessages);
         }
 
-        throw new Error(result.message || "Gagal memperbarui vendor.");
+        const errDetail = result.error ? `${result.message} (${result.error})` : result.message;
+        throw new Error(errDetail || "Gagal memperbarui vendor.");
       }
 
       // -----------------------------------------------------
