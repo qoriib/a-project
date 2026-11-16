@@ -7,19 +7,88 @@ import {
 } from "../../api/config";
 
 const DOCUMENT_TYPES = [
-  { key: "NPWP", label: "Dokumen NPWP", field: "npwp_file" },
-  { key: "REKENING", label: "Dokumen Rekening Bank", field: "rekening_file" },
-  { key: "NIB", label: "Dokumen NIB", field: "nib_file" },
-  { key: "SIUP", label: "Dokumen SIUP", field: "siup_file" },
   {
-    key: "COMPANY_PROFILE",
-    label: "Dokumen Company Profile",
-    field: "company_profile_file",
+    key: "STRUKTUR_ORGANISASI",
+    label: "Struktur Organisasi Perusahaan",
+    field: "struktur_organisasi_files",
+    aliases: ["STRUKTUR_ORGANISASI"],
   },
   {
-    key: "SERTIFIKAT",
-    label: "Dokumen Sertifikat Pendukung",
-    field: "sertifikat_file",
+    key: "AKTA_PENDIRIAN",
+    label: "Akta Pendirian dan SK Kemenkumham",
+    field: "akta_pendirian_files",
+    aliases: ["AKTA_PENDIRIAN"],
+  },
+  {
+    key: "AKTA_PERUBAHAN",
+    label: "Akta Perubahan Terakhir dan SK Kemenkumham",
+    field: "akta_perubahan_files",
+    aliases: ["AKTA_PERUBAHAN"],
+  },
+  {
+    key: "COMPANY_PROFILE",
+    label: "Company Profile",
+    field: "company_profile_files",
+    aliases: ["COMPANY_PROFILE"],
+  },
+  {
+    key: "NPWP_SPPKP",
+    label: "NPWP & SPPKP / Faktur Pajak",
+    field: "npwp_sppkp_files",
+    aliases: ["NPWP_SPPKP", "NPWP", "SPPKP"],
+  },
+  {
+    key: "NIB",
+    label: "Nomor Induk Berusaha (NIB)",
+    field: "nib_files",
+    aliases: ["NIB"],
+  },
+  {
+    key: "IDENTITAS_PENGURUS",
+    label: "Identitas Pengurus (KTP / Paspor & NPWP Direksi)",
+    field: "identitas_pengurus_files",
+    aliases: ["IDENTITAS_PENGURUS", "KTP", "PASPOR"],
+  },
+  {
+    key: "LAPORAN_KEUANGAN",
+    label: "Laporan Keuangan (Neraca / Laba Rugi)",
+    field: "laporan_keuangan_files",
+    aliases: ["LAPORAN_KEUANGAN"],
+  },
+  {
+    key: "DOKUMENTASI_LOKASI",
+    label: "Foto Kantor / Plang Nama Perusahaan / Surat Keterangan Domisili",
+    field: "dokumentasi_lokasi_files",
+    aliases: [
+      "DOKUMENTASI_LOKASI",
+      "SURAT_KETERANGAN_DOMISILI",
+      "FOTO_TEMPAT_USAHA",
+      "DOMISILI",
+    ],
+  },
+  {
+    key: "BPJS_KETENAGAKERJAAN",
+    label: "BPJS Ketenagakerjaan",
+    field: "bpjs_ketenagakerjaan_files",
+    aliases: ["BPJS_KETENAGAKERJAAN", "BPJS"],
+  },
+  {
+    key: "PERIZINAN_PEKERJAAN",
+    label: "Dokumen Perizinan Lingkup Pekerjaan (SIUP / SBU)",
+    field: "perizinan_pekerjaan_files",
+    aliases: ["PERIZINAN_PEKERJAAN", "SIUP", "SBU"],
+  },
+  {
+    key: "SERTIFIKASI_KOMPETENSI",
+    label: "Sertifikasi Kompetensi Keahlian",
+    field: "sertifikasi_kompetensi_files",
+    aliases: ["SERTIFIKASI_KOMPETENSI", "SERTIFIKAT"],
+  },
+  {
+    key: "DOKUMEN_PENDUKUNG",
+    label: "Dokumen Pendukung Lainnya",
+    field: "dokumen_pendukung_files",
+    aliases: ["DOKUMEN_PENDUKUNG", "REKENING", "LAINNYA"],
   },
 ];
 
@@ -55,12 +124,19 @@ const EMPTY_FORM = {
 };
 
 const EMPTY_DOCUMENTS = {
-  NPWP: null,
-  REKENING: null,
-  NIB: null,
-  SIUP: null,
+  STRUKTUR_ORGANISASI: null,
+  AKTA_PENDIRIAN: null,
+  AKTA_PERUBAHAN: null,
   COMPANY_PROFILE: null,
-  SERTIFIKAT: null,
+  NPWP_SPPKP: null,
+  NIB: null,
+  IDENTITAS_PENGURUS: null,
+  LAPORAN_KEUANGAN: null,
+  DOKUMENTASI_LOKASI: null,
+  BPJS_KETENAGAKERJAAN: null,
+  PERIZINAN_PEKERJAAN: null,
+  SERTIFIKASI_KOMPETENSI: null,
+  DOKUMEN_PENDUKUNG: null,
 };
 
 function editVendor() {
@@ -70,6 +146,7 @@ function editVendor() {
 
   const [vendor, setVendor] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [subcategories, setSubcategories] = useState(["Material", "Jasa"]);
 
   const [bankAccounts, setBankAccounts] = useState([
     {
@@ -77,6 +154,7 @@ function editVendor() {
       bank_name: "",
       rekening: "",
       benificiary: "",
+      swift_code: "",
     },
   ]);
 
@@ -206,6 +284,7 @@ function editVendor() {
         bank_name: bank.bank_name ?? "",
         rekening: bank.account_number ?? bank.rekening ?? "",
         benificiary: bank.account_name ?? bank.benificiary ?? "",
+        swift_code: bank.swift_code ?? "",
       }));
     }
 
@@ -217,6 +296,7 @@ function editVendor() {
           bank_name: data.bank_name ?? "",
           rekening: data.rekening ?? "",
           benificiary: data.benificiary ?? "",
+          swift_code: data.swift_code ?? "",
         },
       ];
     }
@@ -227,6 +307,7 @@ function editVendor() {
         bank_name: "",
         rekening: "",
         benificiary: "",
+        swift_code: "",
       },
     ];
   };
@@ -239,6 +320,12 @@ function editVendor() {
     const banks = getBanks(data);
 
     setBankAccounts(banks);
+
+    // Muat subkategori yang sudah ada
+    const existingSubs = (data?.vendor_subcategories ?? data?.vendorSubcategories ?? [])
+      .map((s) => s.subcategory)
+      .filter(Boolean);
+    setSubcategories(existingSubs.length > 0 ? existingSubs : ["Material", "Jasa"]);
 
     const taxes = data.withholding_taxes ?? data.withholdingTaxes ?? [];
 
@@ -269,7 +356,13 @@ function editVendor() {
       npwp: data.npwp ?? "",
       business_type: data.business_type ?? "",
 
-      kategori_id: String(data.kategori_id ?? data.kategori?.id ?? ""),
+      kategori_id: String(
+        data.kategori_id ??
+        data.vendor_subcategories?.[0]?.category_id ??
+        data.vendorSubcategories?.[0]?.category_id ??
+        data.kategori?.id ??
+        ""
+      ),
 
       kategori_other: data.kategori_other ?? "",
 
@@ -283,11 +376,17 @@ function editVendor() {
       order_currency_other: data.order_currency_other ?? "",
 
       account_group_id: String(
-        data.account_group_id ?? data.accountGroup?.id ?? "",
+        data.account_group_id ??
+        data.account_group?.id ??
+        data.accountGroup?.id ??
+        ""
       ),
 
       recon_account_id: String(
-        data.recon_account_id ?? data.reconAccount?.id ?? "",
+        data.recon_account_id ??
+        data.recon_account?.id ??
+        data.reconAccount?.id ??
+        ""
       ),
 
       payment_method: data.payment_method ?? "Transfer",
@@ -415,22 +514,40 @@ function editVendor() {
 
   const latestDocuments = useMemo(() => {
     const result = {};
+    const docs = vendor?.documents ?? [];
 
-    for (const document of vendor?.documents ?? []) {
-      const type = String(
-        document.document_type ?? document.type ?? "",
-      ).toUpperCase();
+    DOCUMENT_TYPES.forEach((def) => {
+      const candidates = docs.filter((d) => {
+        const type = String(d.document_type ?? d.type ?? "").toUpperCase();
+        return def.key === type || (def.aliases && def.aliases.includes(type));
+      });
 
-      if (
-        !result[type] ||
-        Number(document.version ?? 0) > Number(result[type].version ?? 0)
-      ) {
-        result[type] = document;
+      if (candidates.length > 0) {
+        candidates.sort(
+          (a, b) =>
+            Number(b.version ?? 0) - Number(a.version ?? 0) ||
+            (b.id ?? 0) - (a.id ?? 0)
+        );
+        result[def.key] = candidates[0];
       }
-    }
+    });
 
     return result;
   }, [vendor]);
+
+  // =========================================================
+  // SUBKATEGORI HANDLER
+  // =========================================================
+
+  const handleSubcategoryToggle = (sub) => {
+    setSubcategories((prev) =>
+      prev.includes(sub)
+        ? prev.length > 1
+          ? prev.filter((s) => s !== sub)
+          : prev
+        : [...prev, sub]
+    );
+  };
 
   // =========================================================
   // FORM HANDLER
@@ -457,6 +574,7 @@ function editVendor() {
         bank_name: "",
         rekening: "",
         benificiary: "",
+        swift_code: "",
       },
     ]);
   };
@@ -655,6 +773,21 @@ function editVendor() {
       });
 
       // -----------------------------------------------------
+      // SUBKATEGORI VENDOR
+      // -----------------------------------------------------
+
+      if (form.kategori_id) {
+        const subsToSend = subcategories.length > 0 ? subcategories : ["Material", "Jasa"];
+        subsToSend.forEach((sub, idx) => {
+          payload.append(`vendor_subcategories[${idx}][category_id]`, form.kategori_id);
+          payload.append(`vendor_subcategories[${idx}][subcategory]`, sub);
+          if (form.kategori_other) {
+            payload.append(`vendor_subcategories[${idx}][category_other]`, form.kategori_other);
+          }
+        });
+      }
+
+      // -----------------------------------------------------
       // BANK ACCOUNTS
       // -----------------------------------------------------
 
@@ -677,6 +810,11 @@ function editVendor() {
           `bank_accounts[${index}][account_name]`,
           bank.benificiary ?? "",
         );
+
+        payload.append(
+          `bank_accounts[${index}][swift_code]`,
+          bank.swift_code ?? "",
+        );
       });
 
       // -----------------------------------------------------
@@ -686,6 +824,10 @@ function editVendor() {
       Object.entries(selectedDocuments).forEach(([type, file]) => {
         if (file) {
           payload.append(`documents[${type}]`, file);
+          const docDef = DOCUMENT_TYPES.find((d) => d.key === type);
+          if (docDef && docDef.field) {
+            payload.append(`${docDef.field}[]`, file);
+          }
         }
       });
 
@@ -957,6 +1099,34 @@ function editVendor() {
                     />
                   </div>
                 )}
+
+                <div className="col-12 account-detail-field">
+                  <label className="account-detail-label d-block mb-2">
+                    Subkategori Vendor *
+                  </label>
+                  <div className="d-flex gap-4">
+                    <label className="form-check-label d-flex align-items-center gap-2" style={{ cursor: "pointer", fontSize: "13px" }}>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={subcategories.includes("Material")}
+                        onChange={() => handleSubcategoryToggle("Material")}
+                        disabled={saving}
+                      />
+                      <span>Material</span>
+                    </label>
+                    <label className="form-check-label d-flex align-items-center gap-2" style={{ cursor: "pointer", fontSize: "13px" }}>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={subcategories.includes("Jasa")}
+                        onChange={() => handleSubcategoryToggle("Jasa")}
+                        disabled={saving}
+                      />
+                      <span>Jasa</span>
+                    </label>
+                  </div>
+                </div>
 
                 <div className="col-12 account-detail-field">
                   <label className="account-detail-label">
@@ -1300,7 +1470,7 @@ function editVendor() {
                   <div className="bank-card-divider" />
 
                   <div className="row bank-fields-row">
-                    <div className="col-md-4 account-detail-field">
+                    <div className="col-md-3 account-detail-field">
                       <label className="account-detail-label">
                         Nama Bank <span className="bank-required">*</span>
                       </label>
@@ -1321,7 +1491,7 @@ function editVendor() {
                       />
                     </div>
 
-                    <div className="col-md-4 account-detail-field">
+                    <div className="col-md-3 account-detail-field">
                       <label className="account-detail-label">
                         Nomor Rekening <span className="bank-required">*</span>
                       </label>
@@ -1342,7 +1512,7 @@ function editVendor() {
                       />
                     </div>
 
-                    <div className="col-md-4 account-detail-field">
+                    <div className="col-md-3 account-detail-field">
                       <label className="account-detail-label">
                         Nama Pemilik Rekening{" "}
                         <span className="bank-required">*</span>
@@ -1360,6 +1530,26 @@ function editVendor() {
                           )
                         }
                         required
+                        disabled={saving}
+                      />
+                    </div>
+
+                    <div className="col-md-3 account-detail-field">
+                      <label className="account-detail-label">
+                        SWIFT / BIC Code (Opsional)
+                      </label>
+
+                      <input
+                        className="account-detail-input bank-input"
+                        placeholder="Contoh: BMRIIDJA"
+                        value={bank.swift_code || ""}
+                        onChange={(event) =>
+                          updateBankAccount(
+                            index,
+                            "swift_code",
+                            event.target.value,
+                          )
+                        }
                         disabled={saving}
                       />
                     </div>
@@ -1527,14 +1717,19 @@ function editVendor() {
 
             <div className="row account-detail-row">
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Vendor Code</label>
+                <label className="account-detail-label d-flex align-items-center justify-content-between">
+                  <span>Vendor Code SAP</span>
+                  <span className="badge bg-success" style={{ fontSize: "11px" }}>SAP Verified</span>
+                </label>
 
                 <input
-                  className="account-detail-input"
+                  className="account-detail-input bg-light"
                   name="vendor_code"
                   value={form.vendor_code}
-                  onChange={updateField}
-                  disabled={saving}
+                  readOnly
+                  disabled
+                  title="Kode Vendor SAP bersifat tetap (tidak dapat diubah manual)"
+                  style={{ cursor: "not-allowed", backgroundColor: "#f8f9fa", fontWeight: "600" }}
                 />
               </div>
             </div>

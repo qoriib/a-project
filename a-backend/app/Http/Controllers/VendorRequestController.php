@@ -550,27 +550,13 @@ class VendorRequestController extends Controller
             $this->vendorRelations()
         )->findOrFail($id);
 
-        // Hanya request CREATE yang menggunakan approval workflow.
-        if ($requestData->request_type !== 'CREATE') {
+        if (!in_array(strtoupper($requestData->request_type), ['CREATE', 'NEW', 'UPDATE', 'EXISTING'], true)) {
             return response()->json([
                 'message' => 'Request tidak ditemukan atau tidak dapat diakses.',
             ], 404);
         }
 
-        $stage = strtoupper($requestData->current_stage);
-
-        $allowedStages = [
-            'REQUESTER',
-            'ACCOUNTING',
-            'TAX',
-            'SAP',
-        ];
-
-        if (!in_array($stage, $allowedStages, true)) {
-            return response()->json([
-                'message' => 'Tahap request tidak valid.',
-            ], 403);
-        }
+        $stage = strtoupper($requestData->current_stage ?? 'ASISTEN_KADIV');
 
         // Ambil permission user pada stage request ini.
         $permissions = $this->getStagePermissions(
@@ -578,11 +564,8 @@ class VendorRequestController extends Controller
             $stage
         );
 
-        if (!$permissions['can_view']) {
-            return response()->json([
-                'message' => 'Anda tidak memiliki akses untuk melihat request ini.',
-            ], 403);
-        }
+        // Seluruh user berhak melihat data pengajuan pada alur approval
+        $permissions['can_view'] = true;
 
         return response()->json([
             'data' => $requestData,

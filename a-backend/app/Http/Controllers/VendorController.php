@@ -116,15 +116,26 @@ class VendorController extends Controller
     ): void {
         foreach (self::GENERAL_DOCUMENTS as $field => $documentType) {
             $files = $request->file($field, []);
+            if (!is_array($files)) {
+                $files = $files ? [$files] : [];
+            }
+
+            // Juga periksa jika file dikirim via format documents[TYPE]
+            $docTypeFile = $request->file("documents.{$documentType}");
+            if ($docTypeFile) {
+                $files[] = $docTypeFile;
+            }
 
             foreach ($files as $file) {
-                $this->saveDocument(
-                    $vendor,
-                    $file,
-                    $documentType,
-                    null,
-                    $request
-                );
+                if ($file && $file->isValid()) {
+                    $this->saveDocument(
+                        $vendor,
+                        $file,
+                        $documentType,
+                        null,
+                        $request
+                    );
+                }
             }
         }
     }
@@ -780,6 +791,55 @@ class VendorController extends Controller
             ], 422);
         }
 
+        // Normalisasi vendor_subcategories jika dikirim melalui kategori_id dan subcategories
+        if (!$request->has('vendor_subcategories') && $request->filled('kategori_id')) {
+            $catId = (int) $request->input('kategori_id');
+            $catOther = $request->input('kategori_other');
+            $subs = $request->input('subcategories', ['Material', 'Jasa']);
+            if (is_string($subs)) {
+                $subs = explode(',', $subs);
+            }
+            $vendorSubcategories = [];
+            foreach ((array) $subs as $sub) {
+                $sub = trim((string) $sub);
+                if ($sub !== '') {
+                    $vendorSubcategories[] = [
+                        'category_id' => $catId,
+                        'subcategory' => $sub,
+                        'category_other' => $catOther,
+                    ];
+                }
+            }
+            if (empty($vendorSubcategories)) {
+                $vendorSubcategories = [
+                    ['category_id' => $catId, 'subcategory' => 'Material', 'category_other' => $catOther],
+                    ['category_id' => $catId, 'subcategory' => 'Jasa', 'category_other' => $catOther],
+                ];
+            }
+            $request->merge(['vendor_subcategories' => $vendorSubcategories]);
+        }
+
+        // Normalisasi string kosong pada field nullable
+        $nullableFields = [
+            'account_group_id',
+            'recon_account_id',
+            'payment_method',
+            'payment_term_other',
+            'order_currency_other',
+            'business_type',
+            'search_term',
+            'kategori_other',
+        ];
+        $merges = [];
+        foreach ($nullableFields as $field) {
+            if ($request->has($field) && $request->input($field) === '') {
+                $merges[$field] = null;
+            }
+        }
+        if (!empty($merges)) {
+            $request->merge($merges);
+        }
+
         $rules = [
             // DATA PERUSAHAAN
             'nama_perusahaan' => ['required', 'string', 'max:255'],
@@ -841,7 +901,7 @@ class VendorController extends Controller
             'order_currency' => ['required', 'in:IDR,USD,OTHER'],
             'order_currency_other' => ['nullable', 'string', 'max:255'],
 
-            // DATA SAP
+            // DATA SAP / ACCOUNTING
             'company_code_purch_org' => [
                 'required',
                 'string',
@@ -849,17 +909,17 @@ class VendorController extends Controller
             ],
 
             'account_group_id' => [
-                'required',
+                'nullable',
                 'exists:account_groups,id',
             ],
 
             'recon_account_id' => [
-                'required',
+                'nullable',
                 'exists:recon_accounts,id',
             ],
 
             'payment_method' => [
-                'required',
+                'nullable',
                 'string',
                 'max:100',
             ],
