@@ -109,10 +109,6 @@ export function Login() {
 
   return (
     <div className="login-page-wrapper">
-      {/* Decorative ambient background spots */}
-      <div className="login-bg-decor-1" aria-hidden="true" />
-      <div className="login-bg-decor-2" aria-hidden="true" />
-
       <div className="login-container">
         <div className="login-card">
           {/* Accent top stripe matching IBS Brand */}
