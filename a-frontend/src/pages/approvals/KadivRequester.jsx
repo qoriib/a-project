@@ -809,7 +809,9 @@ function KadivDetail() {
         {/* ALASAN PENOLAKAN */}
         {showRejectForm && (
           <div className="kadiv-reject-panel">
-            <label htmlFor="rejectReason">Alasan Penolakan</label>
+            <label htmlFor="rejectReason">
+              Alasan Penolakan <span className="text-danger">*</span>
+            </label>
 
             <textarea
               id="rejectReason"

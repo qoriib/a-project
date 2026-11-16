@@ -932,7 +932,9 @@ function AccountDetail() {
             {/* ACCOUNT GROUP */}
 
             <div className="col-md-6 account-detail-field">
-              <label className="account-detail-label">Account Group</label>
+              <label className="account-detail-label">
+                Account Group {canEdit && <span className="text-danger">*</span>}
+              </label>
 
               {canEdit ? (
                 <select
@@ -975,7 +977,9 @@ function AccountDetail() {
             {/* RECON ACCOUNT */}
 
             <div className="col-md-6 account-detail-field">
-              <label className="account-detail-label">Recon Account</label>
+              <label className="account-detail-label">
+                Recon Account {canEdit && <span className="text-danger">*</span>}
+              </label>
 
               {canEdit ? (
                 <select

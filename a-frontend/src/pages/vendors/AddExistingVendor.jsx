@@ -303,7 +303,9 @@ function AddExistingVendor() {
                 ===================================== */}
 
             <div className="col-md-6 add-vendor-field">
-              <label className="add-vendor-label">Vendor Code</label>
+              <label className="add-vendor-label">
+                Vendor Code <span className="text-danger">*</span>
+              </label>
 
               <input
                 type="text"
@@ -321,7 +323,9 @@ function AddExistingVendor() {
                 ===================================== */}
 
             <div className="col-md-6 add-vendor-field">
-              <label className="add-vendor-label">Nama Perusahaan</label>
+              <label className="add-vendor-label">
+                Nama Perusahaan <span className="text-danger">*</span>
+              </label>
 
               <input
                 type="text"
@@ -543,7 +547,9 @@ function AddExistingVendor() {
                 ===================================== */}
 
             <div className="col-md-6 add-vendor-field">
-              <label className="add-vendor-label">Kategori</label>
+              <label className="add-vendor-label">
+                Kategori <span className="text-danger">*</span>
+              </label>
 
               <select
                 name="kategoriId"
@@ -609,7 +615,9 @@ function AddExistingVendor() {
                 ===================================== */}
 
             <div className="col-md-6 add-vendor-field">
-              <label className="add-vendor-label">Order Currency</label>
+              <label className="add-vendor-label">
+                Order Currency <span className="text-danger">*</span>
+              </label>
 
               <select
                 name="orderCurrency"

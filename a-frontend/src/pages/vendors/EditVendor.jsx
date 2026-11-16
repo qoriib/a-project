@@ -1028,7 +1028,7 @@ function editVendor() {
               <div className="row account-detail-row">
                 <div className="col-md-6 account-detail-field">
                   <label className="account-detail-label">
-                    Nama Perusahaan *
+                    Nama Perusahaan <span className="text-danger">*</span>
                   </label>
 
                   <input
@@ -1067,7 +1067,7 @@ function editVendor() {
 
                 <div className="col-md-6 account-detail-field">
                   <label className="account-detail-label">
-                    Kategori Vendor *
+                    Kategori Vendor <span className="text-danger">*</span>
                   </label>
 
                   <select
@@ -1086,7 +1086,7 @@ function editVendor() {
                 {isOtherSelected(categories, form.kategori_id) && (
                   <div className="col-md-6 account-detail-field">
                     <label className="account-detail-label">
-                      Keterangan Kategori Other *
+                      Keterangan Kategori Other <span className="text-danger">*</span>
                     </label>
 
                     <input
@@ -1102,7 +1102,7 @@ function editVendor() {
 
                 <div className="col-12 account-detail-field">
                   <label className="account-detail-label d-block mb-2">
-                    Subkategori Vendor *
+                    Subkategori Vendor <span className="text-danger">*</span>
                   </label>
                   <div className="d-flex gap-4">
                     <label className="form-check-label d-flex align-items-center gap-2" style={{ cursor: "pointer", fontSize: "13px" }}>
@@ -1130,7 +1130,7 @@ function editVendor() {
 
                 <div className="col-12 account-detail-field">
                   <label className="account-detail-label">
-                    Street Address *
+                    Street Address <span className="text-danger">*</span>
                   </label>
 
                   <textarea
@@ -1144,7 +1144,9 @@ function editVendor() {
                 </div>
 
                 <div className="col-md-6 account-detail-field">
-                  <label className="account-detail-label">City *</label>
+                  <label className="account-detail-label">
+                    City <span className="text-danger">*</span>
+                  </label>
 
                   <input
                     className="account-detail-input"
@@ -1157,7 +1159,9 @@ function editVendor() {
                 </div>
 
                 <div className="col-md-6 account-detail-field">
-                  <label className="account-detail-label">Postal Code *</label>
+                  <label className="account-detail-label">
+                    Postal Code <span className="text-danger">*</span>
+                  </label>
 
                   <input
                     className="account-detail-input"
@@ -1170,7 +1174,9 @@ function editVendor() {
                 </div>
 
                 <div className="col-md-6 account-detail-field">
-                  <label className="account-detail-label">Country *</label>
+                  <label className="account-detail-label">
+                    Country <span className="text-danger">*</span>
+                  </label>
 
                   <input
                     className="account-detail-input"
@@ -1194,7 +1200,9 @@ function editVendor() {
 
             <div className="row account-detail-row">
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Contact Person *</label>
+                <label className="account-detail-label">
+                  Contact Person <span className="text-danger">*</span>
+                </label>
 
                 <input
                   className="account-detail-input"
@@ -1207,7 +1215,9 @@ function editVendor() {
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Email *</label>
+                <label className="account-detail-label">
+                  Email <span className="text-danger">*</span>
+                </label>
 
                 <input
                   type="email"
@@ -1221,7 +1231,9 @@ function editVendor() {
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Telephone *</label>
+                <label className="account-detail-label">
+                  Telephone <span className="text-danger">*</span>
+                </label>
 
                 <input
                   className="account-detail-input"
@@ -1234,7 +1246,9 @@ function editVendor() {
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Mobile Phone *</label>
+                <label className="account-detail-label">
+                  Mobile Phone <span className="text-danger">*</span>
+                </label>
 
                 <input
                   className="account-detail-input"
@@ -1247,7 +1261,9 @@ function editVendor() {
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Fax *</label>
+                <label className="account-detail-label">
+                  Fax <span className="text-danger">*</span>
+                </label>
 
                 <input
                   className="account-detail-input"
@@ -1274,7 +1290,9 @@ function editVendor() {
 
             <div className="row account-detail-row">
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">NPWP *</label>
+                <label className="account-detail-label">
+                  NPWP <span className="text-danger">*</span>
+                </label>
 
                 <input
                   className="account-detail-input"
@@ -1304,7 +1322,7 @@ function editVendor() {
               {isOtherSelected(paymentTerms, form.payment_term_id) && (
                 <div className="col-md-6 account-detail-field">
                   <label className="account-detail-label">
-                    Payment Term Other *
+                    Payment Term Other <span className="text-danger">*</span>
                   </label>
 
                   <input
@@ -1319,7 +1337,9 @@ function editVendor() {
               )}
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Order Currency *</label>
+                <label className="account-detail-label">
+                  Order Currency <span className="text-danger">*</span>
+                </label>
 
                 <select
                   className="account-detail-input account-detail-select"
@@ -1338,7 +1358,7 @@ function editVendor() {
               {form.order_currency === "OTHER" && (
                 <div className="col-md-6 account-detail-field">
                   <label className="account-detail-label">
-                    Keterangan Currency Other *
+                    Keterangan Currency Other <span className="text-danger">*</span>
                   </label>
 
                   <input
@@ -1354,7 +1374,7 @@ function editVendor() {
 
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Company Code / Purchasing Organization *
+                  Company Code / Purchasing Organization <span className="text-danger">*</span>
                 </label>
 
                 <input
@@ -1572,7 +1592,9 @@ function editVendor() {
 
             <div className="row account-detail-row">
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Account Group *</label>
+                <label className="account-detail-label">
+                  Account Group <span className="text-danger">*</span>
+                </label>
 
                 <select
                   className="account-detail-input account-detail-select"
@@ -1588,7 +1610,9 @@ function editVendor() {
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Recon Account *</label>
+                <label className="account-detail-label">
+                  Recon Account <span className="text-danger">*</span>
+                </label>
 
                 <select
                   className="account-detail-input account-detail-select"
@@ -1604,7 +1628,9 @@ function editVendor() {
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Payment Method *</label>
+                <label className="account-detail-label">
+                  Payment Method <span className="text-danger">*</span>
+                </label>
 
                 <input
                   className="account-detail-input"

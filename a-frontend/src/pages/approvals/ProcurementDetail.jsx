@@ -24,8 +24,16 @@ const DOCUMENT_LIST = [
     type: "COMPANY_PROFILE",
     label: "Company Profile",
   },
-  { key: "npwp_sppkp_files", type: "NPWP_SPPKP", label: "NPWP / SPPKP" },
-  { key: "nib_files", type: "NIB", label: "NIB" },
+  {
+    key: "npwp_sppkp_files",
+    type: "NPWP_SPPKP",
+    label: "NPWP / SPPKP"
+  },
+  {
+    key: "nib_files",
+    type: "NIB",
+    label: "NIB"
+  },
   {
     key: "identitas_pengurus_files",
     type: "IDENTITAS_PENGURUS",
@@ -277,10 +285,10 @@ function ProcurementDetail() {
         setVendorSubcategories(
           Array.isArray(existingSubcategories)
             ? existingSubcategories.map((item) => ({
-                category_id: item.category_id,
-                subcategory: item.subcategory,
-                category: item.category ?? null,
-              }))
+              category_id: item.category_id,
+              subcategory: item.subcategory,
+              category: item.category ?? null,
+            }))
             : [],
         );
 
@@ -850,9 +858,8 @@ function ProcurementDetail() {
       if (!response.ok) {
         throw new Error(
           data.message ||
-            `Gagal ${
-              action === "approve" ? "menyetujui" : "menolak"
-            } pengajuan.`,
+          `Gagal ${action === "approve" ? "menyetujui" : "menolak"
+          } pengajuan.`,
         );
       }
 
@@ -928,11 +935,10 @@ function ProcurementDetail() {
           <div className="procurement-request-item">
             <span className="procurement-request-label">Status</span>
             <span
-              className={`procurement-request-value ${
-                requestData.status === "Rejected"
-                  ? "procurement-status-rejected"
-                  : ""
-              }`}
+              className={`procurement-request-value ${requestData.status === "Rejected"
+                ? "procurement-status-rejected"
+                : ""
+                }`}
             >
               {requestData.status || "-"}
             </span>
@@ -1002,7 +1008,7 @@ function ProcurementDetail() {
             <div className="row procurement-detail-row">
               <div className="col-md-6 procurement-detail-field">
                 <label className="procurement-detail-label">
-                  Nama Perusahaan
+                  Nama Perusahaan {canEdit && <span className="text-danger">*</span>}
                 </label>
                 <input
                   type="text"
@@ -1031,7 +1037,7 @@ function ProcurementDetail() {
 
               <div className="col-12 procurement-detail-field">
                 <label className="procurement-detail-label">
-                  Street Address
+                  Street Address {canEdit && <span className="text-danger">*</span>}
                 </label>
                 <textarea
                   name="address"
@@ -1045,7 +1051,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">City</label>
+                <label className="procurement-detail-label">
+                  City {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="text"
                   name="city"
@@ -1059,7 +1067,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">Postal Code</label>
+                <label className="procurement-detail-label">
+                  Postal Code {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="text"
                   name="postal_code"
@@ -1073,7 +1083,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">Country</label>
+                <label className="procurement-detail-label">
+                  Country {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="text"
                   name="country"
@@ -1087,7 +1099,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">Telephone</label>
+                <label className="procurement-detail-label">
+                  Telephone {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="text"
                   name="phone"
@@ -1101,7 +1115,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">Mobile Phone</label>
+                <label className="procurement-detail-label">
+                  Mobile Phone {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="text"
                   name="mobile_phone"
@@ -1115,7 +1131,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">Fax</label>
+                <label className="procurement-detail-label">
+                  Fax {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="text"
                   name="fax"
@@ -1130,7 +1148,7 @@ function ProcurementDetail() {
 
               <div className="col-md-6 procurement-detail-field">
                 <label className="procurement-detail-label">
-                  Contact Person
+                  Contact Person {canEdit && <span className="text-danger">*</span>}
                 </label>
                 <input
                   type="text"
@@ -1145,7 +1163,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">Email</label>
+                <label className="procurement-detail-label">
+                  Email {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="email"
                   name="email"
@@ -1159,7 +1179,9 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">NPWP</label>
+                <label className="procurement-detail-label">
+                  NPWP {canEdit && <span className="text-danger">*</span>}
+                </label>
                 <input
                   type="text"
                   name="npwp"
@@ -1191,7 +1213,7 @@ function ProcurementDetail() {
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <div>
                     <label className="procurement-detail-label mb-1">
-                      Kategori dan Subkategori
+                      Kategori dan Subkategori {canEdit && <span className="text-danger">*</span>}
                     </label>
 
                     <small className="text-muted d-block">
@@ -1277,7 +1299,7 @@ function ProcurementDetail() {
 
               <div className="col-md-6 procurement-detail-field">
                 <label className="procurement-detail-label">
-                  Due Date Payment
+                  Due Date Payment {canEdit && <span className="text-danger">*</span>}
                 </label>
                 <select
                   name="payment_term_id"
@@ -1313,7 +1335,7 @@ function ProcurementDetail() {
 
               <div className="col-md-6 procurement-detail-field">
                 <label className="procurement-detail-label">
-                  Order Currency
+                  Order Currency {canEdit && <span className="text-danger">*</span>}
                 </label>
                 <select
                   name="order_currency"
@@ -1380,7 +1402,7 @@ function ProcurementDetail() {
                   <div className="row procurement-detail-row">
                     <div className="col-md-6 procurement-detail-field">
                       <label className="procurement-detail-label">
-                        Bank Name
+                        Bank Name {canEdit && <span className="text-danger">*</span>}
                       </label>
                       <input
                         type="text"
@@ -1397,7 +1419,7 @@ function ProcurementDetail() {
 
                     <div className="col-md-6 procurement-detail-field">
                       <label className="procurement-detail-label">
-                        Bank Account Number
+                        Bank Account Number {canEdit && <span className="text-danger">*</span>}
                       </label>
                       <input
                         type="text"
@@ -1418,7 +1440,7 @@ function ProcurementDetail() {
 
                     <div className="col-md-6 procurement-detail-field">
                       <label className="procurement-detail-label">
-                        Beneficiary
+                        Beneficiary {canEdit && <span className="text-danger">*</span>}
                       </label>
                       <input
                         type="text"
@@ -1768,7 +1790,7 @@ function ProcurementDetail() {
 
               <div className="procurement-reject-field">
                 <label htmlFor="rejectionReason">
-                  Alasan Penolakan <span>*</span>
+                  Alasan Penolakan <span className="text-danger">*</span>
                 </label>
 
                 <textarea
@@ -1834,7 +1856,9 @@ function ProcurementDetail() {
                 <p>Pilih kategori dan subkategori vendor.</p>
 
                 <div className="mb-3 text-start">
-                  <label className="procurement-detail-label">Kategori</label>
+                  <label className="procurement-detail-label">
+                    Kategori <span className="text-danger">*</span>
+                  </label>
 
                   <select
                     className="form-select"
@@ -1853,7 +1877,7 @@ function ProcurementDetail() {
 
                 <div className="mb-4 text-start">
                   <label className="procurement-detail-label">
-                    Subkategori
+                    Subkategori <span className="text-danger">*</span>
                   </label>
 
                   <select
@@ -1932,13 +1956,12 @@ function ProcurementDetail() {
 
               <button
                 type="button"
-                className={`procurement-alert-btn ${
-                  modal.type === "warning"
-                    ? "procurement-alert-confirm-warning"
-                    : modal.type === "error"
-                      ? "procurement-alert-confirm-danger"
-                      : "procurement-alert-confirm"
-                }`}
+                className={`procurement-alert-btn ${modal.type === "warning"
+                  ? "procurement-alert-confirm-warning"
+                  : modal.type === "error"
+                    ? "procurement-alert-confirm-danger"
+                    : "procurement-alert-confirm"
+                  }`}
                 disabled={saving || processingApproval}
                 onClick={() => {
                   if (modal.onConfirm) {

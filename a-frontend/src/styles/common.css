@@ -261,3 +261,16 @@
   cursor: not-allowed;
   color: var(--text-muted);
 }
+
+/* =========================================================
+   UNIVERSAL REQUIRED ASTERISK (RED)
+========================================================= */
+
+.text-danger,
+.bank-required,
+.required-asterisk,
+.required-star {
+  color: #dc3545 !important;
+  font-weight: 700;
+  margin-left: 2px;
+}

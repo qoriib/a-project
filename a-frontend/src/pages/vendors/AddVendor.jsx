@@ -813,7 +813,9 @@ function AddVendor() {
 
             <div className="row add-vendor-row">
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Nama Perusahaan</label>
+                <label className="add-vendor-label">
+                  Nama Perusahaan <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="namaPerusahaan"
@@ -838,7 +840,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">City</label>
+                <label className="add-vendor-label">
+                  City <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="city"
@@ -851,7 +855,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Postal Code</label>
+                <label className="add-vendor-label">
+                  Postal Code <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="postalCode"
@@ -864,7 +870,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Country</label>
+                <label className="add-vendor-label">
+                  Country <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="country"
@@ -878,7 +886,7 @@ function AddVendor() {
 
               <div className="col-md-6 add-vendor-field">
                 <label className="add-vendor-label">
-                  Telephone / Nomor Telepon
+                  Telephone / Nomor Telepon <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -892,7 +900,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Mobile Phone</label>
+                <label className="add-vendor-label">
+                  Mobile Phone <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="mobilePhone"
@@ -905,7 +915,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Fax</label>
+                <label className="add-vendor-label">
+                  Fax <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="fax"
@@ -918,7 +930,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Contact Person</label>
+                <label className="add-vendor-label">
+                  Contact Person <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="picVendor"
@@ -931,7 +945,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Email</label>
+                <label className="add-vendor-label">
+                  Email <span className="text-danger">*</span>
+                </label>
                 <input
                   type="email"
                   name="email"
@@ -946,7 +962,9 @@ function AddVendor() {
 
             <div className="row add-vendor-row add-vendor-address-row">
               <div className="col-12 add-vendor-field">
-                <label className="add-vendor-label">Street Address</label>
+                <label className="add-vendor-label">
+                  Street Address <span className="text-danger">*</span>
+                </label>
                 <textarea
                   name="address"
                   className="add-vendor-input add-vendor-textarea"
@@ -971,7 +989,9 @@ function AddVendor() {
 
             <div className="row add-vendor-row">
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">NPWP</label>
+                <label className="add-vendor-label">
+                  NPWP <span className="text-danger">*</span>
+                </label>
                 <input
                   type="text"
                   name="npwp"
@@ -1001,7 +1021,7 @@ function AddVendor() {
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <div>
                     <label className="add-vendor-label mb-1">
-                      Kategori dan Subkategori
+                      Kategori dan Subkategori <span className="text-danger">*</span>
                     </label>
 
                     <small className="text-muted d-block">
@@ -1076,7 +1096,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Due Date Payment</label>
+                <label className="add-vendor-label">
+                  Due Date Payment <span className="text-danger">*</span>
+                </label>
 
                 <select
                   name="dueDatePayment"
@@ -1110,7 +1132,9 @@ function AddVendor() {
               </div>
 
               <div className="col-md-6 add-vendor-field">
-                <label className="add-vendor-label">Order Currency</label>
+                <label className="add-vendor-label">
+                  Order Currency <span className="text-danger">*</span>
+                </label>
 
                 <select
                   name="orderCurrency"
@@ -1583,7 +1607,7 @@ function AddVendor() {
 
               <div className="mb-3 text-start">
                 <label className="add-vendor-label">
-                  Kategori Utama
+                  Kategori Utama <span className="text-danger">*</span>
                 </label>
 
                 <select
@@ -1623,7 +1647,7 @@ function AddVendor() {
               {isCategoryOther && (
                 <div className="mb-3 text-start">
                   <label className="add-vendor-label">
-                    Nama Kategori Other
+                    Nama Kategori Other <span className="text-danger">*</span>
                   </label>
 
                   <input
@@ -1641,7 +1665,7 @@ function AddVendor() {
 
               <div className="mb-4 text-start">
                 <label className="add-vendor-label d-block mb-2">
-                  Subkategori
+                  Subkategori <span className="text-danger">*</span>
                 </label>
 
                 <div className="border rounded p-3">

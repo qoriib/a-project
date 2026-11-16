@@ -149,7 +149,7 @@ export function Login() {
               {/* Email Input */}
               <div className="login-form-group">
                 <label className="login-label" htmlFor="login-email">
-                  Alamat Email
+                  Alamat Email <span className="text-danger">*</span>
                 </label>
 
                 <div className="login-input-wrapper">
@@ -185,7 +185,7 @@ export function Login() {
               {/* Password Input */}
               <div className="login-form-group">
                 <label className="login-label" htmlFor="login-password">
-                  Kata Sandi
+                  Kata Sandi <span className="text-danger">*</span>
                 </label>
 
                 <div className="login-input-wrapper">
