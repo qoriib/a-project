@@ -45,7 +45,7 @@ function Approval() {
       label: "Asisten Kadiv (L1)",
       description: "Verifikasi dokumen vendor",
       stage: "ASISTEN_KADIV",
-      statuses: ["PENDING_L1", "Pending", "Under Review"],
+      statuses: ["PENDING_L1", "Pending", "Under Review", "IN_PROGRESS"],
       permission: "can_approve",
     },
     {
@@ -53,47 +53,59 @@ function Approval() {
       label: "Kadiv SCM (L2)",
       description: "Approval pengajuan vendor SCM",
       stage: "KADIV",
-      statuses: ["PENDING_L2", "Pending", "Under Review"],
+      statuses: ["PENDING_L2", "Pending", "Under Review", "IN_PROGRESS"],
       permission: "can_approve",
     },
     {
       value: "ACCOUNTING",
-      label: "Accounting",
-      description: "Draft data accounting",
+      label: "Accounting (L3)",
+      description: "Input Account Group & Recon Account",
       stage: "ACCOUNTING",
-      statuses: ["Pending", "Rejected", "Revision Required"],
+      statuses: [
+        "PENDING_L3",
+        "Pending",
+        "Under Review",
+        "IN_PROGRESS",
+        "Rejected",
+        "Revision Required",
+        "Draft",
+        "DRAFT",
+      ],
       permission: "can_edit",
-    },
-    {
-      value: "KADIV_ACCOUNTING",
-      label: "Kadiv Accounting",
-      description: "Approval accounting",
-      stage: "ACCOUNTING",
-      statuses: ["Under Review"],
-      permission: "can_approve",
     },
     {
       value: "TAX",
-      label: "Tax",
-      description: "Draft data perpajakan",
+      label: "Tax (L4)",
+      description: "Input Withholding Tax (PPh)",
       stage: "TAX",
-      statuses: ["Pending", "Rejected", "Revision Required"],
+      statuses: [
+        "PENDING_L4",
+        "Pending",
+        "Under Review",
+        "IN_PROGRESS",
+        "Rejected",
+        "Revision Required",
+        "Draft",
+        "DRAFT",
+      ],
       permission: "can_edit",
     },
     {
-      value: "KADIV_TAX",
-      label: "Kadiv Tax",
-      description: "Approval perpajakan",
-      stage: "TAX",
-      statuses: ["Under Review"],
-      permission: "can_approve",
-    },
-    {
       value: "SAP",
-      label: "SAP",
-      description: "Proses Vendor Code",
+      label: "SAP Team (L5)",
+      description: "Review Full Form & Input SAP Code",
       stage: "SAP",
-      statuses: ["Pending", "Rejected", "Revision Required"],
+      statuses: [
+        "PENDING_L5",
+        "FORM_APPROVED",
+        "Pending",
+        "Under Review",
+        "IN_PROGRESS",
+        "Rejected",
+        "Revision Required",
+        "Draft",
+        "DRAFT",
+      ],
       permission: "can_edit",
     },
   ];
@@ -118,7 +130,7 @@ function Approval() {
         return false;
       }
 
-      return permission[card.permission] === true;
+      return permission.can_edit === true || permission.can_approve === true;
     });
   }, [stagePermissions, isAdmin]);
 
@@ -207,8 +219,8 @@ function Approval() {
           (request) =>
             request.current_stage !== "COMPLETED" &&
             request.status !== "Approved" &&
-            (!request.vendor?.source_type ||
-              request.vendor.source_type === "NEW"),
+            request.status !== "COMPLETED" &&
+            request.status !== "DONE",
         );
 
         setRequests(activeRequests);

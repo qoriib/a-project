@@ -224,14 +224,21 @@ function AccountDetail() {
   // =====================================================
 
   const canEdit =
-    permissions.can_edit &&
+    (permissions.can_edit || permissions.is_admin) &&
     request?.current_stage === "ACCOUNTING" &&
-    request?.status === "Pending";
+    [
+      "PENDING_L3",
+      "Pending",
+      "Under Review",
+      "Revision Required",
+      "Draft",
+      "DRAFT",
+    ].includes(request?.status);
 
   const canApprove =
-    permissions.can_approve &&
+    (permissions.can_approve || permissions.is_admin) &&
     request?.current_stage === "ACCOUNTING" &&
-    request?.status === "Under Review";
+    ["PENDING_L3", "Pending", "Under Review"].includes(request?.status);
 
   // =====================================================
   // SELECTED MASTER DATA

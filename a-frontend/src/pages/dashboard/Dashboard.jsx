@@ -528,7 +528,7 @@ function Dashboard() {
                 DONUT CHART KATEGORI VENDOR
             =================================================== */}
 
-        <div className="col-xl-6">
+        <div className="col-12">
           <div className="content-card chart-card category-donut-card">
             <div className="card-header-custom">
               <div>
@@ -569,9 +569,9 @@ function Dashboard() {
                           formatter={(value, name) => {
                             const percentage = totalCategoryVendors
                               ? (
-                                  (Number(value) / totalCategoryVendors) *
-                                  100
-                                ).toFixed(1)
+                                (Number(value) / totalCategoryVendors) *
+                                100
+                              ).toFixed(1)
                               : "0.0";
 
                             return [`${value} vendor (${percentage}%)`, name];
@@ -649,7 +649,7 @@ function Dashboard() {
             LINE CHART
         =================================================== */}
 
-        <div className="col-xl-6">
+        <div className="col-12">
           <div className="content-card chart-card">
             <div className="card-header-custom">
               <div>
@@ -752,11 +752,10 @@ function Dashboard() {
 
                       <td>
                         <span
-                          className={`status ${
-                            vendor.source_type === "EXISTING"
+                          className={`status ${vendor.source_type === "EXISTING"
                               ? "existing"
                               : "new"
-                          }`}
+                            }`}
                         >
                           {vendorType}
                         </span>
