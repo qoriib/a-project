@@ -539,7 +539,8 @@
   border-color: #fecaca;
 }
 
-.vendor-status.active {
+.vendor-status.active,
+.vendor-status.completed {
   background: #e7f6ec;
   border-color: #238442;
   color: #238442;
@@ -552,8 +553,46 @@
 }
 
 /* =========================================================
-   DETAIL BUTTON
+   DETAIL BUTTON & PDF BUTTON
 ========================================================= */
+
+.approval-pdf-button {
+  min-width: 76px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #d9dee7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.approval-pdf-button:hover {
+  transform: translateY(-1px);
+  border-color: #bfc7d4;
+  background: #f8fafc;
+  color: #1f2937;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.approval-pdf-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.approval-pdf-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.15);
+  outline-offset: 2px;
+}
 
 .existing-detail-button {
   padding: 6px 12px;
@@ -588,6 +627,27 @@
 
 .existing-edit-button:hover {
   background: #cd434f;
+  color: #ffffff;
+}
+
+/* =========================================================
+   DELETE BUTTON
+========================================================= */
+
+.existing-delete-button {
+  padding: 6px 12px;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+  background: #fff5f5;
+  color: #dc3545;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.existing-delete-button:hover {
+  background: #dc3545;
   color: #ffffff;
 }
 

@@ -168,6 +168,48 @@ function NewVendor() {
   };
 
   // ==========================================
+  // LIHAT / DOWNLOAD PDF PENGAJUAN
+  // ==========================================
+
+  const handleViewPdf = async (requestId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Session login tidak ditemukan. Silakan login kembali.");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/vendor-requests/${requestId}/pdf`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(false, { Accept: "application/pdf" }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Gagal mengambil PDF:", errorText);
+        alert("PDF gagal dibuka atau belum tersedia. Silakan periksa kelengkapan data pengajuan.");
+        return;
+      }
+
+      const blob = await response.blob();
+      const pdfUrl = window.URL.createObjectURL(blob);
+
+      window.open(pdfUrl, "_blank");
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(pdfUrl);
+      }, 60000);
+    } catch (error) {
+      console.error("Error membuka PDF:", error);
+      alert("Terjadi kesalahan saat membuka PDF.");
+    }
+  };
+
+  // ==========================================
   // ENTER PADA SEARCH
   // ==========================================
 
@@ -567,6 +609,7 @@ function NewVendor() {
                   <th>Email</th>
                   <th>Status</th>
                   <th>Tahap Proses</th>
+                  <th>PDF</th>
                   <th>Aksi</th>
                 </tr>
               </thead>
@@ -603,6 +646,19 @@ function NewVendor() {
                         </span>
                       </td>
 
+                      {/* PDF */}
+
+                      <td>
+                        <button
+                          type="button"
+                          className="approval-pdf-button"
+                          onClick={() => handleViewPdf(request.id)}
+                          title="Lihat / Download PDF"
+                        >
+                          📄 PDF
+                        </button>
+                      </td>
+
                       {/* AKSI */}
 
                       <td>
@@ -611,9 +667,11 @@ function NewVendor() {
                           className="existing-detail-button"
                           onClick={() => handleDetail(request.id)}
                         >
-                          {request.status === "DRAFT" || request.status === "Draft"
+                          {String(request.status || "").toUpperCase() === "DRAFT" ||
+                          String(request.current_stage || "").toUpperCase() === "DRAFT"
                             ? "Lanjutkan Draft"
-                            : request.status === "Rejected"
+                            : String(request.status || "").toUpperCase() === "REJECTED" ||
+                              String(request.current_stage || "").toUpperCase() === "REJECTED"
                             ? "Revisi Draft"
                             : "Detail"}
                         </button>

@@ -4,6 +4,7 @@ import "./EditVendor.css";
 import {
   API_BASE_URL as API_URL,
   STORAGE_BASE_URL as STORAGE_URL,
+  getAuthUser,
 } from "../../api/config";
 
 const DOCUMENT_TYPES = [
@@ -144,6 +145,31 @@ function editVendor() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  const user = getAuthUser();
+  const userRole = String(
+    user?.role || user?.role_name || (user?.is_admin ? "ADMIN" : "")
+  )
+    .toUpperCase()
+    .trim();
+
+  const isAdmin = userRole === "ADMIN" || user?.is_admin === true;
+  const isRequester =
+    userRole === "REQUESTER" ||
+    userRole === "PROCUREMENT" ||
+    (!isAdmin &&
+      !["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(
+        userRole
+      ));
+
+  const canEdit = isAdmin || isRequester;
+
+  useEffect(() => {
+    if (!canEdit) {
+      alert("Anda tidak memiliki hak akses untuk mengedit vendor.");
+      navigate("/vendors/all", { replace: true });
+    }
+  }, [canEdit, navigate]);
+
   const [vendor, setVendor] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [subcategories, setSubcategories] = useState(["Material", "Jasa"]);
@@ -204,7 +230,7 @@ function editVendor() {
     }));
 
     if (shouldRedirect) {
-      navigate("/vendors/existing");
+      navigate(isRequester ? "/vendors/existing?tab=requests" : "/vendors/existing");
     }
   };
 
@@ -462,8 +488,7 @@ function editVendor() {
         for (let index = 0; index < results.length; index++) {
           if (!results[index].ok) {
             throw new Error(
-              `Gagal mengambil ${endpointNames[index]}: ${
-                results[index].body.message ?? "Periksa route API Laravel."
+              `Gagal mengambil ${endpointNames[index]}: ${results[index].body.message ?? "Periksa route API Laravel."
               }`,
             );
           }
@@ -670,9 +695,9 @@ function editVendor() {
       previous.map((bank, i) =>
         i === index
           ? {
-              ...bank,
-              [field]: value,
-            }
+            ...bank,
+            [field]: value,
+          }
           : bank,
       ),
     );
@@ -980,7 +1005,7 @@ function editVendor() {
       if (!refreshedResponse.ok) {
         throw new Error(
           refreshedResult.message ??
-            "Data tersimpan, tetapi gagal memuat ulang detail vendor.",
+          "Data tersimpan, tetapi gagal memuat ulang detail vendor.",
         );
       }
 
@@ -1092,10 +1117,32 @@ function editVendor() {
         {/* HEADER */}
         <div className="account-detail-header">
           <div>
-            <h4>Edit Data Vendor</h4>
+            <h4>{isRequester ? "Pengajuan Perubahan Data Vendor" : "Edit Data Vendor"}</h4>
             <p>{vendor.nama_perusahaan || "Edit data vendor"}</p>
           </div>
         </div>
+
+        {isRequester && (
+          <div
+            style={{
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: "8px",
+              padding: "14px 18px",
+              margin: "0 0 24px 0",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+            }}
+          >
+            <span style={{ fontSize: "20px" }}>ℹ️</span>
+            <div style={{ fontSize: "13px", color: "#1e40af", lineHeight: "1.5" }}>
+              <strong>Alur Approval Perubahan Data Vendor (Existing Vendor):</strong>
+              <br />
+              Sebagai Requester, Anda dapat mengajukan pembaruan data vendor (informasi umum perusahaan, kontak/PIC, rekening bank, dan dokumen). Pengajuan ini akan melalui proses verifikasi dan approval bertingkat (<strong>Asisten Kadiv → Kadiv SCM → Accounting → Tax → SAP</strong>) sebelum data master vendor diperbarui. Bagian Accounting, Tax, dan SAP bersifat read-only dan akan diverifikasi oleh masing-masing tim pada tahap approval terkait.
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* =================================================
@@ -1123,6 +1170,7 @@ function editVendor() {
                     name="nama_perusahaan"
                     value={form.nama_perusahaan}
                     onChange={updateField}
+                    placeholder="Masukkan nama perusahaan"
                     required
                     disabled={saving}
                   />
@@ -1136,6 +1184,7 @@ function editVendor() {
                     name="search_term"
                     value={form.search_term}
                     onChange={updateField}
+                    placeholder="Masukkan search term (opsional)"
                     disabled={saving}
                   />
                 </div>
@@ -1148,6 +1197,7 @@ function editVendor() {
                     name="business_type"
                     value={form.business_type}
                     onChange={updateField}
+                    placeholder="Contoh: PT, CV, Perorangan (opsional)"
                     disabled={saving}
                   />
                 </div>
@@ -1165,7 +1215,7 @@ function editVendor() {
                     required
                     disabled={saving}
                   >
-                    <option value="">Pilih kategori</option>
+                    <option value="">Pilih kategori vendor</option>
                     {renderSelectOptions(categories)}
                   </select>
                 </div>
@@ -1181,6 +1231,7 @@ function editVendor() {
                       name="kategori_other"
                       value={form.kategori_other}
                       onChange={updateField}
+                      placeholder="Tuliskan nama kategori lainnya"
                       required
                       disabled={saving}
                     />
@@ -1225,6 +1276,7 @@ function editVendor() {
                     name="address"
                     value={form.address}
                     onChange={updateField}
+                    placeholder="Masukkan alamat lengkap perusahaan"
                     required
                     disabled={saving}
                   />
@@ -1240,6 +1292,7 @@ function editVendor() {
                     name="city"
                     value={form.city}
                     onChange={updateField}
+                    placeholder="Contoh: Jakarta Selatan"
                     required
                     disabled={saving}
                   />
@@ -1255,6 +1308,7 @@ function editVendor() {
                     name="postal_code"
                     value={form.postal_code}
                     onChange={updateField}
+                    placeholder="Contoh: 12345"
                     required
                     disabled={saving}
                   />
@@ -1270,6 +1324,7 @@ function editVendor() {
                     name="country"
                     value={form.country}
                     onChange={updateField}
+                    placeholder="Contoh: Indonesia"
                     required
                     disabled={saving}
                   />
@@ -1285,6 +1340,10 @@ function editVendor() {
           <div className="account-section">
             <h5 className="account-section-title">Contact Information</h5>
 
+            <p className="account-section-description">
+              Informasi narahubung dan kontak resmi vendor.
+            </p>
+
             <div className="row account-detail-row">
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
@@ -1296,6 +1355,7 @@ function editVendor() {
                   name="pic_vendor"
                   value={form.pic_vendor}
                   onChange={updateField}
+                  placeholder="Masukkan nama contact person"
                   required
                   disabled={saving}
                 />
@@ -1312,6 +1372,7 @@ function editVendor() {
                   name="email"
                   value={form.email}
                   onChange={updateField}
+                  placeholder="vendor@email.com"
                   required
                   disabled={saving}
                 />
@@ -1319,7 +1380,7 @@ function editVendor() {
 
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Telephone <span className="text-danger">*</span>
+                  Telephone / Nomor Telepon <span className="text-danger">*</span>
                 </label>
 
                 <input
@@ -1327,6 +1388,7 @@ function editVendor() {
                   name="phone"
                   value={form.phone}
                   onChange={updateField}
+                  placeholder="Contoh: 021-12345678"
                   required
                   disabled={saving}
                 />
@@ -1342,6 +1404,7 @@ function editVendor() {
                   name="mobile_phone"
                   value={form.mobile_phone}
                   onChange={updateField}
+                  placeholder="Contoh: 081234567890"
                   required
                   disabled={saving}
                 />
@@ -1384,22 +1447,26 @@ function editVendor() {
                   name="npwp"
                   value={form.npwp}
                   onChange={updateField}
+                  placeholder="Contoh: 01.234.567.8-012.000"
                   required
                   disabled={saving}
                 />
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Due Date Payment</label>
+                <label className="account-detail-label">
+                  Due Date Payment <span className="text-danger">*</span>
+                </label>
 
                 <select
                   className="account-detail-input account-detail-select"
                   name="payment_term_id"
                   value={String(form.payment_term_id || "")}
                   onChange={updateField}
+                  required
                   disabled={saving}
                 >
-                  <option value="">Pilih payment term</option>
+                  <option value="">Pilih due date payment</option>
                   {renderSelectOptions(paymentTerms)}
                 </select>
               </div>
@@ -1415,6 +1482,7 @@ function editVendor() {
                     name="payment_term_other"
                     value={form.payment_term_other}
                     onChange={updateField}
+                    placeholder="Masukkan keterangan payment term lainnya"
                     required
                     disabled={saving}
                   />
@@ -1434,12 +1502,9 @@ function editVendor() {
                   required
                   disabled={saving}
                 >
-                  <option value="IDR">IDR</option>
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="SGD">SGD</option>
-                  <option value="JPY">JPY</option>
-                  <option value="OTHER">Other</option>
+                  <option value="IDR">IDR - Indonesian Rupiah</option>
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="OTHER">OTHER - Currency Lainnya</option>
                 </select>
               </div>
 
@@ -1454,6 +1519,7 @@ function editVendor() {
                     name="order_currency_other"
                     value={form.order_currency_other}
                     onChange={updateField}
+                    placeholder="Contoh: EUR, SGD, JPY"
                     required
                     disabled={saving}
                   />
@@ -1462,16 +1528,15 @@ function editVendor() {
 
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Company Code / Purchasing Organization <span className="text-danger">*</span>
+                  Company Code / Purchasing Organization
                 </label>
 
                 <input
-                  className="account-detail-input"
+                  className="account-detail-input bg-light"
                   name="company_code_purch_org"
-                  value={form.company_code_purch_org}
-                  onChange={updateField}
-                  required
-                  disabled={saving}
+                  value={form.company_code_purch_org || "1200 / 1300 (PROJECT BAKTI)"}
+                  readOnly
+                  disabled
                 />
               </div>
             </div>
@@ -1672,61 +1737,79 @@ function editVendor() {
           ================================================= */}
 
           <div className="account-section">
-            <h5 className="account-section-title">Data Accounting</h5>
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <h5 className="account-section-title mb-0">Data Accounting</h5>
+              {isRequester && (
+                <span className="badge bg-secondary" style={{ fontSize: "11px", fontWeight: "normal" }}>
+                  Dikelola oleh Tim Accounting (Level 3)
+                </span>
+              )}
+            </div>
 
             <p className="account-section-description">
-              Informasi accounting vendor.
+              {isRequester
+                ? "Bagian ini bersifat read-only bagi Requester dan akan ditinjau serta diisi oleh Tim Accounting pada tahap approval Level 3."
+                : "Informasi accounting vendor."}
             </p>
 
             <div className="row account-detail-row">
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Account Group <span className="text-danger">*</span>
+                  Account Group {!isRequester && <span className="text-danger">*</span>}
                 </label>
 
                 <select
-                  className="account-detail-input account-detail-select"
+                  className="account-detail-input account-detail-select bg-light"
                   name="account_group_id"
                   value={String(form.account_group_id || "")}
                   onChange={updateField}
-                  required
-                  disabled={saving}
+                  disabled={saving || isRequester}
+                  style={isRequester ? { cursor: "not-allowed", backgroundColor: "#f8f9fa" } : {}}
                 >
-                  <option value="">Pilih Account Group</option>
-                  {renderSelectOptions(accountGroups)}
+                  <option value="">
+                    {isRequester
+                      ? accountGroups.find((a) => String(a.id) === String(form.account_group_id))?.name || "Belum ditentukan"
+                      : "Pilih Account Group"}
+                  </option>
+                  {!isRequester && renderSelectOptions(accountGroups)}
                 </select>
               </div>
 
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Recon Account <span className="text-danger">*</span>
+                  Recon Account {!isRequester && <span className="text-danger">*</span>}
                 </label>
 
                 <select
-                  className="account-detail-input account-detail-select"
+                  className="account-detail-input account-detail-select bg-light"
                   name="recon_account_id"
                   value={String(form.recon_account_id || "")}
                   onChange={updateField}
-                  required
-                  disabled={saving}
+                  disabled={saving || isRequester}
+                  style={isRequester ? { cursor: "not-allowed", backgroundColor: "#f8f9fa" } : {}}
                 >
-                  <option value="">Pilih Recon Account</option>
-                  {renderSelectOptions(reconAccounts)}
+                  <option value="">
+                    {isRequester
+                      ? reconAccounts.find((r) => String(r.id) === String(form.recon_account_id))?.name || "Belum ditentukan"
+                      : "Pilih Recon Account"}
+                  </option>
+                  {!isRequester && renderSelectOptions(reconAccounts)}
                 </select>
               </div>
 
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Payment Method <span className="text-danger">*</span>
+                  Payment Method {!isRequester && <span className="text-danger">*</span>}
                 </label>
 
                 <input
-                  className="account-detail-input"
+                  className="account-detail-input bg-light"
                   name="payment_method"
                   value={form.payment_method}
                   onChange={updateField}
-                  required
-                  disabled={saving}
+                  placeholder={isRequester ? "Dikelola oleh Tim Accounting" : "Contoh: Transfer"}
+                  disabled={saving || isRequester}
+                  style={isRequester ? { cursor: "not-allowed", backgroundColor: "#f8f9fa" } : {}}
                 />
               </div>
             </div>
@@ -1737,10 +1820,19 @@ function editVendor() {
           ================================================= */}
 
           <div className="account-section">
-            <h5 className="account-section-title">Data Tax</h5>
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <h5 className="account-section-title mb-0">Data Tax</h5>
+              {isRequester && (
+                <span className="badge bg-secondary" style={{ fontSize: "11px", fontWeight: "normal" }}>
+                  Dikelola oleh Tim Tax (Level 4)
+                </span>
+              )}
+            </div>
 
             <p className="account-section-description">
-              Pilih satu atau beberapa Withholding Tax untuk vendor.
+              {isRequester
+                ? "Bagian ini bersifat read-only bagi Requester dan akan ditentukan oleh Tim Perpajakan pada tahap approval Level 4."
+                : "Pilih satu atau beberapa Withholding Tax untuk vendor."}
             </p>
 
             <div className="row account-detail-row">
@@ -1761,16 +1853,17 @@ function editVendor() {
                       return (
                         <label
                           key={tax.id}
-                          className={`withholding-tax-option ${
-                            checked ? "selected" : ""
-                          }`}
+                          className={`withholding-tax-option ${checked ? "selected" : ""
+                            }`}
+                          style={isRequester ? { cursor: "not-allowed", opacity: checked ? 1 : 0.6 } : {}}
                         >
                           <input
                             type="checkbox"
                             className="withholding-tax-checkbox"
                             checked={checked}
-                            disabled={saving}
+                            disabled={saving || isRequester}
                             onChange={() => {
+                              if (isRequester) return;
                               setForm((previous) => {
                                 const currentIds = (
                                   previous.withholding_tax_ids || []
@@ -1778,8 +1871,8 @@ function editVendor() {
 
                                 const nextIds = currentIds.includes(taxId)
                                   ? currentIds.filter(
-                                      (value) => value !== taxId,
-                                    )
+                                    (value) => value !== taxId,
+                                  )
                                   : [...currentIds, taxId];
 
                                 return {
@@ -1823,7 +1916,14 @@ function editVendor() {
           ================================================= */}
 
           <div className="account-section account-input-section">
-            <h5 className="account-section-title">Data SAP</h5>
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <h5 className="account-section-title mb-0">Data SAP</h5>
+              {isRequester && (
+                <span className="badge bg-secondary" style={{ fontSize: "11px", fontWeight: "normal" }}>
+                  Dikelola oleh Tim SAP (Level 5)
+                </span>
+              )}
+            </div>
 
             <p className="account-section-description">
               Vendor Code yang terdaftar pada SAP.
@@ -1883,9 +1983,8 @@ function editVendor() {
                     {/* EXISTING DOCUMENT */}
                     {document && (
                       <div
-                        className={`edit-vendor-existing-file ${
-                          isDeleted ? "document-marked-delete" : ""
-                        }`}
+                        className={`edit-vendor-existing-file ${isDeleted ? "document-marked-delete" : ""
+                          }`}
                       >
                         <div className="edit-vendor-document-info">
                           <div className="edit-vendor-document-icon">
@@ -1943,9 +2042,8 @@ function editVendor() {
 
                           <button
                             type="button"
-                            className={`edit-vendor-delete-document ${
-                              isDeleted ? "cancel-delete" : ""
-                            }`}
+                            className={`edit-vendor-delete-document ${isDeleted ? "cancel-delete" : ""
+                              }`}
                             onClick={() => handleRemoveDocument(document)}
                             disabled={saving}
                           >
@@ -2030,7 +2128,7 @@ function editVendor() {
               className="account-detail-save"
               disabled={saving}
             >
-              {saving ? "Menyimpan..." : "Simpan Perubahan"}
+              {saving ? "Menyimpan..." : (isRequester ? "Kirim Pengajuan Update" : "Simpan Perubahan")}
             </button>
           </div>
         </form>

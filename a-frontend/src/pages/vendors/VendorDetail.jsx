@@ -4,6 +4,7 @@ import "./VendorDetail.css";
 import {
   API_BASE_URL as API_URL,
   STORAGE_BASE_URL as STORAGE_URL,
+  getAuthUser,
 } from "../../api/config";
 
 const DOCUMENT_TYPES = [
@@ -18,6 +19,34 @@ const DOCUMENT_TYPES = [
 function VendorDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const user = getAuthUser();
+  const userRole = String(
+    user?.role || user?.role_name || (user?.is_admin ? "ADMIN" : "")
+  )
+    .toUpperCase()
+    .trim();
+
+  const isAdmin = userRole === "ADMIN" || user?.is_admin === true;
+  const isRequester =
+    userRole === "REQUESTER" ||
+    userRole === "PROCUREMENT" ||
+    (!isAdmin &&
+      !["ASISTEN_KADIV", "KADIV", "ACCOUNTING", "TAX", "SAP"].includes(
+        userRole
+      ));
+
+  const canEdit = isAdmin || isRequester;
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else if (canEdit) {
+      navigate("/vendors/existing");
+    } else {
+      navigate("/vendors/all");
+    }
+  };
 
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -143,11 +172,11 @@ function VendorDetail() {
   const isOtherSelected = (relation, directValue, otherValue) => {
     const name = String(
       relation?.name ??
-        relation?.nama ??
-        relation?.description ??
-        relation?.code ??
-        directValue ??
-        "",
+      relation?.nama ??
+      relation?.description ??
+      relation?.code ??
+      directValue ??
+      "",
     )
       .trim()
       .toLowerCase();
@@ -216,6 +245,18 @@ function VendorDetail() {
 
           <h6 className="vendor-detail-subsection-title">Informasi Vendor</h6>
           <div className="vendor-detail-grid">
+            {readOnlyField(
+              "No. Request",
+              vendor.latest_request?.form_number ||
+                vendor.latestRequest?.form_number ||
+                "-",
+            )}
+            {readOnlyField(
+              "Tipe Request",
+              vendor.latest_request?.request_type ||
+                vendor.latestRequest?.request_type ||
+                (vendor.source_type === "EXISTING" ? "EXISTING" : "NEW"),
+            )}
             {readOnlyField("Nama Perusahaan", vendor.nama_perusahaan)}
             {readOnlyField("Vendor Code", vendor.vendor_code)}
             {readOnlyField("Search Term", vendor.search_term)}
@@ -436,18 +477,20 @@ function VendorDetail() {
           <button
             type="button"
             className="vendor-detail-button vendor-detail-button-back"
-            onClick={() => navigate("/vendors/existing")}
+            onClick={handleBack}
           >
             Kembali
           </button>
 
-          <button
-            type="button"
-            className="vendor-detail-button vendor-detail-button-edit"
-            onClick={() => navigate(`/vendors/edit/${vendor.id}`)}
-          >
-            Edit Vendor
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              className="vendor-detail-button vendor-detail-button-edit"
+              onClick={() => navigate(`/vendors/edit/${vendor.id}`)}
+            >
+              Edit Vendor
+            </button>
+          )}
         </footer>
       </div>
     </div>

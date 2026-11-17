@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./ExistingVendor.css";
 import "./VendorList.css";
 import { API_BASE_URL, getAuthHeaders, getAuthUser } from "../../api/config";
 
@@ -28,7 +29,6 @@ function VendorList() {
 
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
 
   // ==========================================
@@ -42,17 +42,12 @@ function VendorList() {
       .then(async (response) => {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-
           console.error("Response API:", errorData);
-
           throw new Error(errorData.message || "Gagal mengambil data vendor");
         }
-
         return response.json();
       })
       .then((data) => {
-        console.log("Data Vendor:", data);
-
         setVendors(Array.isArray(data) ? data : []);
       })
       .catch((error) => {
@@ -70,26 +65,59 @@ function VendorList() {
 
   const filteredVendors = vendors.filter((vendor) => {
     const isExisting = vendor.source_type === "EXISTING";
-
     const request = vendor.latest_request || vendor.latestRequest;
 
-    const isCompletedNew =
-      vendor.source_type === "NEW" &&
-      request?.current_stage === "COMPLETED" &&
+    const isCompleted =
+      isExisting ||
+      Boolean(vendor.vendor_code) ||
+      request?.current_stage === "COMPLETED" ||
+      request?.status === "COMPLETED" ||
       request?.status === "Approved";
 
     const keyword = search.trim().toLowerCase();
 
-    const matchesSearch =
-      String(vendor.vendor_code || "")
-        .toLowerCase()
-        .includes(keyword) ||
-      String(vendor.nama_perusahaan || "")
-        .toLowerCase()
-        .includes(keyword);
+    if (!isCompleted) return false;
+    if (!keyword) return true;
 
-    return (isExisting || isCompletedNew) && matchesSearch;
+    return (
+      String(vendor.vendor_code || "").toLowerCase().includes(keyword) ||
+      String(vendor.nama_perusahaan || "").toLowerCase().includes(keyword) ||
+      String(vendor.pic_vendor || "").toLowerCase().includes(keyword) ||
+      String(vendor.email || "").toLowerCase().includes(keyword) ||
+      String(vendor.city || "").toLowerCase().includes(keyword) ||
+      String(vendor.kategori?.name || "").toLowerCase().includes(keyword) ||
+      String(vendor.phone || "").toLowerCase().includes(keyword) ||
+      String(vendor.mobile_phone || "").toLowerCase().includes(keyword)
+    );
   });
+
+  // ==========================================
+  // SEARCH KEY DOWN (ENTER)
+  // ==========================================
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) {
+      return;
+    }
+
+    const matchedVendor = filteredVendors.find((vendor) => {
+      return (
+        String(vendor.vendor_code || "").toLowerCase() === keyword ||
+        String(vendor.nama_perusahaan || "").toLowerCase() === keyword
+      );
+    });
+
+    if (matchedVendor) {
+      navigate(`/vendors/detail/${matchedVendor.id}`);
+    } else {
+      alert("Vendor tidak ditemukan.");
+    }
+  };
 
   // ==========================================
   // DELETE VENDOR
@@ -128,136 +156,58 @@ function VendorList() {
   };
 
   // ==========================================
-  // STATUS WORKFLOW
-  // ==========================================
-
-  const getVendorStatus = (vendor) => {
-    if (vendor.source_type === "EXISTING") {
-      return "Existing";
-    }
-
-    const request = vendor.latest_request || vendor.latestRequest;
-
-    return request?.status || "-";
-  };
-
-  // ==========================================
-  // VENDOR STAGE
-  // ==========================================
-
-  const getVendorStage = (vendor) => {
-    if (vendor.source_type === "EXISTING") {
-      return "Existing Vendor";
-    }
-
-    const request = vendor.latest_request || vendor.latestRequest;
-
-    if (!request) {
-      return "-";
-    }
-
-    const stage = request.current_stage;
-    const status = request.status;
-
-    if (status === "Rejected") {
-      return "Ditolak - Kembali ke Requester";
-    }
-
-    if (stage === "REQUESTER") {
-      return status === "Under Review"
-        ? "Menunggu Kadiv Requester"
-        : "Draft Requester";
-    }
-
-    if (stage === "ACCOUNTING") {
-      return status === "Under Review"
-        ? "Menunggu Kadiv Accounting"
-        : "Proses Accounting";
-    }
-
-    if (stage === "TAX") {
-      return status === "Under Review" ? "Menunggu Kadiv Tax" : "Proses Tax";
-    }
-
-    if (stage === "SAP") {
-      return "Proses SAP";
-    }
-
-    if (stage === "COMPLETED") {
-      return "Completed";
-    }
-
-    return stage || "-";
-  };
-
-  // ==========================================
-  // STATUS CLASS
-  // ==========================================
-
-  const getStatusClass = (status) => {
-    if (!status) {
-      return "";
-    }
-
-    return status.toLowerCase().replace(/\s+/g, "-");
-  };
-
-  const getStageClass = (stage) => {
-    if (!stage || stage === "-") {
-      return "no-status";
-    }
-
-    return stage.toLowerCase().replace(/\s+/g, "-");
-  };
-
-  // ==========================================
-  // VENDOR TYPE
-  // ==========================================
-
-  const getVendorType = (vendor) => {
-    if (vendor.source_type === "EXISTING") {
-      return "Existing";
-    }
-
-    return "New";
-  };
-
-  // ==========================================
   // RENDER
   // ==========================================
 
   return (
-    <div className="page-content vendor-list-page">
+    <div className="existing-vendor-page">
       {/* ======================================
-          HEADER
-          TITLE LEFT - SEARCH RIGHT
+          HEADER (TITLE LEFT - SEARCH RIGHT)
       ====================================== */}
 
-      <div className="vendor-list-header">
-        {/* TITLE */}
-        <div className="vendor-list-title">
-          <h2>Daftar Vendor</h2>
-
-          <p>Seluruh vendor yang terdaftar dalam sistem</p>
+      <div className="existing-vendor-header">
+        <div>
+          <h2>All Vendor</h2>
+          <p>Seluruh master data vendor yang terdaftar dalam sistem IBS.</p>
         </div>
 
         {/* SEARCH */}
-        <div className="vendor-list-search-container">
-          <div className="existing-vendor-search">
-            <label htmlFor="existing-vendor-search-input">Cari Vendor</label>
+        <div className="existing-vendor-search">
+          <label htmlFor="all-vendor-search-input">Cari Vendor</label>
 
-            <div className="existing-search-wrapper">
-              <input
-                id="existing-vendor-search-input"
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Vendor Code / Nama Perusahaan"
-              />
+          <div className="existing-search-wrapper">
+            <input
+              id="all-vendor-search-input"
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Vendor Code / Nama Perusahaan"
+            />
 
-              <span className="search-icon">🔍</span>
-            </div>
+            <button
+              type="button"
+              aria-label="Cari vendor"
+              onClick={() => {
+                const keyword = search.trim().toLowerCase();
+                if (!keyword) return;
+                const matched = filteredVendors.find(
+                  (v) =>
+                    String(v.vendor_code || "").toLowerCase() === keyword ||
+                    String(v.nama_perusahaan || "").toLowerCase() === keyword,
+                );
+                if (matched) {
+                  navigate(`/vendors/detail/${matched.id}`);
+                } else {
+                  alert("Vendor tidak ditemukan.");
+                }
+              }}
+            >
+              🔍
+            </button>
           </div>
+
+          <small>Tekan Enter untuk membuka data vendor</small>
         </div>
       </div>
 
@@ -265,112 +215,100 @@ function VendorList() {
           TABLE CARD
       ====================================== */}
 
-      <div className="vendor-list-card">
-        <div className="table-responsive">
-          <table className="vendor-list-table">
-            <thead>
-              <tr>
-                <th>VENDOR</th>
-                <th>EMAIL</th>
-                <th>JENIS</th>
-                <th>STATUS</th>
-                <th>TAHAP</th>
-                <th>AKSI</th>
-              </tr>
-            </thead>
+      <div className="existing-vendor-list-card">
+        <div className="existing-vendor-list-header">
+          <div>
+            <h4>Daftar Vendor</h4>
+            <p>Seluruh vendor yang terdaftar dan aktif dalam sistem IBS</p>
+          </div>
 
-            <tbody>
-              {/* LOADING */}
-              {loading && (
+          <div className="existing-vendor-total">
+            {filteredVendors.length} Vendor
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="existing-vendor-empty">Memuat data vendor...</div>
+        ) : filteredVendors.length === 0 ? (
+          <div className="existing-vendor-empty">
+            <div className="empty-icon">🏢</div>
+            <h5>Vendor Tidak Ditemukan</h5>
+            <p>
+              {search
+                ? "Coba periksa kembali kata kunci pencarian Anda."
+                : "Belum ada vendor terdaftar yang dapat ditampilkan."}
+            </p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table existing-vendor-table">
+              <thead>
                 <tr>
-                  <td colSpan="6" className="vendor-list-message">
-                    Memuat data vendor...
-                  </td>
+                  <th width="45">No.</th>
+                  <th>Vendor Code</th>
+                  <th>Nama Perusahaan</th>
+                  <th>Kategori</th>
+                  <th>PIC Vendor</th>
+                  <th>Email</th>
+                  <th>No. Telepon</th>
+                  <th>Kota</th>
+                  <th width="140">Aksi</th>
                 </tr>
-              )}
+              </thead>
 
-              {/* DATA VENDOR */}
-              {!loading &&
-                filteredVendors.length > 0 &&
-                filteredVendors.map((vendor) => {
-                  const status = getVendorStatus(vendor);
-                  const stage = getVendorStage(vendor);
-                  const vendorType = getVendorType(vendor);
-
+              <tbody>
+                {filteredVendors.map((vendor, index) => {
                   const isRejected =
                     vendor.source_type !== "EXISTING" &&
-                    status?.trim().toLowerCase() === "rejected";
+                    (vendor.latest_request?.status || "").toLowerCase() ===
+                      "rejected";
 
                   return (
                     <tr key={vendor.id}>
-                      {/* VENDOR */}
-                      <td>
-                        <div className="vendor-list-name">
-                          <div className="vendor-list-avatar">
-                            {vendor.nama_perusahaan?.charAt(0).toUpperCase()}
-                          </div>
+                      {/* NO */}
+                      <td>{index + 1}</td>
 
-                          <strong>{vendor.nama_perusahaan}</strong>
-                        </div>
+                      {/* VENDOR CODE */}
+                      <td>
+                        <strong>{vendor.vendor_code || "-"}</strong>
                       </td>
+
+                      {/* NAMA PERUSAHAAN */}
+                      <td>
+                        <strong>{vendor.nama_perusahaan || "-"}</strong>
+                      </td>
+
+                      {/* KATEGORI */}
+                      <td>
+                        {vendor.kategori?.name ||
+                          vendor.kategori?.category_desc ||
+                          "-"}
+                      </td>
+
+                      {/* PIC VENDOR */}
+                      <td>{vendor.pic_vendor || "-"}</td>
 
                       {/* EMAIL */}
                       <td>{vendor.email || "-"}</td>
 
-                      {/* JENIS */}
-                      <td>
-                        <span
-                          className={`vendor-list-type ${
-                            vendor.source_type === "EXISTING"
-                              ? "existing"
-                              : "new"
-                          }`}
-                        >
-                          {vendorType}
-                        </span>
-                      </td>
+                      {/* NO. TELEPON */}
+                      <td>{vendor.phone || vendor.mobile_phone || "-"}</td>
 
-                      {/* STATUS */}
-                      <td>
-                        {status ? (
-                          <span
-                            className={`vendor-list-status ${getStatusClass(
-                              status,
-                            )}`}
-                          >
-                            {status}
-                          </span>
-                        ) : (
-                          <span className="vendor-list-status no-status">
-                            -
-                          </span>
-                        )}
-                      </td>
-
-                      {/* TAHAP */}
-                      <td>
-                        {stage !== "-" ? (
-                          <span
-                            className={`vendor-list-stage ${getStageClass(
-                              stage,
-                            )}`}
-                          >
-                            {stage}
-                          </span>
-                        ) : (
-                          <span className="vendor-list-status no-status">
-                            -
-                          </span>
-                        )}
-                      </td>
+                      {/* KOTA */}
+                      <td>{vendor.city || "-"}</td>
 
                       {/* AKSI */}
                       <td>
-                        <div className="vendor-actions">
-                          {/* Tombol Detail dapat diakses oleh seluruh pengguna */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
                           <button
                             type="button"
-                            className="action-button detail-button"
+                            className="existing-detail-button"
                             onClick={() =>
                               navigate(`/vendors/detail/${vendor.id}`)
                             }
@@ -378,11 +316,10 @@ function VendorList() {
                             Detail
                           </button>
 
-                          {/* Tombol Edit khusus untuk Admin dan Requester/Procurement */}
                           {(isAdmin || isRequester) && !isRejected && (
                             <button
                               type="button"
-                              className="action-button edit-button"
+                              className="existing-edit-button"
                               onClick={() =>
                                 navigate(`/vendors/edit/${vendor.id}`)
                               }
@@ -391,11 +328,10 @@ function VendorList() {
                             </button>
                           )}
 
-                          {/* Tombol Hapus KHUSUS Administrator */}
                           {isAdmin && (
                             <button
                               type="button"
-                              className="action-button delete-button"
+                              className="existing-delete-button"
                               onClick={() => handleDelete(vendor.id)}
                             >
                               Hapus
@@ -406,20 +342,10 @@ function VendorList() {
                     </tr>
                   );
                 })}
-
-              {/* EMPTY */}
-              {!loading && filteredVendors.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="vendor-list-message">
-                    {search.trim()
-                      ? `Vendor "${search}" tidak ditemukan`
-                      : "Belum ada vendor"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

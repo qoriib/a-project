@@ -737,12 +737,21 @@
 }
 
 .add-vendor-actions button {
-  min-height: 40px;
-  padding: 9px 19px;
-  border-radius: 7px;
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  min-height: 38px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
+  gap: 6px;
   transition: all 0.2s ease;
 }
 

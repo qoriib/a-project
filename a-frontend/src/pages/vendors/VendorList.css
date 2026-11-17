@@ -340,7 +340,8 @@
   color: #4c76c8;
 }
 
-.vendor-list-status.approved {
+.vendor-list-status.approved,
+.vendor-list-status.completed {
   background: #e8f7ef;
   color: #25845a;
 }
