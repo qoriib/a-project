@@ -241,7 +241,7 @@
 .account-detail-page .account-document-section {
   width: 100%;
   min-width: 0;
-  margin-top: 0;
+  margin-top: 15px;
 }
 
 .account-detail-page .account-document-section .account-detail-row {
@@ -485,7 +485,7 @@
   --bs-gutter-y: 13px;
 }
 
-.account-detail-page .bank-fields-row > [class*="col-"] {
+.account-detail-page .bank-fields-row>[class*="col-"] {
   min-width: 0;
 }
 
@@ -527,7 +527,7 @@
   margin-top: 22px;
 }
 
-.account-detail-page .account-bank-section > .account-subsection-title {
+.account-detail-page .account-bank-section>.account-subsection-title {
   margin-bottom: 5px;
   color: #26364a;
   font-size: 14px;
@@ -616,7 +616,7 @@
   --bs-gutter-y: 0;
 }
 
-.account-detail-page .account-bank-fields > .account-detail-field {
+.account-detail-page .account-bank-fields>.account-detail-field {
   width: auto;
   min-width: 0;
   max-width: none;
@@ -778,21 +778,24 @@
 .account-detail-page .account-detail-cancel,
 .account-detail-page .account-detail-draft,
 .account-detail-page .account-detail-reject,
+.account-detail-page .account-detail-cancel-approve,
 .account-detail-page .account-detail-save {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 110px;
-  min-height: 37px;
-  padding: 0 14px;
+  min-height: 38px;
+  height: 38px;
+  padding: 0 16px;
   border: 1px solid transparent;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
+  gap: 6px;
   transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -827,6 +830,19 @@
 .account-detail-page .account-detail-reject:hover:not(:disabled) {
   border-color: #e6a8ae;
   background: #fff3f4;
+}
+
+.account-detail-page .account-detail-cancel-approve {
+  border-color: #ffc107;
+  background: #ffc107;
+  color: #212529;
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+}
+
+.account-detail-page .account-detail-cancel-approve:hover:not(:disabled) {
+  border-color: #e0a800;
+  background: #e0a800;
+  color: #212529;
 }
 
 .account-detail-page .account-detail-save {
@@ -1416,7 +1432,7 @@
     padding-top: 15px;
   }
 
-  .account-detail-page .account-detail-actions > button {
+  .account-detail-page .account-detail-actions>button {
     flex: 1;
     min-width: 0;
     padding: 0 10px;
@@ -1445,7 +1461,6 @@
 .account-detail-page .account-document-section {
   width: 100%;
   min-width: 0;
-  margin-top: 0;
   padding: 20px;
   border: 1px solid #e5eaf1;
   border-radius: 10px;
@@ -1904,7 +1919,7 @@
     align-items: stretch;
   }
 
-  .account-detail-page .account-detail-actions > button {
+  .account-detail-page .account-detail-actions>button {
     width: 100%;
     flex: auto;
   }
@@ -1917,6 +1932,7 @@
 /* REDUCE MOTION */
 
 @media (prefers-reduced-motion: reduce) {
+
   .account-detail-page,
   .account-detail-page *,
   .account-detail-page *::before,

@@ -7,6 +7,7 @@ import {
   getAuthHeaders,
 } from "../../api/config";
 import { AlertModal } from "../../components/common/AlertModal";
+import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 function TaxDetail() {
   const { id } = useParams();
@@ -180,8 +181,20 @@ function TaxDetail() {
   // PERMISSION
   // ==========================================
 
+  let storedUser = {};
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch {
+    storedUser = {};
+  }
+  const userRole = String(
+    storedUser?.role || storedUser?.role_name || ""
+  ).toUpperCase().trim();
+  const isAdmin = userRole === "ADMIN" || storedUser?.is_admin === true || permissions.is_admin;
+
   const canEdit =
-    (permissions.can_edit || permissions.is_admin) &&
+    (permissions.can_edit || isAdmin) &&
+    (isAdmin || userRole === "TAX") &&
     request?.current_stage === "TAX" &&
     [
       "PENDING_L4",
@@ -193,7 +206,8 @@ function TaxDetail() {
     ].includes(request?.status);
 
   const canApprove =
-    (permissions.can_approve || permissions.is_admin) &&
+    (permissions.can_approve || isAdmin) &&
+    (isAdmin || userRole === "TAX") &&
     request?.current_stage === "TAX" &&
     ["PENDING_L4", "Pending", "Under Review"].includes(request?.status);
 
@@ -222,13 +236,13 @@ function TaxDetail() {
   const confirmBack = () => {
     showAlert({
       type: "warning",
-      title: "Kembali ke Halaman Tax?",
+      title: "Kembali ke Approval?",
       message:
-        "Apakah kamu yakin ingin kembali? Perubahan yang belum disimpan tidak akan dikirim.",
+        "Apakah kamu yakin ingin kembali ke halaman Approval? Perubahan yang belum disimpan tidak akan dikirim.",
       confirmText: "Ya, Kembali",
       cancelText: "Lanjut Periksa",
       showCancel: true,
-      onConfirm: () => navigate("/tax"),
+      onConfirm: () => navigate("/approval"),
     });
   };
 
@@ -294,7 +308,7 @@ function TaxDetail() {
         message:
           "Data Tax berhasil disimpan dan pengajuan vendor telah dikirim ke tahap selanjutnya.",
         confirmText: "OK",
-        onConfirm: () => navigate("/tax"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error submit Tax:", error);
@@ -357,7 +371,7 @@ function TaxDetail() {
         title: "Draft Berhasil Disimpan",
         message: "Data Tax berhasil disimpan sebagai Draft.",
         confirmText: "OK",
-        onConfirm: () => navigate("/tax"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error save Draft Tax:", error);
@@ -426,7 +440,7 @@ function TaxDetail() {
           ? "Pengajuan dikembalikan kepada Requester untuk diperbaiki."
           : "Pengajuan berhasil disetujui dan diteruskan ke tahap SAP.",
         confirmText: "OK",
-        onConfirm: () => navigate("/tax"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error approval Tax:", error);
@@ -505,11 +519,26 @@ function TaxDetail() {
     );
   }
 
-  const vendor = request.vendor ?? {};
+  const isUpdate =
+    request?.request_type === "UPDATE" ||
+    request?.request_type === "EXISTING" ||
+    request?.is_update === true;
 
-  const bankAccounts = Array.isArray(vendor.bank_accounts)
-    ? vendor.bank_accounts
-    : Array.isArray(vendor.bankAccounts)
+  const detailRecord = request?.details?.[0] || {};
+  const diffMap = request?.diff_data || detailRecord?.diff_data || {};
+  const newData = request?.new_data || detailRecord?.new_data || {};
+  const vendor = request.vendor ?? {};
+  const displayVendor =
+    isUpdate && Object.keys(newData).length > 0
+      ? { ...vendor, ...newData }
+      : vendor;
+
+  const bankAccounts =
+    isUpdate && Array.isArray(newData.bank_accounts) && newData.bank_accounts.length > 0
+      ? newData.bank_accounts
+      : Array.isArray(vendor.bank_accounts)
+      ? vendor.bank_accounts
+      : Array.isArray(vendor.bankAccounts)
       ? vendor.bankAccounts
       : [];
 
@@ -545,7 +574,7 @@ function TaxDetail() {
         <div className="account-detail-header">
           <div>
             <h4>Detail Pengajuan Vendor</h4>
-            <p>{vendor.nama_perusahaan || "Detail data vendor"}</p>
+            <p>{displayVendor.nama_perusahaan || "Detail data vendor"}</p>
           </div>
         </div>
 
@@ -563,7 +592,22 @@ function TaxDetail() {
               {request.current_stage || "-"}
             </span>
           </div>
+
+          <div className="account-request-item">
+            <span className="account-request-label">Tipe Pengajuan</span>
+            <span className="account-request-value">
+              {isUpdate ? "Update Existing Vendor" : "New Vendor"}
+            </span>
+          </div>
         </div>
+
+        {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
+        {isUpdate && (
+          <VendorChangeComparison
+            requestData={request}
+            currentRole="TAX"
+          />
+        )}
 
         {/* DATA REQUESTER */}
 
@@ -575,45 +619,77 @@ function TaxDetail() {
 
           <div className="row account-detail-row">
             {[
-              ["Nama Perusahaan", vendor.nama_perusahaan],
-              ["Search Term", vendor.search_term],
-              ["Business Type", vendor.business_type],
-              ["Kategori", vendor.kategori?.name],
-              ["City", vendor.city],
-              ["Postal Code", vendor.postal_code],
-              ["Country", vendor.country],
-              ["Telephone", vendor.phone],
-              ["Mobile Phone", vendor.mobile_phone],
-              ["Fax", vendor.fax],
-              ["Contact Person", vendor.pic_vendor],
-              ["Email", vendor.email],
-              ["NPWP", vendor.npwp],
+              ["Nama Perusahaan", displayVendor.nama_perusahaan, "nama_perusahaan"],
+              ["Search Term", displayVendor.search_term, "search_term"],
+              ["Business Type", displayVendor.business_type, "business_type"],
+              ["Kategori", displayVendor.kategori?.name, "vendor_subcategories"],
+              ["City", displayVendor.city, "city"],
+              ["Postal Code", displayVendor.postal_code, "postal_code"],
+              ["Country", displayVendor.country, "country"],
+              ["Telephone", displayVendor.phone, "phone"],
+              ["Mobile Phone", displayVendor.mobile_phone, "mobile_phone"],
+              ["Fax", displayVendor.fax, "fax"],
+              ["Contact Person", displayVendor.pic_vendor, "pic_vendor"],
+              ["Email", displayVendor.email, "email"],
+              ["NPWP", displayVendor.npwp, "npwp"],
               [
                 "Due Date Payment",
-                vendor.payment_term?.name || vendor.payment_term_other,
+                displayVendor.payment_term?.name || displayVendor.payment_term_other,
+                "payment_term_id",
               ],
               [
                 "Order Currency",
-                vendor.order_currency_other || vendor.order_currency,
+                displayVendor.order_currency_other || displayVendor.order_currency,
+                "order_currency",
               ],
-            ].map(([label, value]) => (
-              <div className="col-md-6 account-detail-field" key={label}>
-                <label className="account-detail-label">{label}</label>
-                <input
-                  className="account-detail-input"
-                  value={value || ""}
-                  readOnly
-                />
-              </div>
-            ))}
+            ].map(([label, value, fieldKey]) => {
+              const diff = fieldKey ? diffMap[fieldKey] : null;
+              return (
+                <div
+                  className={`col-md-6 account-detail-field ${
+                    diff ? "field-has-diff" : ""
+                  }`}
+                  key={label}
+                >
+                  <label className="account-detail-label">
+                    {label}
+                    {diff && <span className="field-diff-badge">BERUBAH</span>}
+                  </label>
+                  <input
+                    className="account-detail-input"
+                    value={value || ""}
+                    readOnly
+                  />
+                  {diff && diff.old && (
+                    <div className="field-old-hint">
+                      Sebelumnya: <span>{diff.old}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
-            <div className="col-12 account-detail-field">
-              <label className="account-detail-label">Street Address</label>
+            <div
+              className={`col-12 account-detail-field ${
+                diffMap.address ? "field-has-diff" : ""
+              }`}
+            >
+              <label className="account-detail-label">
+                Street Address
+                {diffMap.address && (
+                  <span className="field-diff-badge">BERUBAH</span>
+                )}
+              </label>
               <textarea
                 className="account-detail-input account-detail-textarea"
-                value={vendor.address || ""}
+                value={displayVendor.address || ""}
                 readOnly
               />
+              {diffMap.address?.old && (
+                <div className="field-old-hint">
+                  Sebelumnya: <span>{diffMap.address.old}</span>
+                </div>
+              )}
             </div>
 
             <div className="col-md-6 account-detail-field">
@@ -636,6 +712,17 @@ function TaxDetail() {
           <p className="account-bank-description">
             Seluruh rekening bank vendor.
           </p>
+
+          {diffMap.bank_accounts && (
+            <div className="vcc-old-box mb-3">
+              <span className="vcc-tag">Perubahan Rekening Bank Diajukan</span>
+              <div style={{ whiteSpace: "pre-line" }}>
+                <strong>Rekening Sebelumnya di Master:</strong>
+                <br />
+                {diffMap.bank_accounts.old}
+              </div>
+            </div>
+          )}
 
           {bankAccounts.length > 0 ? (
             <div className="account-bank-list">
@@ -668,8 +755,8 @@ function TaxDetail() {
                       [
                         "Beneficiary",
                         bank.account_name ??
-                          bank.benificiary ??
-                          bank.beneficiary,
+                        bank.benificiary ??
+                        bank.beneficiary,
                       ],
                     ].map(([label, value]) => (
                       <div
@@ -767,8 +854,8 @@ function TaxDetail() {
                   vendor.account_group?.code
                     ? `${vendor.account_group.code} - ${vendor.account_group.name}`
                     : vendor.account_group?.name ||
-                      vendor.account_group_other ||
-                      ""
+                    vendor.account_group_other ||
+                    ""
                 }
                 readOnly
               />
@@ -782,8 +869,8 @@ function TaxDetail() {
                   vendor.recon_account?.code
                     ? `${vendor.recon_account.code} - ${vendor.recon_account.name}`
                     : vendor.recon_account?.name ||
-                      vendor.recon_account_other ||
-                      ""
+                    vendor.recon_account_other ||
+                    ""
                 }
                 readOnly
               />
@@ -821,6 +908,17 @@ function TaxDetail() {
                 Pilih satu atau beberapa jenis Withholding Tax yang sesuai.
               </p>
 
+              {isUpdate && (
+                <div className="field-old-hint mb-3">
+                  Withholding Tax di Master Saat Ini:{" "}
+                  <strong>
+                    {(vendor.withholding_taxes || vendor.withholdingTaxes || [])
+                      .map((t) => t.name)
+                      .join(", ") || "Belum ada pajak terdaftar"}
+                  </strong>
+                </div>
+              )}
+
               {withholdingTaxes.length > 0 ? (
                 <div className="withholding-tax-grid">
                   {withholdingTaxes.map((item) => {
@@ -830,9 +928,8 @@ function TaxDetail() {
                     return (
                       <label
                         key={item.id}
-                        className={`withholding-tax-option ${
-                          checked ? "selected" : ""
-                        }`}
+                        className={`withholding-tax-option ${checked ? "selected" : ""
+                          }`}
                       >
                         <input
                           type="checkbox"
@@ -867,9 +964,11 @@ function TaxDetail() {
             </div>
           </div>
 
-          {/* STAFF ACTIONS */}
+          {/* =================================================
+              ACTION BUTTONS
+          ================================================= */}
 
-          {canEdit && (
+          {(canEdit || canApprove) && !showRejectForm && (
             <div className="account-detail-actions">
               <button
                 type="button"
@@ -880,13 +979,44 @@ function TaxDetail() {
                 Kembali
               </button>
 
+              {canEdit && (
+                <button
+                  type="button"
+                  className="account-detail-draft"
+                  onClick={saveTaxDraft}
+                  disabled={isProcessing}
+                >
+                  {savingDraft ? "Menyimpan..." : "Simpan Draft"}
+                </button>
+              )}
+
               <button
                 type="button"
-                className="account-detail-draft"
-                onClick={saveTaxDraft}
+                className="account-detail-reject"
+                onClick={openRejectForm}
                 disabled={isProcessing}
               >
-                {savingDraft ? "Menyimpan..." : "Simpan Draft"}
+                Reject
+              </button>
+
+              <button
+                type="button"
+                className="account-detail-cancel-approve"
+                disabled={isProcessing}
+                onClick={() =>
+                  showAlert({
+                    type: "warning",
+                    title: "Batalkan Approval (Cancel Approve)?",
+                    message:
+                      "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 3 (Accounting).",
+                    confirmText: "Ya, Rollback",
+                    cancelText: "Kembali",
+                    showCancel: true,
+                    onConfirm: () => handleApproval("cancel-approve"),
+                  })
+                }
+              >
+                Cancel Approve
               </button>
 
               <button
@@ -900,72 +1030,16 @@ function TaxDetail() {
             </div>
           )}
 
-          {/* APPROVER ACTIONS */}
-
-          {canApprove && (
-            <div className="procurement-approval-actions">
-              <div className="procurement-approval-info">
-                <span className="procurement-approval-info-icon">✓</span>
-                <div>
-                  <strong>Pengajuan Siap Ditinjau</strong>
-                  <p>
-                    Periksa data vendor dan informasi Tax sebelum memberikan
-                    keputusan.
-                  </p>
-                </div>
-              </div>
-
-              <div className="procurement-approval-buttons">
-                <button
-                  type="button"
-                  className="procurement-reject-button"
-                  onClick={openRejectForm}
-                  disabled={isProcessing}
-                >
-                  ✕ Reject
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-warning"
-                  disabled={isProcessing}
-                  onClick={() =>
-                    showAlert({
-                      type: "warning",
-                      title: "Batalkan Approval (Cancel Approve)?",
-                      message:
-                        "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 3 (Accounting).",
-                      confirmText: "Ya, Rollback",
-                      cancelText: "Kembali",
-                      showCancel: true,
-                      onConfirm: () => handleApproval("cancel-approve"),
-                    })
-                  }
-                  style={{ padding: "8px 16px", fontWeight: "600", borderRadius: "8px" }}
-                >
-                  Cancel Approve
-                </button>
-
-                <button
-                  type="button"
-                  className="procurement-approve-button"
-                  disabled={isProcessing}
-                  onClick={() =>
-                    showAlert({
-                      type: "success",
-                      title: "Setujui Pengajuan?",
-                      message:
-                        "Apakah kamu yakin ingin menyetujui pengajuan vendor pada tahap Tax? Pengajuan akan diteruskan ke tahap SAP.",
-                      confirmText: "Ya, Setujui",
-                      cancelText: "Periksa Kembali",
-                      showCancel: true,
-                      onConfirm: () => handleApproval("approve"),
-                    })
-                  }
-                >
-                  ✓ Approve Pengajuan
-                </button>
-              </div>
+          {/* READ ONLY BACK BUTTON */}
+          {!canEdit && !canApprove && (
+            <div className="account-detail-actions">
+              <button
+                type="button"
+                className="account-detail-cancel"
+                onClick={() => navigate("/approval")}
+              >
+                Kembali
+              </button>
             </div>
           )}
 

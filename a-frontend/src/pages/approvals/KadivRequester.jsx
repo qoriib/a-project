@@ -8,6 +8,7 @@ import {
   getAuthHeaders,
 } from "../../api/config";
 import { AlertModal } from "../../components/common/AlertModal";
+import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 function KadivDetail() {
   const { id } = useParams();
@@ -15,6 +16,12 @@ function KadivDetail() {
   const token = localStorage.getItem("token");
 
   const [requestData, setRequestData] = useState(null);
+  const [permissions, setPermissions] = useState({
+    can_view: false,
+    can_edit: false,
+    can_approve: false,
+    is_admin: false,
+  });
   const [categories, setCategories] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,15 +95,11 @@ function KadivDetail() {
   // ==========================================
 
   const handleBack = () => {
-    showAlert({
-      type: "warning",
-      title: "Kembali ke Approval?",
-      message: "Apakah kamu yakin ingin kembali ke halaman Approval?",
-      confirmText: "Ya, Kembali",
-      cancelText: "Lanjut Periksa",
-      showCancel: true,
-      onConfirm: () => navigate("/approval"),
-    });
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/approval");
+    }
   };
 
   // ==========================================
@@ -181,6 +184,9 @@ function KadivDetail() {
         }
 
         setRequestData(result.data ?? result);
+        if (result.permissions) {
+          setPermissions(result.permissions);
+        }
       } catch (err) {
         console.error("Detail vendor:", err);
         setError(err.message || "Gagal mengambil data vendor.");
@@ -277,46 +283,59 @@ function KadivDetail() {
 
   // DATA REQUEST DAN VENDOR
 
-  const vendor = requestData?.vendor ?? {};
+  const isUpdate =
+    requestData?.request_type === "UPDATE" ||
+    requestData?.request_type === "EXISTING" ||
+    requestData?.is_update === true;
 
-  const bankAccounts = Array.isArray(
-    vendor.bank_accounts ?? vendor.bankAccounts,
-  )
-    ? (vendor.bank_accounts ?? vendor.bankAccounts)
-    : [];
+  const detailRecord = requestData?.details?.[0] || {};
+  const diffMap = requestData?.diff_data || detailRecord?.diff_data || {};
+  const newData = requestData?.new_data || detailRecord?.new_data || {};
+  const vendor = requestData?.vendor ?? {};
+  const displayVendor =
+    isUpdate && Object.keys(newData).length > 0
+      ? { ...vendor, ...newData }
+      : vendor;
+
+  const bankAccounts =
+    isUpdate && Array.isArray(newData.bank_accounts) && newData.bank_accounts.length > 0
+      ? newData.bank_accounts
+      : Array.isArray(vendor.bank_accounts ?? vendor.bankAccounts)
+      ? (vendor.bank_accounts ?? vendor.bankAccounts)
+      : [];
 
   const documents = Array.isArray(vendor.documents) ? vendor.documents : [];
 
   const categoryName = value(
-    getRelationName(vendor.kategori),
-    getRelationName(vendor.category),
-    vendor.kategori_name,
-    vendor.kategori_other,
-    categories.find((item) => String(item.id) === String(vendor.kategori_id))
+    getRelationName(displayVendor.kategori),
+    getRelationName(displayVendor.category),
+    displayVendor.kategori_name,
+    displayVendor.kategori_other,
+    categories.find((item) => String(item.id) === String(displayVendor.kategori_id))
       ?.name,
   );
 
   const paymentName = value(
-    getRelationName(vendor.payment_term),
-    getRelationName(vendor.paymentTerm),
-    vendor.payment_term_name,
-    vendor.payment_term_other,
+    getRelationName(displayVendor.payment_term),
+    getRelationName(displayVendor.paymentTerm),
+    displayVendor.payment_term_name,
+    displayVendor.payment_term_other,
     paymentTerms.find(
-      (item) => String(item.id) === String(vendor.payment_term_id),
+      (item) => String(item.id) === String(displayVendor.payment_term_id),
     )?.name,
   );
 
   const categoryIsOther =
     String(categoryName).toLowerCase() === "other" ||
-    Boolean(vendor.kategori_other);
+    Boolean(displayVendor.kategori_other);
 
   const paymentIsOther =
     String(paymentName).toLowerCase() === "other" ||
-    Boolean(vendor.payment_term_other);
+    Boolean(displayVendor.payment_term_other);
 
   const currency = value(
-    vendor.order_currency === "OTHER" ? vendor.order_currency_other : "",
-    vendor.order_currency,
+    displayVendor.order_currency === "OTHER" ? displayVendor.order_currency_other : "",
+    displayVendor.order_currency,
   );
 
   // DOKUMEN
@@ -458,19 +477,56 @@ function KadivDetail() {
     }
   };
 
+  let storedUser = {};
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch {
+    storedUser = {};
+  }
+  const userRole = String(
+    storedUser?.role || storedUser?.role_name || ""
+  ).toUpperCase().trim();
+  const isAdmin = userRole === "ADMIN" || storedUser?.is_admin === true || permissions.is_admin;
+  const reqStage = String(requestData?.current_stage || "").toUpperCase();
+
+  const canApprove =
+    (permissions.can_approve || isAdmin) &&
+    (isAdmin ||
+      (userRole === "ASISTEN_KADIV" && reqStage === "ASISTEN_KADIV") ||
+      (userRole === "KADIV" && reqStage === "KADIV")) &&
+    ["ASISTEN_KADIV", "KADIV"].includes(reqStage) &&
+    ["PENDING_L1", "PENDING_L2", "PENDING", "UNDER REVIEW"].includes(
+      String(requestData?.status || "").toUpperCase(),
+    );
+
   // ==========================================
-  // KOMPONEN FIELD READ-ONLY
+  // KOMPONEN FIELD READ-ONLY (DILENGKAPI INDIKATOR DIFF)
   // ==========================================
 
-  const Field = ({ label, children, full = false }) => (
-    <div className={`${full ? "col-12" : "col-md-6"} procurement-detail-field`}>
-      <label className="procurement-detail-label">{label}</label>
-      {children}
-    </div>
-  );
+  const Field = ({ label, children, full = false, fieldKey = null }) => {
+    const diff = fieldKey ? diffMap[fieldKey] : null;
+    return (
+      <div
+        className={`${full ? "col-12" : "col-md-6"} procurement-detail-field ${
+          diff ? "field-has-diff" : ""
+        }`}
+      >
+        <label className="procurement-detail-label">
+          {label}
+          {diff && <span className="field-diff-badge">BERUBAH</span>}
+        </label>
+        {children}
+        {diff && diff.old && (
+          <div className="field-old-hint">
+            Sebelumnya: <span>{diff.old}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
-  const Input = ({ label, data, full = false }) => (
-    <Field label={label} full={full}>
+  const Input = ({ label, data, fieldKey = null, full = false }) => (
+    <Field label={label} full={full} fieldKey={fieldKey}>
       <input
         type="text"
         className="procurement-detail-input"
@@ -480,8 +536,8 @@ function KadivDetail() {
     </Field>
   );
 
-  const TextArea = ({ label, data }) => (
-    <Field label={label} full>
+  const TextArea = ({ label, data, fieldKey = null }) => (
+    <Field label={label} full fieldKey={fieldKey}>
       <textarea
         className="procurement-detail-input procurement-detail-textarea"
         rows={3}
@@ -558,7 +614,22 @@ function KadivDetail() {
               {requestData.current_stage || "-"}
             </span>
           </div>
+
+          <div className="procurement-request-item">
+            <span className="procurement-request-label">Tipe Pengajuan</span>
+            <span className="procurement-request-value">
+              {isUpdate ? "Update Existing Vendor" : "New Vendor"}
+            </span>
+          </div>
         </div>
+
+        {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
+        {isUpdate && (
+          <VendorChangeComparison
+            requestData={requestData}
+            currentRole={userRole === "KADIV" ? "KADIV" : "ASISTEN_KADIV"}
+          />
+        )}
 
         {/* FORM READ-ONLY */}
 
@@ -572,27 +643,71 @@ function KadivDetail() {
             </p>
 
             <div className="row procurement-detail-row">
-              <Input label="Nama Perusahaan" data={vendor.nama_perusahaan} />
+              <Input
+                label="Nama Perusahaan"
+                data={displayVendor.nama_perusahaan}
+                fieldKey="nama_perusahaan"
+              />
 
-              <Input label="Search Term" data={vendor.search_term} />
+              <Input
+                label="Search Term"
+                data={displayVendor.search_term}
+                fieldKey="search_term"
+              />
 
-              <Input label="City" data={vendor.city} />
+              <Input
+                label="City"
+                data={displayVendor.city}
+                fieldKey="city"
+              />
 
-              <Input label="Postal Code" data={vendor.postal_code} />
+              <Input
+                label="Postal Code"
+                data={displayVendor.postal_code}
+                fieldKey="postal_code"
+              />
 
-              <Input label="Country" data={vendor.country} />
+              <Input
+                label="Country"
+                data={displayVendor.country}
+                fieldKey="country"
+              />
 
-              <Input label="Telephone / Nomor Telepon" data={vendor.phone} />
+              <Input
+                label="Telephone / Nomor Telepon"
+                data={displayVendor.phone}
+                fieldKey="phone"
+              />
 
-              <Input label="Mobile Phone" data={vendor.mobile_phone} />
+              <Input
+                label="Mobile Phone"
+                data={displayVendor.mobile_phone}
+                fieldKey="mobile_phone"
+              />
 
-              <Input label="Fax" data={vendor.fax} />
+              <Input
+                label="Fax"
+                data={displayVendor.fax}
+                fieldKey="fax"
+              />
 
-              <Input label="Contact Person" data={vendor.pic_vendor} />
+              <Input
+                label="Contact Person"
+                data={displayVendor.pic_vendor}
+                fieldKey="pic_vendor"
+              />
 
-              <Input label="Email" data={vendor.email} />
+              <Input
+                label="Email"
+                data={displayVendor.email}
+                fieldKey="email"
+              />
 
-              <TextArea label="Street Address" data={vendor.address} />
+              <TextArea
+                label="Street Address"
+                data={displayVendor.address}
+                fieldKey="address"
+              />
             </div>
           </div>
 
@@ -605,14 +720,26 @@ function KadivDetail() {
             </p>
 
             <div className="row procurement-detail-row">
-              <Input label="NPWP" data={vendor.npwp} />
+              <Input
+                label="NPWP"
+                data={displayVendor.npwp}
+                fieldKey="npwp"
+              />
 
-              <Input label="Business Type" data={vendor.business_type} />
+              <Input
+                label="Business Type"
+                data={displayVendor.business_type}
+                fieldKey="business_type"
+              />
 
-              <Input label="Kategori" data={categoryName} />
+              <Input
+                label="Kategori"
+                data={categoryName}
+                fieldKey="vendor_subcategories"
+              />
 
               {categoryIsOther && (
-                <Input label="Kategori" data={vendor.kategori_other} />
+                <Input label="Kategori" data={displayVendor.kategori_other} />
               )}
 
               <Input
@@ -623,20 +750,25 @@ function KadivDetail() {
               <Input
                 label="Due Date Payment"
                 data={
-                  paymentName && vendor.payment_term?.code
-                    ? `${vendor.payment_term.code} - ${paymentName}`
+                  paymentName && displayVendor.payment_term?.code
+                    ? `${displayVendor.payment_term.code} - ${paymentName}`
                     : paymentName
                 }
+                fieldKey="payment_term_id"
               />
 
               {paymentIsOther && (
                 <Input
                   label="Due Date Payment"
-                  data={vendor.payment_term_other}
+                  data={displayVendor.payment_term_other}
                 />
               )}
 
-              <Input label="Order Currency" data={currency} />
+              <Input
+                label="Order Currency"
+                data={currency}
+                fieldKey="order_currency"
+              />
             </div>
           </div>
 
@@ -650,6 +782,17 @@ function KadivDetail() {
                 </p>
               </div>
             </div>
+
+            {diffMap.bank_accounts && (
+              <div className="vcc-old-box mb-3">
+                <span className="vcc-tag">Perubahan Rekening Bank Diajukan</span>
+                <div style={{ whiteSpace: "pre-line" }}>
+                  <strong>Rekening Sebelumnya di Master:</strong>
+                  <br />
+                  {diffMap.bank_accounts.old}
+                </div>
+              </div>
+            )}
 
             {bankAccounts.length > 0 ? (
               <div className="kadiv-bank-account-list">
@@ -860,7 +1003,7 @@ function KadivDetail() {
             Kembali
           </button>
 
-          {!showRejectForm && (
+          {canApprove && !showRejectForm && (
             <>
               <button
                 type="button"
@@ -876,10 +1019,9 @@ function KadivDetail() {
 
               <button
                 type="button"
-                className="btn btn-warning"
+                className="kadiv-cancel-approve-button"
                 disabled={processing}
                 onClick={confirmCancelApprove}
-                style={{ padding: "10px 20px", fontWeight: "600", borderRadius: "8px" }}
               >
                 Cancel Approve
               </button>

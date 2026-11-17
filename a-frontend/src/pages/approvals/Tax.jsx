@@ -6,34 +6,30 @@ import { API_BASE_URL, getAuthHeaders } from "../../api/config";
 function Tax() {
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState("PROCESS");
   const [requests, setRequests] = useState([]);
+  const [rejectedRequests, setRejectedRequests] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   // ==========================================
-  // AMBIL DATA REQUEST ACCOUNTING
+  // AMBIL DATA REQUEST TAX
   // ==========================================
 
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/vendor-requests/stage/TAX`,
-          {
+        const [response, rejRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/vendor-requests/stage/TAX`, {
             headers: getAuthHeaders(false),
-          },
-        );
+          }),
+          fetch(`${API_BASE_URL}/vendor-requests/rejected?stage=TAX`, {
+            headers: getAuthHeaders(false),
+          }),
+        ]);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          console.error("Gagal mengambil vendor request:", data);
-
-          setRequests([]);
-          return;
-        }
-
-        console.log("Data Account:", data);
+        const data = await response.json().catch(() => []);
+        const rejData = await rejRes.json().catch(() => []);
 
         const list = Array.isArray(data)
           ? data
@@ -41,11 +37,18 @@ function Tax() {
           ? data.data
           : [];
 
+        const rejList = Array.isArray(rejData)
+          ? rejData
+          : Array.isArray(rejData?.data)
+          ? rejData.data
+          : [];
+
         setRequests(list);
+        setRejectedRequests(rejList);
       } catch (error) {
         console.error("Error mengambil vendor request:", error);
-
         setRequests([]);
+        setRejectedRequests([]);
       } finally {
         setLoading(false);
       }
@@ -60,16 +63,22 @@ function Tax() {
 
   const filteredRequests = requests.filter((request) => {
     const keyword = search.trim().toLowerCase();
-
     const vendor = request.vendor;
-
-    if (!keyword) {
-      return true;
-    }
-
+    if (!keyword) return true;
     return (
       vendor?.vendor_code?.toLowerCase().includes(keyword) ||
       vendor?.nama_perusahaan?.toLowerCase().includes(keyword)
+    );
+  });
+
+  const filteredRejected = rejectedRequests.filter((request) => {
+    const keyword = search.trim().toLowerCase();
+    const vendor = request.vendor;
+    if (!keyword) return true;
+    return (
+      vendor?.vendor_code?.toLowerCase().includes(keyword) ||
+      vendor?.nama_perusahaan?.toLowerCase().includes(keyword) ||
+      request.rejection_reason?.toLowerCase().includes(keyword)
     );
   });
 
@@ -185,118 +194,201 @@ function Tax() {
       </div>
 
       {/* ==========================================
+          TABS
+      ========================================== */}
+
+      <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid #e5e7eb", marginBottom: "20px" }}>
+        <button
+          type="button"
+          className={`btn ${activeTab === "PROCESS" ? "btn-dark" : "btn-light"}`}
+          style={{ borderRadius: "8px", fontWeight: "600", fontSize: "13px" }}
+          onClick={() => {
+            setActiveTab("PROCESS");
+            setSearch("");
+          }}
+        >
+          Dalam Proses ({requests.length})
+        </button>
+
+        <button
+          type="button"
+          className={`btn ${activeTab === "REJECTED" ? "btn-dark" : "btn-light"}`}
+          style={{ borderRadius: "8px", fontWeight: "600", fontSize: "13px" }}
+          onClick={() => {
+            setActiveTab("REJECTED");
+            setSearch("");
+          }}
+        >
+          History Rejected ({rejectedRequests.length})
+        </button>
+      </div>
+
+      {/* ==========================================
           VENDOR LIST
       ========================================== */}
 
-      <div className="existing-vendor-list-card">
-        <div className="existing-vendor-list-header">
-          <div>
-            <h4>Daftar Vendor</h4>
+      {activeTab === "PROCESS" ? (
+        <div className="existing-vendor-list-card">
+          <div className="existing-vendor-list-header">
+            <div>
+              <h4>Daftar Vendor</h4>
 
-            <p>Vendor yang sedang menunggu proses Tax.</p>
+              <p>Vendor yang sedang menunggu proses Tax.</p>
+            </div>
+
+            <div className="existing-vendor-total">
+              {filteredRequests.length} Vendor
+            </div>
           </div>
 
-          <div className="existing-vendor-total">
-            {filteredRequests.length} Vendor
-          </div>
+          {filteredRequests.length === 0 ? (
+            <div className="existing-vendor-empty">
+              <div className="empty-icon">📋</div>
+
+              <h5>Belum ada vendor</h5>
+
+              <p>Belum ada vendor yang sedang diproses di tahap Tax.</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table existing-vendor-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+
+                    <th>Nama Perusahaan</th>
+
+                    <th>Kategori</th>
+
+                    <th>PIC Vendor</th>
+
+                    <th>Email</th>
+
+                    <th>Status</th>
+
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredRequests.map((request, index) => {
+                    const vendor = request.vendor;
+
+                    return (
+                      <tr key={request.id}>
+                        <td>{index + 1}</td>
+
+                        <td>{vendor?.nama_perusahaan || "-"}</td>
+
+                        <td>{vendor?.kategori?.name || "-"}</td>
+
+                        <td>{vendor?.pic_vendor || "-"}</td>
+
+                        <td>{vendor?.email || "-"}</td>
+
+                        <td>
+                          <span
+                            className={
+                              request.status === "Pending"
+                                ? "vendor-status active"
+                                : "vendor-status inactive"
+                            }
+                          >
+                            {request.status || "-"}
+                          </span>
+                        </td>
+
+                        <td>
+                          <button
+                            type="button"
+                            className="existing-detail-button"
+                            onClick={() => handleDetail(request.id)}
+                          >
+                            Proses
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-
-        {/* ==========================================
-            EMPTY
-        ========================================== */}
-
-        {filteredRequests.length === 0 ? (
-          <div className="existing-vendor-empty">
-            <div className="empty-icon">📋</div>
-
-            <h5>Belum ada vendor</h5>
-
-            <p>Belum ada vendor yang sedang diproses di tahap Tax.</p>
+      ) : (
+        <div className="existing-vendor-list-card">
+          <div className="existing-vendor-list-header">
+            <div>
+              <h4>History Rejected</h4>
+              <p>Daftar pengajuan vendor yang ditolak pada tahap Tax.</p>
+            </div>
+            <div className="existing-vendor-total">
+              {filteredRejected.length} Vendor
+            </div>
           </div>
-        ) : (
-          /* ==========================================
-             TABLE
-             ========================================== */
 
-          <div className="table-responsive">
-            <table className="table existing-vendor-table">
-              <thead>
-                <tr>
-                  <th>No</th>
-
-                  <th>Nama Perusahaan</th>
-
-                  <th>Kategori</th>
-
-                  <th>PIC Vendor</th>
-
-                  <th>Email</th>
-
-                  <th>Status</th>
-
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredRequests.map((request, index) => {
-                  const vendor = request.vendor;
-
-                  return (
-                    <tr key={request.id}>
-                      {/* NO */}
-
-                      <td>{index + 1}</td>
-
-                      {/* NAMA PERUSAHAAN */}
-
-                      <td>{vendor?.nama_perusahaan || "-"}</td>
-
-                      {/* KATEGORI */}
-
-                      <td>{vendor?.kategori?.name || "-"}</td>
-
-                      {/* PIC */}
-
-                      <td>{vendor?.pic_vendor || "-"}</td>
-
-                      {/* EMAIL */}
-
-                      <td>{vendor?.email || "-"}</td>
-
-                      {/* STATUS */}
-
-                      <td>
-                        <span
-                          className={
-                            request.status === "Pending"
-                              ? "vendor-status active"
-                              : "vendor-status inactive"
-                          }
-                        >
-                          {request.status || "-"}
-                        </span>
-                      </td>
-
-                      {/* AKSI */}
-
-                      <td>
-                        <button
-                          type="button"
-                          className="existing-detail-button"
-                          onClick={() => handleDetail(request.id)}
-                        >
-                          Proses
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+          {filteredRejected.length === 0 ? (
+            <div className="existing-vendor-empty">
+              <div className="empty-icon">✓</div>
+              <h5>Belum ada History Rejected</h5>
+              <p>Tidak ada pengajuan vendor yang berstatus ditolak di tahap Tax.</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table existing-vendor-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama Perusahaan</th>
+                    <th>Kategori</th>
+                    <th>PIC Vendor</th>
+                    <th>Email</th>
+                    <th>Alasan Penolakan</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRejected.map((request, index) => {
+                    const vendor = request.vendor;
+                    return (
+                      <tr key={request.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <strong>{vendor?.nama_perusahaan || "-"}</strong>
+                          <div style={{ fontSize: "11px", color: "#6b7280" }}>
+                            {request.form_number || `Request #${request.id}`}
+                          </div>
+                        </td>
+                        <td>{vendor?.kategori?.name || "-"}</td>
+                        <td>{vendor?.pic_vendor || "-"}</td>
+                        <td>{vendor?.email || "-"}</td>
+                        <td>
+                          <span style={{ color: "#b91c1c", fontSize: "12px", maxWidth: "250px", display: "inline-block" }}>
+                            {request.rejection_reason || "-"}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="vendor-status rejected">REJECTED</span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="existing-detail-button"
+                            onClick={() => navigate(`/procurement/${request.id}`)}
+                          >
+                            Detail
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

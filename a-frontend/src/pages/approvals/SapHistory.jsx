@@ -63,6 +63,35 @@ function SapHistory() {
     );
   });
 
+  // Handle tombol cari & tekan Enter
+  const handleSearchKeyDown = (event) => {
+    if (event.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  const handleSearch = () => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return;
+
+    const foundRequest =
+      requests.find((request) => {
+        const vendor = request.vendor;
+        return (
+          String(request.id).toLowerCase() === keyword ||
+          vendor?.vendor_code?.toLowerCase() === keyword ||
+          vendor?.nama_perusahaan?.toLowerCase() === keyword ||
+          vendor?.email?.toLowerCase() === keyword
+        );
+      }) || (filteredRequests.length === 1 ? filteredRequests[0] : null);
+
+    if (foundRequest) {
+      handleDetail(foundRequest.id);
+    } else if (filteredRequests.length === 0) {
+      alert("Vendor tidak ditemukan.");
+    }
+  };
+
   // Buka detail vendor
   const handleDetail = (id) => {
     navigate(`/sap/${id}`);
@@ -132,8 +161,17 @@ function SapHistory() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="ID Request / Vendor Code / Nama Vendor"
             />
+            <button
+              type="button"
+              aria-label="Cari vendor"
+              title="Cari vendor"
+              onClick={handleSearch}
+            >
+              🔍
+            </button>
           </div>
           <small>Cari berdasarkan ID, Vendor Code, nama, atau email.</small>
         </div>

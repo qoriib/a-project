@@ -7,18 +7,27 @@ function Approval() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const typeParam = (searchParams.get("type") || "").toUpperCase();
+  const requestType = typeParam === "UPDATE" || typeParam === "EXISTING" ? "UPDATE" : "NEW";
+
   const [requests, setRequests] = useState([]);
   const [historyRequests, setHistoryRequests] = useState([]);
+  const [rejectedRequests, setRejectedRequests] = useState([]);
 
   const tabParam = (searchParams.get("tab") || "").toUpperCase();
   const [activeTab, setActiveTab] = useState(
-    tabParam === "HISTORY" ? "HISTORY" : "PROCESS"
+    tabParam === "HISTORY"
+      ? "HISTORY"
+      : tabParam === "REJECTED"
+        ? "REJECTED"
+        : "PROCESS"
   );
   const [search, setSearch] = useState("");
   const [cardFilter, setCardFilter] = useState("ALL");
 
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [rejectedLoading, setRejectedLoading] = useState(false);
 
   const [stagePermissions, setStagePermissions] = useState({});
   const [isAdmin, setIsAdmin] = useState(false);
@@ -119,12 +128,42 @@ function Approval() {
   // =========================================================
 
   const approvalCards = useMemo(() => {
-    if (isAdmin) {
+    let storedUser = {};
+    try {
+      storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      storedUser = {};
+    }
+
+    const userRole = String(
+      storedUser?.role || storedUser?.role_name || ""
+    ).toUpperCase().trim();
+
+    const isUserAdmin = isAdmin || storedUser?.is_admin === true || userRole === "ADMIN";
+
+    if (isUserAdmin) {
       return allApprovalCards;
     }
 
+    const roleStageMapping = {
+      ASISTEN_KADIV: ["ASISTEN_KADIV"],
+      KADIV: ["KADIV"],
+      ACCOUNTING: ["ACCOUNTING"],
+      TAX: ["TAX"],
+      SAP: ["SAP"],
+      REQUESTER: ["REQUESTER"],
+      PROCUREMENT: ["REQUESTER"],
+    };
+
+    const allowedStages = roleStageMapping[userRole] || null;
+
     return allApprovalCards.filter((card) => {
       if (card.value === "ALL") {
+        return false;
+      }
+
+      // Pembatasan ketat: tiap role hanya dapat mengakses card miliknya sendiri
+      if (allowedStages && !allowedStages.includes(card.stage)) {
         return false;
       }
 
@@ -134,38 +173,42 @@ function Approval() {
         return false;
       }
 
-      return permission.can_edit === true || permission.can_approve === true;
+      return (
+        permission.can_edit === true ||
+        permission.can_approve === true ||
+        permission.can_view === true
+      );
     });
   }, [stagePermissions, isAdmin]);
 
   // =========================================================
-  // FETCH REQUEST BERDASARKAN STAGE
+  // FETCH REQUEST BERDASARKAN STAGE (DALAM PROSES)
   // =========================================================
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      setLoading(true);
+  const fetchRequests = async () => {
+    setLoading(true);
 
-      try {
-        const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-        if (!token) {
-          throw new Error("Token login tidak ditemukan.");
-        }
+      if (!token) {
+        throw new Error("Token login tidak ditemukan.");
+      }
 
-        const stageList = [
-          "REQUESTER",
-          "ASISTEN_KADIV",
-          "KADIV",
-          "ACCOUNTING",
-          "TAX",
-          "SAP",
-        ];
+      const stageList = [
+        "REQUESTER",
+        "ASISTEN_KADIV",
+        "KADIV",
+        "ACCOUNTING",
+        "TAX",
+        "SAP",
+      ];
 
-        const responses = await Promise.all(
-          stageList.map(async (stage) => {
+      const responses = await Promise.all(
+        stageList.map(async (stage) => {
+          try {
             const response = await fetch(
-              `${API_BASE_URL}/vendor-requests/stage/${stage}`,
+              `${API_BASE_URL}/vendor-requests/stage/${stage}?type=${requestType}`,
               {
                 headers: getAuthHeaders(false),
               },
@@ -174,17 +217,11 @@ function Approval() {
             const result = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-              if (response.status === 403) {
-                return {
-                  stage,
-                  data: [],
-                  permissions: null,
-                };
-              }
-
-              throw new Error(
-                result.message || `Gagal mengambil data ${stage}.`,
-              );
+              return {
+                stage,
+                data: [],
+                permissions: null,
+              };
             }
 
             return {
@@ -192,119 +229,156 @@ function Approval() {
               data: Array.isArray(result.data) ? result.data : [],
               permissions: result.permissions || null,
             };
-          }),
-        );
-
-        const permissionMap = {};
-
-        responses.forEach((result) => {
-          if (result.permissions) {
-            permissionMap[result.stage] = result.permissions;
+          } catch {
+            return {
+              stage,
+              data: [],
+              permissions: null,
+            };
           }
-        });
+        }),
+      );
 
-        setStagePermissions(permissionMap);
+      const permissionMap = {};
 
-        const admin = responses.some(
-          (result) => result.permissions?.is_admin === true,
-        );
+      responses.forEach((result) => {
+        if (result.permissions) {
+          permissionMap[result.stage] = result.permissions;
+        }
+      });
 
-        setIsAdmin(admin);
+      setStagePermissions(permissionMap);
 
-        const combinedRequests = responses.flatMap((result) => result.data);
+      const admin = responses.some(
+        (result) => result.permissions?.is_admin === true,
+      );
 
-        const uniqueRequests = Array.from(
-          new Map(
-            combinedRequests.map((request) => [request.id, request]),
-          ).values(),
-        );
+      setIsAdmin(admin);
 
-        const activeRequests = uniqueRequests.filter(
-          (request) =>
-            request.current_stage !== "COMPLETED" &&
-            request.status !== "Approved" &&
-            request.status !== "COMPLETED" &&
-            request.status !== "DONE",
-        );
+      const combinedRequests = responses.flatMap((result) => result.data);
 
-        setRequests(activeRequests);
+      const uniqueRequests = Array.from(
+        new Map(
+          combinedRequests.map((request) => [request.id, request]),
+        ).values(),
+      );
 
-        console.log("Approval Requests:", activeRequests);
-        console.log("Stage Permissions:", permissionMap);
-      } catch (error) {
-        console.error("Error mengambil data approval:", error);
-        setRequests([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const activeRequests = uniqueRequests.filter(
+        (request) =>
+          request.current_stage !== "COMPLETED" &&
+          request.status !== "Approved" &&
+          request.status !== "COMPLETED" &&
+          request.status !== "DONE",
+      );
 
-    fetchRequests();
-  }, []);
+      setRequests(activeRequests);
+    } catch (error) {
+      console.error("Error mengambil data approval:", error);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // =========================================================
   // FETCH HISTORY APPROVED
   // =========================================================
 
-  useEffect(() => {
-    if (activeTab !== "HISTORY") return;
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
 
-    let cancelled = false;
+    try {
+      const token = localStorage.getItem("token");
 
-    const fetchHistory = async () => {
-      setHistoryLoading(true);
+      if (!token) return;
 
-      try {
-        const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${API_BASE_URL}/vendor-requests/completed?type=${requestType}`,
+        {
+          headers: getAuthHeaders(false),
+        },
+      );
 
-        const response = await fetch(
-          `${API_BASE_URL}/vendor-requests/completed`,
-          {
-            headers: getAuthHeaders(false),
-          },
-        );
+      const data = await response.json().catch(() => []);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Gagal mengambil History Approved.");
-        }
-
-        if (cancelled) return;
-
-        const completedRequests = (Array.isArray(data) ? data : []).filter(
-          (request) => {
-            const stage = String(request.current_stage || "").toUpperCase().trim();
-            const status = String(request.status || "").toUpperCase().trim();
-
-            return (
-              stage === "COMPLETED" ||
-              status === "COMPLETED" ||
-              status === "APPROVED" ||
-              status === "DONE"
-            );
-          },
-        );
-
-        setHistoryRequests(completedRequests);
-      } catch (error) {
-        console.error("Error mengambil history:", error);
-
-        if (!cancelled) {
-          setHistoryRequests([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setHistoryLoading(false);
-        }
+      if (!response.ok) {
+        throw new Error(data.message || "Gagal mengambil History Approved.");
       }
-    };
 
+      const completedRequests = (Array.isArray(data) ? data : []).filter(
+        (request) => {
+          const stage = String(request.current_stage || "").toUpperCase().trim();
+          const status = String(request.status || "").toUpperCase().trim();
+
+          return (
+            stage === "COMPLETED" ||
+            status === "COMPLETED" ||
+            status === "APPROVED" ||
+            status === "DONE"
+          );
+        },
+      );
+
+      setHistoryRequests(completedRequests);
+    } catch (error) {
+      console.error("Error mengambil history:", error);
+      setHistoryRequests([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // =========================================================
+  // FETCH HISTORY REJECTED
+  // =========================================================
+
+  const fetchRejected = async () => {
+    setRejectedLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) return;
+
+      const response = await fetch(
+        `${API_BASE_URL}/vendor-requests/rejected?type=${requestType}`,
+        {
+          headers: getAuthHeaders(false),
+        },
+      );
+
+      const data = await response.json().catch(() => []);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Gagal mengambil History Rejected.");
+      }
+
+      setRejectedRequests(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error mengambil history rejected:", error);
+      setRejectedRequests([]);
+    } finally {
+      setRejectedLoading(false);
+    }
+  };
+
+  // =========================================================
+  // INITIAL LOAD: LOAD DALAM PROSES, HISTORY APPROVED, & REJECTED
+  // =========================================================
+
+  useEffect(() => {
+    fetchRequests();
     fetchHistory();
+    fetchRejected();
+  }, [requestType]);
 
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    if (activeTab === "HISTORY" && historyRequests.length === 0 && !historyLoading) {
+      fetchHistory();
+    }
+    if (activeTab === "REJECTED" && rejectedRequests.length === 0 && !rejectedLoading) {
+      fetchRejected();
+    }
   }, [activeTab]);
 
   // =========================================================
@@ -320,11 +394,19 @@ function Approval() {
         return;
       }
 
-      counts[card.value] = requests.filter(
-        (request) =>
-          request.current_stage === card.stage &&
-          card.statuses.includes(request.status),
-      ).length;
+      counts[card.value] = requests.filter((request) => {
+        const matchesStage =
+          request.current_stage === card.stage ||
+          (card.stage === "REQUESTER" &&
+            (request.current_stage === "REJECTED" ||
+              request.status === "Rejected" ||
+              request.status === "REJECTED"));
+
+        return (
+          matchesStage &&
+          (!card.statuses || card.statuses.includes(request.status))
+        );
+      }).length;
     });
 
     return counts;
@@ -361,11 +443,21 @@ function Approval() {
 
       // FILTER CARD
       if (selectedCard.value !== "ALL") {
-        if (request.current_stage !== selectedCard.stage) {
+        const matchesStage =
+          request.current_stage === selectedCard.stage ||
+          (selectedCard.stage === "REQUESTER" &&
+            (request.current_stage === "REJECTED" ||
+              request.status === "Rejected" ||
+              request.status === "REJECTED"));
+
+        if (!matchesStage) {
           return false;
         }
 
-        if (!selectedCard.statuses.includes(request.status)) {
+        if (
+          selectedCard.statuses &&
+          !selectedCard.statuses.includes(request.status)
+        ) {
           return false;
         }
       }
@@ -597,10 +689,11 @@ function Approval() {
           <div className="approval-header-icon">✓</div>
 
           <div>
-            <h2>Approval</h2>
+            <h2>{requestType === "UPDATE" ? "Approval Existing Vendor" : "Approval New Vendor"}</h2>
             <p>
-              Kelola dan proses pengajuan vendor baru berdasarkan tahapan
-              workflow.
+              {requestType === "UPDATE"
+                ? "Kelola dan proses persetujuan pembaruan data vendor yang sudah terdaftar berdasarkan tahapan workflow."
+                : "Kelola dan proses persetujuan pengajuan vendor baru berdasarkan tahapan workflow."}
             </p>
           </div>
         </div>
@@ -646,7 +739,7 @@ function Approval() {
             setActiveTab("PROCESS");
             setSearch("");
             setCardFilter("ALL");
-            setSearchParams({});
+            setSearchParams(requestType === "UPDATE" ? { type: "UPDATE" } : {});
           }}
         >
           Dalam Proses
@@ -660,11 +753,25 @@ function Approval() {
             setActiveTab("HISTORY");
             setSearch("");
             setCardFilter("ALL");
-            setSearchParams({ tab: "HISTORY" });
+            setSearchParams({ tab: "HISTORY", ...(requestType === "UPDATE" ? { type: "UPDATE" } : {}) });
           }}
         >
           History Approved
           <span>{historyRequests.length}</span>
+        </button>
+
+        <button
+          type="button"
+          className={`approval-tab ${activeTab === "REJECTED" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("REJECTED");
+            setSearch("");
+            setCardFilter("ALL");
+            setSearchParams({ tab: "REJECTED", ...(requestType === "UPDATE" ? { type: "UPDATE" } : {}) });
+          }}
+        >
+          History Rejected
+          <span>{rejectedRequests.length}</span>
         </button>
       </div>
 
@@ -681,11 +788,10 @@ function Approval() {
               <button
                 key={card.value}
                 type="button"
-                className={`approval-workflow-card ${
-                  card.value === "ALL"
+                className={`approval-workflow-card ${card.value === "ALL"
                     ? "stage-all"
                     : `stage-${card.value.toLowerCase()}`
-                } ${cardFilter === card.value ? "active" : ""}`}
+                  } ${cardFilter === card.value ? "active" : ""}`}
                 onClick={() => setCardFilter(card.value)}
               >
                 <div className="workflow-card-number">
@@ -889,8 +995,8 @@ function Approval() {
                     <th>PIC Vendor</th>
                     <th>Email</th>
                     <th>Tanggal Selesai</th>
-                    <th>Status</th>
                     <th width="120">PDF</th>
+                    <th width="100">Aksi</th>
                   </tr>
                 </thead>
 
@@ -920,15 +1026,15 @@ function Approval() {
 
                       const completedAt = request.completed_at
                         ? new Date(request.completed_at).toLocaleString(
-                            "id-ID",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          )
+                          "id-ID",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )
                         : "-";
 
                       return (
@@ -955,18 +1061,22 @@ function Approval() {
                           <td>{completedAt}</td>
 
                           <td>
-                            <span className="approval-status approved">
-                              Approved
-                            </span>
-                          </td>
-
-                          <td>
                             <button
                               type="button"
                               className="approval-pdf-button"
                               onClick={() => handleViewPdf(request.id)}
                             >
                               📄 PDF
+                            </button>
+                          </td>
+
+                          <td>
+                            <button
+                              type="button"
+                              className="existing-detail-button"
+                              onClick={() => navigate(`/sap/${request.id}`)}
+                            >
+                              Detail
                             </button>
                           </td>
                         </tr>
@@ -1001,6 +1111,226 @@ function Approval() {
                             <p>
                               Data vendor yang sudah selesai diproses SAP akan
                               muncul di sini.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =====================================================
+          HISTORY REJECTED
+      ===================================================== */}
+
+      {activeTab === "REJECTED" && (
+        <div className="approval-list-card">
+          <div className="approval-list-header">
+            <div>
+              <h4>History Rejected</h4>
+
+              <p>
+                Daftar pengajuan vendor yang ditolak atau memerlukan revisi oleh
+                Requester.
+              </p>
+            </div>
+
+            <div className="approval-list-total">
+              <strong>
+                {
+                  rejectedRequests.filter((request) => {
+                    const vendor = request.vendor || {};
+                    const keyword = search.trim().toLowerCase();
+
+                    return [
+                      vendor.nama_perusahaan,
+                      vendor.vendor_code,
+                      vendor.pic_vendor,
+                      vendor.email,
+                      request.form_number,
+                      request.rejection_reason,
+                      request.id,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                      .toLowerCase()
+                      .includes(keyword);
+                  }).length
+                }
+              </strong>
+
+              <span>Pengajuan Ditolak</span>
+            </div>
+          </div>
+
+          {rejectedLoading ? (
+            <div className="approval-loading">
+              <div className="approval-loading-spinner"></div>
+              <p>Memuat History Rejected...</p>
+            </div>
+          ) : (
+            <div className="approval-table-wrapper">
+              <table className="approval-table">
+                <thead>
+                  <tr>
+                    <th width="50">No</th>
+                    <th>Vendor</th>
+                    <th>PIC Vendor</th>
+                    <th>Email</th>
+                    <th>Tahap Ditolak</th>
+                    <th>Alasan Penolakan</th>
+                    <th>Tanggal Ditolak</th>
+                    <th width="100">PDF</th>
+                    <th width="100">Aksi</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {rejectedRequests
+                    .filter((request) => {
+                      const vendor = request.vendor || {};
+                      const keyword = search.trim().toLowerCase();
+
+                      return [
+                        vendor.nama_perusahaan,
+                        vendor.vendor_code,
+                        vendor.pic_vendor,
+                        vendor.email,
+                        request.form_number,
+                        request.rejection_reason,
+                        request.id,
+                      ]
+                        .filter(Boolean)
+                        .some((value) =>
+                          String(value).toLowerCase().includes(keyword),
+                        );
+                    })
+                    .map((request, index) => {
+                      const vendor = request.vendor || {};
+
+                      const rejectedAt = request.updated_at
+                        ? new Date(request.updated_at).toLocaleString("id-ID", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                        : "-";
+
+                      const latestRejectHistory = (request.approvalHistories || [])
+                        .filter(
+                          (h) =>
+                            String(h.status || "").toUpperCase() === "REJECTED",
+                        )
+                        .pop();
+
+                      const rejectStage =
+                        latestRejectHistory?.approval_stage ||
+                        request.current_stage ||
+                        "-";
+
+                      const rejectReason =
+                        request.rejection_reason ||
+                        latestRejectHistory?.notes ||
+                        "-";
+
+                      return (
+                        <tr key={request.id}>
+                          <td>
+                            <span className="approval-number">{index + 1}</span>
+                          </td>
+
+                          <td>
+                            <div className="approval-vendor">
+                              <strong>{vendor.nama_perusahaan || "-"}</strong>
+                              <span>
+                                {request.form_number || `Request #${request.id}`}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td>{vendor.pic_vendor || "-"}</td>
+
+                          <td>{vendor.email || "-"}</td>
+
+                          <td>
+                            <span className="badge bg-light text-dark border">
+                              {getStageLabel(rejectStage)}
+                            </span>
+                          </td>
+
+                          <td>
+                            <div
+                              style={{
+                                maxWidth: "260px",
+                                wordBreak: "break-word",
+                                color: "#b91c1c",
+                                fontSize: "12px",
+                              }}
+                              title={rejectReason}
+                            >
+                              {rejectReason}
+                            </div>
+                          </td>
+
+                          <td>{rejectedAt}</td>
+
+                          <td>
+                            <button
+                              type="button"
+                              className="approval-pdf-button"
+                              onClick={() => handleViewPdf(request.id)}
+                            >
+                              📄 PDF
+                            </button>
+                          </td>
+
+                          <td>
+                            <button
+                              type="button"
+                              className="existing-detail-button"
+                              onClick={() => handleDetail(request)}
+                            >
+                              Detail
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                  {!rejectedLoading &&
+                    rejectedRequests.filter((request) => {
+                      const vendor = request.vendor || {};
+                      const keyword = search.trim().toLowerCase();
+
+                      return [
+                        vendor.nama_perusahaan,
+                        vendor.vendor_code,
+                        vendor.pic_vendor,
+                        vendor.email,
+                        request.form_number,
+                        request.rejection_reason,
+                        request.id,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")
+                        .toLowerCase()
+                        .includes(keyword);
+                    }).length === 0 && (
+                      <tr>
+                        <td colSpan="9">
+                          <div className="approval-empty">
+                            <div className="approval-empty-icon">✓</div>
+
+                            <h5>Belum ada History Rejected</h5>
+
+                            <p>
+                              Tidak ada pengajuan vendor yang berstatus ditolak.
                             </p>
                           </div>
                         </td>

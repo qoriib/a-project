@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./ProcurementDetail.css";
-import { BASE_URL as API_URL, API_BASE_URL, getStorageUrl } from "../../api/config";
+import { BASE_URL as API_URL, API_BASE_URL, getStorageUrl, getAuthUser } from "../../api/config";
+import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 const DOCUMENT_LIST = [
   {
@@ -204,6 +205,20 @@ function ProcurementDetail() {
     }));
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      const user = getAuthUser();
+      const role = String(user?.role || user?.role_name || "").toUpperCase();
+      if (role === "REQUESTER" || role === "PROCUREMENT") {
+        navigate("/vendors/add");
+      } else {
+        navigate("/approval");
+      }
+    }
+  };
+
   const handleCancel = () => {
     showAlert({
       type: "warning",
@@ -213,7 +228,7 @@ function ProcurementDetail() {
       confirmText: "Ya, Batal",
       cancelText: "Lanjut Edit",
       showCancel: true,
-      onConfirm: () => navigate("/vendors/add"),
+      onConfirm: handleBack,
     });
   };
 
@@ -353,7 +368,7 @@ function ProcurementDetail() {
           title: "Gagal Memuat Data",
           message: error.message || "Gagal mengambil data vendor.",
           confirmText: "Kembali",
-          onConfirm: () => navigate("/approval"),
+          onConfirm: handleBack,
         });
       } finally {
         setLoading(false);
@@ -561,15 +576,37 @@ function ProcurementDetail() {
   // PERMISSIONS
   // ==========================================
 
+  const currentStage = String(requestData?.current_stage || "").toUpperCase();
+  const currentStatus = String(requestData?.status || "").toUpperCase();
+
+  const isEditableStatus = [
+    "DRAFT",
+    "PENDING",
+    "REJECTED",
+  ].includes(currentStatus);
+
+  let storedUser = {};
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch {
+    storedUser = {};
+  }
+  const userRole = String(
+    storedUser?.role || storedUser?.role_name || ""
+  ).toUpperCase().trim();
+  const isAdmin = userRole === "ADMIN" || storedUser?.is_admin === true || permissions.is_admin;
+
   const canEdit =
-    permissions.can_edit &&
-    requestData?.current_stage === "REQUESTER" &&
-    requestData?.status === "Pending";
+    (permissions.can_edit || isAdmin) &&
+    (isAdmin || ["REQUESTER", "PROCUREMENT"].includes(userRole)) &&
+    (currentStage === "REQUESTER" || currentStage === "REJECTED") &&
+    isEditableStatus;
 
   const canApprove =
-    permissions.can_approve &&
-    requestData?.current_stage === "REQUESTER" &&
-    requestData?.status === "Under Review";
+    (permissions.can_approve || isAdmin) &&
+    (isAdmin || userRole === "ASISTEN_KADIV") &&
+    (currentStage === "REQUESTER" || currentStage === "ASISTEN_KADIV") &&
+    ["UNDER REVIEW", "PENDING_L1", "PENDING"].includes(currentStatus);
 
   // ==========================================
   // DOCUMENT HELPERS
@@ -958,18 +995,18 @@ function ProcurementDetail() {
         </div>
 
         {/* REJECTION NOTICE */}
-        {requestData.status === "Rejected" &&
-          requestData.current_stage === "REQUESTER" && (
+        {(String(requestData?.status || "").toUpperCase() === "REJECTED" ||
+          String(requestData?.current_stage || "").toUpperCase() === "REJECTED") && (
             <div className="procurement-rejection-notice">
               <div className="procurement-rejection-header">
                 <div className="procurement-rejection-mark">!</div>
 
                 <div className="procurement-rejection-title-wrap">
                   <h6 className="procurement-rejection-title">
-                    Pengajuan Dikembalikan
+                    Pengajuan Dikembalikan (Perlu Revisi)
                   </h6>
                   <p className="procurement-rejection-subtitle">
-                    Pengajuan vendor perlu diperbaiki sebelum dikirim kembali.
+                    Pengajuan vendor perlu diperbaiki sebelum dikirim kembali untuk proses persetujuan.
                   </p>
                 </div>
 
@@ -978,21 +1015,29 @@ function ProcurementDetail() {
 
               <div className="procurement-rejection-body">
                 <span className="procurement-rejection-label">
-                  Catatan dari Kadiv Requester
+                  Catatan Penolakan
                 </span>
                 <p className="procurement-rejection-reason">
-                  {requestData.rejection_reason ||
-                    requestData.rejection_session ||
+                  {requestData?.rejection_reason ||
+                    requestData?.rejection_session ||
                     "Alasan penolakan belum tersedia."}
                 </p>
               </div>
 
               <div className="procurement-rejection-hint">
-                Perbaiki data yang diperlukan, lalu klik{" "}
-                <strong>Simpan & Kirim</strong> untuk mengajukan ulang.
+                Perbaiki data yang diperlukan pada form di bawah, lalu klik{" "}
+                <strong>Simpan & Kirim</strong> untuk mengajukan ulang verifikasi approval.
               </div>
             </div>
           )}
+
+        {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
+        {requestData && (
+          <VendorChangeComparison
+            requestData={requestData}
+            currentRole="REQUESTER"
+          />
+        )}
 
         {/* FORM */}
         <form
@@ -1783,7 +1828,7 @@ function ProcurementDetail() {
               type="button"
               className="procurement-detail-cancel"
               disabled={saving || processingApproval}
-              onClick={() => navigate("/approval")}
+              onClick={handleBack}
             >
               Kembali
             </button>

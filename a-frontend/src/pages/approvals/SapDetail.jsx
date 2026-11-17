@@ -7,6 +7,7 @@ import {
   getAuthHeaders,
 } from "../../api/config";
 import { AlertModal } from "../../components/common/AlertModal";
+import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 function SapDetail() {
   const { id } = useParams();
@@ -19,6 +20,12 @@ function SapDetail() {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [vendorCode, setVendorCode] = useState("");
+  const [permissions, setPermissions] = useState({
+    can_view: false,
+    can_edit: false,
+    can_approve: false,
+    is_admin: false,
+  });
 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -84,13 +91,13 @@ function SapDetail() {
   const confirmBack = () => {
     showAlert({
       type: "warning",
-      title: "Kembali ke SAP?",
+      title: "Kembali ke Approval?",
       message:
-        "Apakah kamu yakin ingin kembali ke halaman SAP? Perubahan yang belum disimpan tidak akan dikirim.",
+        "Apakah kamu yakin ingin kembali ke halaman Approval? Perubahan yang belum disimpan tidak akan dikirim.",
       confirmText: "Ya, Kembali",
       cancelText: "Lanjut Periksa",
       showCancel: true,
-      onConfirm: () => navigate("/sap"),
+      onConfirm: () => navigate("/approval"),
     });
   };
 
@@ -119,8 +126,15 @@ function SapDetail() {
       }
 
       const requestData = data.data ?? data;
+      const permissionData = data.permissions || {};
 
       setRequest(requestData);
+      setPermissions({
+        can_view: permissionData.can_view ?? false,
+        can_edit: permissionData.can_edit ?? false,
+        can_approve: permissionData.can_approve ?? false,
+        is_admin: permissionData.is_admin ?? false,
+      });
       setVendorCode(requestData?.vendor?.vendor_code || "");
     } catch (error) {
       console.error("Error mengambil data SAP:", error);
@@ -128,6 +142,43 @@ function SapDetail() {
       setLoading(false);
     }
   };
+
+  // ==========================================
+  // PERMISSION CHECK
+  // ==========================================
+
+  let storedUser = {};
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch {
+    storedUser = {};
+  }
+  const userRole = String(
+    storedUser?.role || storedUser?.role_name || ""
+  ).toUpperCase().trim();
+  const isAdmin = userRole === "ADMIN" || storedUser?.is_admin === true || permissions.is_admin;
+
+  const canEdit =
+    (permissions.can_edit || isAdmin) &&
+    (isAdmin || userRole === "SAP") &&
+    request?.current_stage === "SAP" &&
+    [
+      "PENDING_L5",
+      "FORM_APPROVED",
+      "Pending",
+      "Under Review",
+      "Revision Required",
+      "Draft",
+      "DRAFT",
+    ].includes(request?.status);
+
+  const canApprove =
+    (permissions.can_approve || isAdmin) &&
+    (isAdmin || userRole === "SAP") &&
+    request?.current_stage === "SAP" &&
+    ["PENDING_L5", "FORM_APPROVED", "Pending", "Under Review"].includes(
+      request?.status,
+    );
 
   // ==========================================
   // SAVE SAP DRAFT
@@ -185,7 +236,7 @@ function SapDetail() {
         title: "Draft SAP Berhasil Disimpan",
         message: "Draft SAP berhasil disimpan.",
         confirmText: "OK",
-        onConfirm: () => navigate("/sap"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error menyimpan Draft SAP:", error);
@@ -270,7 +321,7 @@ function SapDetail() {
         message:
           "Vendor Code berhasil disimpan dan pengajuan vendor telah diselesaikan.",
         confirmText: "OK",
-        onConfirm: () => navigate("/sap"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error menyimpan Vendor Code:", error);
@@ -371,7 +422,7 @@ function SapDetail() {
         title: "Approval Berhasil Dibatalkan",
         message: "Pengajuan berhasil di-rollback ke Level 4 (Tax).",
         confirmText: "OK",
-        onConfirm: () => navigate("/sap"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       showAlert({
@@ -427,7 +478,7 @@ function SapDetail() {
         title: "Pengajuan Berhasil Ditolak",
         message: "Request berhasil ditolak dan dikembalikan kepada Requester.",
         confirmText: "OK",
-        onConfirm: () => navigate("/sap"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error Reject vendor:", error);
@@ -473,17 +524,41 @@ function SapDetail() {
     return (
       <div className="account-detail-page">
         <div className="account-detail-card">
-          Data vendor request tidak ditemukan.
+          <div className="account-detail-loading">
+            Data vendor request tidak ditemukan.
+          </div>
+          <button
+            type="button"
+            className="account-detail-cancel mt-3"
+            onClick={() => navigate("/approval")}
+          >
+            Kembali
+          </button>
         </div>
       </div>
     );
   }
 
-  const vendor = request.vendor ?? {};
+  const isUpdate =
+    request?.request_type === "UPDATE" ||
+    request?.request_type === "EXISTING" ||
+    request?.is_update === true;
 
-  const bankAccounts = Array.isArray(vendor.bank_accounts)
-    ? vendor.bank_accounts
-    : Array.isArray(vendor.bankAccounts)
+  const detailRecord = request?.details?.[0] || {};
+  const diffMap = request?.diff_data || detailRecord?.diff_data || {};
+  const newData = request?.new_data || detailRecord?.new_data || {};
+  const vendor = request.vendor ?? {};
+  const displayVendor =
+    isUpdate && Object.keys(newData).length > 0
+      ? { ...vendor, ...newData }
+      : vendor;
+
+  const bankAccounts =
+    isUpdate && Array.isArray(newData.bank_accounts) && newData.bank_accounts.length > 0
+      ? newData.bank_accounts
+      : Array.isArray(vendor.bank_accounts)
+      ? vendor.bank_accounts
+      : Array.isArray(vendor.bankAccounts)
       ? vendor.bankAccounts
       : [];
 
@@ -522,7 +597,7 @@ function SapDetail() {
         <div className="account-detail-header">
           <div>
             <h4>Detail Pengajuan Vendor</h4>
-            <p>{vendor?.nama_perusahaan || "Detail data vendor"}</p>
+            <p>{displayVendor?.nama_perusahaan || "Detail data vendor"}</p>
           </div>
         </div>
 
@@ -542,7 +617,22 @@ function SapDetail() {
               {request.current_stage || "-"}
             </span>
           </div>
+
+          <div className="account-request-item">
+            <span className="account-request-label">Tipe Pengajuan</span>
+            <span className="account-request-value">
+              {isUpdate ? "Update Existing Vendor" : "New Vendor"}
+            </span>
+          </div>
         </div>
+
+        {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
+        {isUpdate && (
+          <VendorChangeComparison
+            requestData={request}
+            currentRole="SAP"
+          />
+        )}
 
         {/* DATA REQUESTER */}
 
@@ -558,121 +648,303 @@ function SapDetail() {
             <h6 className="account-subsection-title">Data Perusahaan</h6>
 
             <div className="row account-detail-row">
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Nama Perusahaan</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.nama_perusahaan ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Nama Perusahaan
+                  {diffMap.nama_perusahaan && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.nama_perusahaan || ""}
+                  value={displayVendor?.nama_perusahaan || ""}
                   readOnly
                 />
+                {diffMap.nama_perusahaan?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.nama_perusahaan.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Search Term</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.search_term ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Search Term
+                  {diffMap.search_term && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.search_term || ""}
+                  value={displayVendor?.search_term || ""}
                   readOnly
                 />
+                {diffMap.search_term?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.search_term.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Business Type</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.business_type ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Business Type
+                  {diffMap.business_type && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.business_type || ""}
+                  value={displayVendor?.business_type || ""}
                   readOnly
                 />
+                {diffMap.business_type?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.business_type.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Kategori</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.vendor_subcategories ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Kategori
+                  {diffMap.vendor_subcategories && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.kategori?.name || vendor?.kategori_other || ""}
+                  value={displayVendor?.kategori?.name || displayVendor?.kategori_other || ""}
                   readOnly
                 />
+                {diffMap.vendor_subcategories?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.vendor_subcategories.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-12 account-detail-field">
-                <label className="account-detail-label">Street Address</label>
+              <div
+                className={`col-12 account-detail-field ${
+                  diffMap.address ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Street Address
+                  {diffMap.address && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <textarea
                   className="account-detail-input account-detail-textarea"
-                  value={vendor?.address || ""}
+                  value={displayVendor?.address || ""}
                   readOnly
                 />
+                {diffMap.address?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.address.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">City</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.city ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  City
+                  {diffMap.city && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.city || ""}
+                  value={displayVendor?.city || ""}
                   readOnly
                 />
+                {diffMap.city?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.city.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Postal Code</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.postal_code ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Postal Code
+                  {diffMap.postal_code && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.postal_code || ""}
+                  value={displayVendor?.postal_code || ""}
                   readOnly
                 />
+                {diffMap.postal_code?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.postal_code.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Country</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.country ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Country
+                  {diffMap.country && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.country || ""}
+                  value={displayVendor?.country || ""}
                   readOnly
                 />
+                {diffMap.country?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.country.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Telephone</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.phone ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Telephone
+                  {diffMap.phone && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.phone || ""}
+                  value={displayVendor?.phone || ""}
                   readOnly
                 />
+                {diffMap.phone?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.phone.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Mobile Phone</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.mobile_phone ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Mobile Phone
+                  {diffMap.mobile_phone && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.mobile_phone || ""}
+                  value={displayVendor?.mobile_phone || ""}
                   readOnly
                 />
+                {diffMap.mobile_phone?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.mobile_phone.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Fax</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.fax ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Fax
+                  {diffMap.fax && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.fax || ""}
+                  value={displayVendor?.fax || ""}
                   readOnly
                 />
+                {diffMap.fax?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.fax.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Contact Person</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.pic_vendor ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Contact Person
+                  {diffMap.pic_vendor && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.pic_vendor || ""}
+                  value={displayVendor?.pic_vendor || ""}
                   readOnly
                 />
+                {diffMap.pic_vendor?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.pic_vendor.old}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">Email</label>
+              <div
+                className={`col-md-6 account-detail-field ${
+                  diffMap.email ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Email
+                  {diffMap.email && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <input
                   className="account-detail-input"
-                  value={vendor?.email || ""}
+                  value={displayVendor?.email || ""}
                   readOnly
                 />
+                {diffMap.email?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.email.old}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -939,8 +1211,8 @@ function SapDetail() {
                   vendor?.account_group?.code
                     ? `${vendor.account_group.code} - ${vendor.account_group.name}`
                     : vendor?.account_group?.name ||
-                      vendor?.account_group_other ||
-                      ""
+                    vendor?.account_group_other ||
+                    ""
                 }
                 readOnly
               />
@@ -954,8 +1226,8 @@ function SapDetail() {
                   vendor?.recon_account?.code
                     ? `${vendor.recon_account.code} - ${vendor.recon_account.name}`
                     : vendor?.recon_account?.name ||
-                      vendor?.recon_account_other ||
-                      ""
+                    vendor?.recon_account_other ||
+                    ""
                 }
                 readOnly
               />
@@ -985,7 +1257,7 @@ function SapDetail() {
               <label className="account-detail-label">Withholding Tax</label>
 
               {Array.isArray(vendor?.withholding_taxes) &&
-              vendor.withholding_taxes.length > 0 ? (
+                vendor.withholding_taxes.length > 0 ? (
                 <div className="d-flex flex-wrap gap-2">
                   {vendor.withholding_taxes.map((tax) => (
                     <span
@@ -1012,13 +1284,15 @@ function SapDetail() {
         <div className="account-section account-input-section">
           <h5 className="account-section-title">Data SAP</h5>
           <p className="account-section-description">
-            Lengkapi Vendor Code dari SAP untuk vendor ini
+            {canEdit
+              ? "Lengkapi Vendor Code dari SAP untuk vendor ini."
+              : "Informasi identitas Vendor Code di SAP."}
           </p>
 
           <div className="row account-detail-row">
             <div className="col-md-6 account-detail-field">
               <label className="account-detail-label">
-                Vendor Code <span className="text-danger">*</span>
+                Vendor Code {canEdit && <span className="text-danger">*</span>}
               </label>
 
               <input
@@ -1027,74 +1301,102 @@ function SapDetail() {
                 value={vendorCode}
                 onChange={(e) => setVendorCode(e.target.value)}
                 placeholder="Masukkan Vendor Code"
+                readOnly={!canEdit}
                 disabled={submitting || savingDraft || rejecting}
               />
+
+              {isUpdate && vendor?.vendor_code && (
+                <div className="field-old-hint mt-2">
+                  Vendor Code SAP Terdaftar di Master: <strong>{vendor.vendor_code}</strong>
+                </div>
+              )}
+
+              {isUpdate && (
+                <div className="alert alert-info py-2 px-3 small mt-3">
+                  ℹ️ <strong>Pembaruan Existing Vendor:</strong> Vendor ini telah memiliki kode SAP <strong>{vendor?.vendor_code || vendorCode}</strong>. Menyetujui tahap akhir SAP ini akan secara otomatis memperbarui data master vendor dan menyelesaikan seluruh alur pengajuan.
+                </div>
+              )}
             </div>
           </div>
 
           {/* ACTION BUTTONS */}
 
-          <div className="account-detail-actions">
-            <button
-  type="button"
-  className="account-detail-cancel"
-  onClick={confirmBack}
-  disabled={submitting || savingDraft || rejecting}
->
-  Kembali
-</button>
+          {(canEdit || canApprove) && !showRejectForm && (
+            <div className="account-detail-actions">
+              <button
+                type="button"
+                className="account-detail-cancel"
+                onClick={confirmBack}
+                disabled={submitting || savingDraft || rejecting}
+              >
+                Kembali
+              </button>
 
-            <button
-              type="button"
-              className="account-detail-draft"
-              onClick={saveSapDraft}
-              disabled={submitting || savingDraft || rejecting}
-            >
-              {savingDraft ? "Menyimpan..." : "Simpan Draft"}
-            </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="account-detail-draft"
+                  onClick={saveSapDraft}
+                  disabled={submitting || savingDraft || rejecting}
+                >
+                  {savingDraft ? "Menyimpan..." : "Simpan Draft"}
+                </button>
+              )}
 
-            <button
-              type="button"
-              className="account-detail-reject"
-              onClick={openRejectForm}
-              disabled={submitting || savingDraft || rejecting}
-            >
-              Reject
-            </button>
+              <button
+                type="button"
+                className="account-detail-reject"
+                onClick={openRejectForm}
+                disabled={submitting || savingDraft || rejecting}
+              >
+                Reject
+              </button>
 
-            <button
-              type="button"
-              className="btn btn-warning"
-              onClick={confirmCancelApprove}
-              disabled={submitting || savingDraft || rejecting}
-              style={{ padding: "8px 16px", fontWeight: "600", borderRadius: "8px" }}
-            >
-              Cancel Approve
-            </button>
+              <button
+                type="button"
+                className="account-detail-cancel-approve"
+                onClick={confirmCancelApprove}
+                disabled={submitting || savingDraft || rejecting}
+              >
+                Cancel Approve
+              </button>
 
-            <button
-              type="button"
-              className="account-detail-save"
-              onClick={submitSap}
-              disabled={submitting || savingDraft || rejecting}
-            >
-              {submitting ? "Menyimpan..." : "Simpan & Approve"}
-            </button>
-          </div>
+              <button
+                type="button"
+                className="account-detail-save"
+                onClick={submitSap}
+                disabled={submitting || savingDraft || rejecting}
+              >
+                {submitting ? "Menyimpan..." : "Simpan & Selesaikan"}
+              </button>
+            </div>
+          )}
+
+          {/* READ ONLY BACK BUTTON */}
+          {!canEdit && !canApprove && (
+            <div className="account-detail-actions">
+              <button
+                type="button"
+                className="account-detail-cancel"
+                onClick={() => navigate("/approval")}
+              >
+                Kembali
+              </button>
+            </div>
+          )}
 
           {/* REJECT FORM */}
 
-          {showRejectForm && (
+          {showRejectForm && (canApprove || canEdit) && (
             <div className="account-reject-form">
-              <h6>Reject Request Vendor</h6>
+              <h6>Alasan Penolakan</h6>
 
               <p className="account-section-description">
-                Masukkan alasan penolakan. Request akan dikembalikan ke
-                Requester untuk diperbaiki.
+                Pengajuan akan dikembalikan ke Requester untuk diperbaiki.
               </p>
 
               <label className="account-detail-label">
-                Alasan Reject <span className="text-danger">*</span>
+                Alasan Penolakan <span className="text-danger">*</span>
               </label>
 
               <textarea
@@ -1123,39 +1425,47 @@ function SapDetail() {
                   type="button"
                   className="account-detail-reject"
                   onClick={rejectRequest}
-                  disabled={rejecting}
+                  disabled={rejecting || !rejectionReason.trim()}
                 >
                   {rejecting ? "Memproses..." : "Konfirmasi Reject"}
                 </button>
               </div>
             </div>
           )}
+
+          {/* READ ONLY NOTICE */}
+          {!canEdit && !canApprove && (
+            <div className="account-section-description">
+              Kamu memiliki akses untuk melihat data ini, tetapi tidak memiliki
+              izin untuk mengubah atau menyelesaikan pengajuan.
+            </div>
+          )}
         </div>
       </div>
-      
-        {/* ==========================================
+
+      {/* ==========================================
             ALERT MODAL
         ========================================== */}
 
-        <AlertModal
-          isOpen={modal.open}
-          type={modal.type}
-          title={modal.title}
-          message={modal.message}
-          confirmText={modal.confirmText}
-          cancelText={modal.cancelText}
-          showCancel={modal.showCancel}
-          isLoading={submitting || savingDraft || rejecting}
-          onConfirm={() => {
-            const callback = modal.onConfirm;
-            closeModal();
-            if (callback) {
-              callback();
-            }
-          }}
-          onCancel={closeModal}
-        />
-      </div>
+      <AlertModal
+        isOpen={modal.open}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        confirmText={modal.confirmText}
+        cancelText={modal.cancelText}
+        showCancel={modal.showCancel}
+        isLoading={submitting || savingDraft || rejecting}
+        onConfirm={() => {
+          const callback = modal.onConfirm;
+          closeModal();
+          if (callback) {
+            callback();
+          }
+        }}
+        onCancel={closeModal}
+      />
+    </div>
   );
 }
 

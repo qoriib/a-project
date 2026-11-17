@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../vendors/ExistingVendor.css";
 import { API_BASE_URL, getAuthHeaders } from "../../api/config";
+import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 function ApprovalDetail() {
   const { id } = useParams();
@@ -264,6 +265,14 @@ function ApprovalDetail() {
           </div>
         </div>
       </div>
+
+      {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
+      {request && (
+        <VendorChangeComparison
+          requestData={request}
+          currentRole="ALL"
+        />
+      )}
 
       {/* VENDOR INFORMATION */}
       <div className="content-card mb-4">

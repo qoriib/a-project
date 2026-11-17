@@ -7,6 +7,7 @@ import {
   getAuthHeaders,
 } from "../../api/config";
 import { AlertModal } from "../../components/common/AlertModal";
+import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 function AccountDetail() {
   const { id } = useParams();
@@ -107,13 +108,13 @@ function AccountDetail() {
   const confirmBack = () => {
     showAlert({
       type: "warning",
-      title: "Kembali ke Accounting?",
+      title: "Kembali ke Approval?",
       message:
-        "Apakah kamu yakin ingin kembali ke halaman Accounting? Perubahan yang belum disimpan tidak akan dikirim.",
+        "Apakah kamu yakin ingin kembali ke halaman Approval? Perubahan yang belum disimpan tidak akan dikirim.",
       confirmText: "Ya, Kembali",
       cancelText: "Lanjut Periksa",
       showCancel: true,
-      onConfirm: () => navigate("/account"),
+      onConfirm: () => navigate("/approval"),
     });
   };
 
@@ -231,8 +232,20 @@ function AccountDetail() {
   // PERMISSION CHECK
   // =====================================================
 
+  let storedUser = {};
+  try {
+    storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch {
+    storedUser = {};
+  }
+  const userRole = String(
+    storedUser?.role || storedUser?.role_name || ""
+  ).toUpperCase().trim();
+  const isAdmin = userRole === "ADMIN" || storedUser?.is_admin === true || permissions.is_admin;
+
   const canEdit =
-    (permissions.can_edit || permissions.is_admin) &&
+    (permissions.can_edit || isAdmin) &&
+    (isAdmin || userRole === "ACCOUNTING") &&
     request?.current_stage === "ACCOUNTING" &&
     [
       "PENDING_L3",
@@ -244,7 +257,8 @@ function AccountDetail() {
     ].includes(request?.status);
 
   const canApprove =
-    (permissions.can_approve || permissions.is_admin) &&
+    (permissions.can_approve || isAdmin) &&
+    (isAdmin || userRole === "ACCOUNTING") &&
     request?.current_stage === "ACCOUNTING" &&
     ["PENDING_L3", "Pending", "Under Review"].includes(request?.status);
 
@@ -386,7 +400,7 @@ function AccountDetail() {
           ? "Data Accounting berhasil disimpan sebagai draft."
           : "Data Accounting berhasil disimpan dan dikirim ke tahap Tax.",
         confirmText: "OK",
-        onConfirm: () => navigate("/account"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error Accounting:", error);
@@ -436,7 +450,7 @@ function AccountDetail() {
         title: "Pengajuan Berhasil Disetujui",
         message: "Pengajuan vendor berhasil diteruskan ke tahap Tax.",
         confirmText: "OK",
-        onConfirm: () => navigate("/account"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error Approve Accounting:", error);
@@ -490,7 +504,7 @@ function AccountDetail() {
         title: "Approval Berhasil Dibatalkan",
         message: "Pengajuan berhasil di-rollback ke Level 2 (Kadiv SCM).",
         confirmText: "OK",
-        onConfirm: () => navigate("/account"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error Cancel Approve Accounting:", error);
@@ -510,7 +524,7 @@ function AccountDetail() {
   // =====================================================
 
   const rejectRequest = () => {
-    if (!canApprove) return;
+    if (!canApprove && !canEdit) return;
 
     const reason = rejectionReason.trim();
 
@@ -572,7 +586,7 @@ function AccountDetail() {
         message:
           "Pengajuan vendor berhasil dikembalikan kepada Requester untuk diperbaiki.",
         confirmText: "OK",
-        onConfirm: () => navigate("/account"),
+        onConfirm: () => navigate("/approval"),
       });
     } catch (error) {
       console.error("Error Reject Accounting:", error);
@@ -615,7 +629,7 @@ function AccountDetail() {
           <button
             type="button"
             className="account-detail-cancel"
-            onClick={() => navigate("/account")}
+            onClick={() => navigate("/approval")}
           >
             Kembali
           </button>
@@ -628,11 +642,26 @@ function AccountDetail() {
   // VENDOR DATA
   // =====================================================
 
-  const vendor = request.vendor || {};
+  const isUpdate =
+    request?.request_type === "UPDATE" ||
+    request?.request_type === "EXISTING" ||
+    request?.is_update === true;
 
-  const bankAccounts = Array.isArray(vendor.bank_accounts)
-    ? vendor.bank_accounts
-    : Array.isArray(vendor.bankAccounts)
+  const detailRecord = request?.details?.[0] || {};
+  const diffMap = request?.diff_data || detailRecord?.diff_data || {};
+  const newData = request?.new_data || detailRecord?.new_data || {};
+  const vendor = request?.vendor || {};
+  const displayVendor =
+    isUpdate && Object.keys(newData).length > 0
+      ? { ...vendor, ...newData }
+      : vendor;
+
+  const bankAccounts =
+    isUpdate && Array.isArray(newData.bank_accounts) && newData.bank_accounts.length > 0
+      ? newData.bank_accounts
+      : Array.isArray(vendor.bank_accounts)
+      ? vendor.bank_accounts
+      : Array.isArray(vendor.bankAccounts)
       ? vendor.bankAccounts
       : [];
 
@@ -667,20 +696,35 @@ function AccountDetail() {
     : vendor.recon_account_other || "-";
 
   // =====================================================
-  // REUSABLE READ-ONLY FIELD
+  // REUSABLE READ-ONLY FIELD (DILENGKAPI INDIKATOR DIFF)
   // =====================================================
 
-  const ReadOnlyField = ({ label, value }) => (
-    <div className="col-md-6 account-detail-field">
-      <label className="account-detail-label">{label}</label>
-      <input
-        type="text"
-        className="account-detail-input"
-        value={value || "-"}
-        readOnly
-      />
-    </div>
-  );
+  const ReadOnlyField = ({ label, value, fieldKey = null }) => {
+    const diff = fieldKey ? diffMap[fieldKey] : null;
+    return (
+      <div
+        className={`col-md-6 account-detail-field ${
+          diff ? "field-has-diff" : ""
+        }`}
+      >
+        <label className="account-detail-label">
+          {label}
+          {diff && <span className="field-diff-badge">BERUBAH</span>}
+        </label>
+        <input
+          type="text"
+          className="account-detail-input"
+          value={value || "-"}
+          readOnly
+        />
+        {diff && diff.old && (
+          <div className="field-old-hint">
+            Sebelumnya: <span>{diff.old}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // =====================================================
   // RENDER
@@ -694,7 +738,7 @@ function AccountDetail() {
         <div className="account-detail-header">
           <div>
             <h4>Detail Pengajuan Vendor</h4>
-            <p>{vendor.nama_perusahaan || "Detail data vendor"}</p>
+            <p>{displayVendor.nama_perusahaan || "Detail data vendor"}</p>
           </div>
         </div>
 
@@ -714,7 +758,22 @@ function AccountDetail() {
               {request.current_stage || "-"}
             </span>
           </div>
+
+          <div className="account-request-item">
+            <span className="account-request-label">Tipe Pengajuan</span>
+            <span className="account-request-value">
+              {isUpdate ? "Update Existing Vendor" : "New Vendor"}
+            </span>
+          </div>
         </div>
+
+        {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
+        {isUpdate && (
+          <VendorChangeComparison
+            requestData={request}
+            currentRole="ACCOUNTING"
+          />
+        )}
 
         {/* DATA REQUESTER */}
 
@@ -730,32 +789,88 @@ function AccountDetail() {
             <div className="row account-detail-row">
               <ReadOnlyField
                 label="Nama Perusahaan"
-                value={vendor.nama_perusahaan}
+                value={displayVendor.nama_perusahaan}
+                fieldKey="nama_perusahaan"
               />
-              <ReadOnlyField label="Search Term" value={vendor.search_term} />
+              <ReadOnlyField
+                label="Search Term"
+                value={displayVendor.search_term}
+                fieldKey="search_term"
+              />
               <ReadOnlyField
                 label="Business Type"
-                value={vendor.business_type}
+                value={displayVendor.business_type}
+                fieldKey="business_type"
               />
-              <ReadOnlyField label="Kategori" value={vendor.kategori?.name} />
+              <ReadOnlyField
+                label="Kategori"
+                value={displayVendor.kategori?.name}
+                fieldKey="vendor_subcategories"
+              />
 
-              <div className="col-12 account-detail-field">
-                <label className="account-detail-label">Street Address</label>
+              <div
+                className={`col-12 account-detail-field ${
+                  diffMap.address ? "field-has-diff" : ""
+                }`}
+              >
+                <label className="account-detail-label">
+                  Street Address
+                  {diffMap.address && (
+                    <span className="field-diff-badge">BERUBAH</span>
+                  )}
+                </label>
                 <textarea
                   className="account-detail-input account-detail-textarea"
-                  value={vendor.address || ""}
+                  value={displayVendor.address || ""}
                   readOnly
                 />
+                {diffMap.address?.old && (
+                  <div className="field-old-hint">
+                    Sebelumnya: <span>{diffMap.address.old}</span>
+                  </div>
+                )}
               </div>
 
-              <ReadOnlyField label="City" value={vendor.city} />
-              <ReadOnlyField label="Postal Code" value={vendor.postal_code} />
-              <ReadOnlyField label="Country" value={vendor.country} />
-              <ReadOnlyField label="Telephone" value={vendor.phone} />
-              <ReadOnlyField label="Mobile Phone" value={vendor.mobile_phone} />
-              <ReadOnlyField label="Fax" value={vendor.fax} />
-              <ReadOnlyField label="Contact Person" value={vendor.pic_vendor} />
-              <ReadOnlyField label="Email" value={vendor.email} />
+              <ReadOnlyField
+                label="City"
+                value={displayVendor.city}
+                fieldKey="city"
+              />
+              <ReadOnlyField
+                label="Postal Code"
+                value={displayVendor.postal_code}
+                fieldKey="postal_code"
+              />
+              <ReadOnlyField
+                label="Country"
+                value={displayVendor.country}
+                fieldKey="country"
+              />
+              <ReadOnlyField
+                label="Telephone"
+                value={displayVendor.phone}
+                fieldKey="phone"
+              />
+              <ReadOnlyField
+                label="Mobile Phone"
+                value={displayVendor.mobile_phone}
+                fieldKey="mobile_phone"
+              />
+              <ReadOnlyField
+                label="Fax"
+                value={displayVendor.fax}
+                fieldKey="fax"
+              />
+              <ReadOnlyField
+                label="Contact Person"
+                value={displayVendor.pic_vendor}
+                fieldKey="pic_vendor"
+              />
+              <ReadOnlyField
+                label="Email"
+                value={displayVendor.email}
+                fieldKey="email"
+              />
             </div>
           </div>
 
@@ -763,18 +878,24 @@ function AccountDetail() {
             <h6 className="account-subsection-title">Informasi Requester</h6>
 
             <div className="row account-detail-row">
-              <ReadOnlyField label="NPWP" value={vendor.npwp} />
+              <ReadOnlyField
+                label="NPWP"
+                value={displayVendor.npwp}
+                fieldKey="npwp"
+              />
               <ReadOnlyField
                 label="Company Code / Purchasing Organization"
                 value="1200 / 1300 - PROJECT BAKTI"
               />
               <ReadOnlyField
                 label="Due Date Payment"
-                value={vendor.payment_term?.name || vendor.payment_term_other}
+                value={displayVendor.payment_term?.name || displayVendor.payment_term_other}
+                fieldKey="payment_term_id"
               />
               <ReadOnlyField
                 label="Order Currency"
-                value={vendor.order_currency_other || vendor.order_currency}
+                value={displayVendor.order_currency_other || displayVendor.order_currency}
+                fieldKey="order_currency"
               />
             </div>
           </div>
@@ -788,6 +909,17 @@ function AccountDetail() {
               Informasi seluruh rekening bank vendor yang telah diisi oleh
               Requester.
             </p>
+
+            {diffMap.bank_accounts && (
+              <div className="vcc-old-box mb-3">
+                <span className="vcc-tag">Perubahan Rekening Bank Diajukan</span>
+                <div style={{ whiteSpace: "pre-line" }}>
+                  <strong>Rekening Sebelumnya di Master:</strong>
+                  <br />
+                  {diffMap.bank_accounts.old}
+                </div>
+              </div>
+            )}
 
             {bankAccounts.length > 0 ? (
               <div className="account-bank-list">
@@ -980,6 +1112,12 @@ function AccountDetail() {
                   readOnly={!canEdit}
                 />
               )}
+
+              {isUpdate && vendor?.account_group && (
+                <div className="field-old-hint">
+                  Konfigurasi di Master: <strong>{vendor.account_group.code ? `${vendor.account_group.code} - ${vendor.account_group.name}` : vendor.account_group.name}</strong>
+                </div>
+              )}
             </div>
 
             {/* RECON ACCOUNT */}
@@ -1025,6 +1163,12 @@ function AccountDetail() {
                   readOnly={!canEdit}
                 />
               )}
+
+              {isUpdate && vendor?.recon_account && (
+                <div className="field-old-hint">
+                  Konfigurasi di Master: <strong>{vendor.recon_account.code ? `${vendor.recon_account.code} - ${vendor.recon_account.name}` : vendor.recon_account.name}</strong>
+                </div>
+              )}
             </div>
 
             {/* PAYMENT METHOD */}
@@ -1036,109 +1180,84 @@ function AccountDetail() {
           </div>
 
           {/* =================================================
-              TOMBOL ACCOUNTING STAFF
+              ACTION BUTTONS
           ================================================= */}
 
-          {canEdit && (
+          {(canEdit || canApprove) && !showRejectForm && (
             <div className="account-detail-actions">
               <button
                 type="button"
                 className="account-detail-cancel"
                 onClick={confirmBack}
-                disabled={saving}
+                disabled={saving || processingApproval}
               >
                 Kembali
               </button>
 
+              {canEdit && (
+                <button
+                  type="button"
+                  className="account-detail-draft"
+                  onClick={saveAccountingDraft}
+                  disabled={saving || processingApproval}
+                >
+                  {saving ? "Memproses..." : "Simpan Draft"}
+                </button>
+              )}
+
               <button
                 type="button"
-                className="account-detail-draft"
-                onClick={saveAccountingDraft}
-                disabled={saving}
+                className="account-detail-reject"
+                onClick={() => {
+                  setRejectionReason("");
+                  setShowRejectForm(true);
+                }}
+                disabled={saving || processingApproval}
               >
-                {saving ? "Memproses..." : "Simpan Draft"}
+                Reject
+              </button>
+
+              <button
+                type="button"
+                className="account-detail-cancel-approve"
+                onClick={() =>
+                  showAlert({
+                    type: "warning",
+                    title: "Batalkan Approval (Cancel Approve)?",
+                    message:
+                      "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 2 (Kadiv SCM).",
+                    confirmText: "Ya, Rollback",
+                    cancelText: "Kembali",
+                    showCancel: true,
+                    onConfirm: cancelApproveAccounting,
+                  })
+                }
+                disabled={saving || processingApproval}
+              >
+                Cancel Approve
               </button>
 
               <button
                 type="button"
                 className="account-detail-save"
                 onClick={submitAccounting}
-                disabled={saving}
+                disabled={saving || processingApproval}
               >
-                Simpan & Kirim ke Tax
+                {saving ? "Memproses..." : "Simpan & Kirim ke Tax"}
               </button>
             </div>
           )}
 
-          {/* =================================================
-              TOMBOL APPROVER / ADMIN
-          ================================================= */}
-
-          {canApprove && (
-            <div className="account-approval-actions">
-              <div className="account-approval-info">
-                <span className="account-approval-info-icon">✓</span>
-
-                <div>
-                  <strong>Pengajuan Siap Ditinjau</strong>
-                  <p>Periksa data Accounting sebelum memberikan keputusan.</p>
-                </div>
-              </div>
-
-              <div className="account-approval-buttons">
-                <button
-                  type="button"
-                  className="account-detail-reject"
-                  onClick={() => {
-                    setRejectionReason("");
-                    setShowRejectForm(true);
-                  }}
-                  disabled={processingApproval}
-                >
-                  ✕ Reject
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-warning"
-                  onClick={() =>
-                    showAlert({
-                      type: "warning",
-                      title: "Batalkan Approval (Cancel Approve)?",
-                      message:
-                        "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 2 (Kadiv SCM).",
-                      confirmText: "Ya, Rollback",
-                      cancelText: "Kembali",
-                      showCancel: true,
-                      onConfirm: cancelApproveAccounting,
-                    })
-                  }
-                  disabled={processingApproval}
-                  style={{ padding: "8px 16px", fontWeight: "600", borderRadius: "8px" }}
-                >
-                  Cancel Approve
-                </button>
-
-                <button
-                  type="button"
-                  className="account-approve-button"
-                  onClick={() =>
-                    showAlert({
-                      type: "warning",
-                      title: "Setujui Data Accounting?",
-                      message:
-                        "Apakah kamu yakin ingin menyetujui data Accounting? Pengajuan akan diteruskan ke tahap Tax.",
-                      confirmText: "Ya, Setujui",
-                      cancelText: "Periksa Kembali",
-                      showCancel: true,
-                      onConfirm: approveAccounting,
-                    })
-                  }
-                  disabled={processingApproval}
-                >
-                  ✓ Approve
-                </button>
-              </div>
+          {/* READ ONLY BACK BUTTON */}
+          {!canEdit && !canApprove && (
+            <div className="account-detail-actions">
+              <button
+                type="button"
+                className="account-detail-cancel"
+                onClick={() => navigate("/approval")}
+              >
+                Kembali
+              </button>
             </div>
           )}
 
@@ -1146,7 +1265,7 @@ function AccountDetail() {
               REJECT FORM
           ================================================= */}
 
-          {showRejectForm && canApprove && (
+          {showRejectForm && (canApprove || canEdit) && (
             <div className="account-reject-form">
               <h6>Alasan Penolakan</h6>
 
@@ -1193,7 +1312,6 @@ function AccountDetail() {
           )}
 
           {/* READ ONLY NOTICE */}
-
           {!canEdit && !canApprove && (
             <div className="account-section-description">
               Kamu memiliki akses untuk melihat data ini, tetapi tidak memiliki
