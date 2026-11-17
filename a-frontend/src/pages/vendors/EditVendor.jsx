@@ -1348,16 +1348,14 @@ function editVendor() {
               </div>
 
               <div className="col-md-6 account-detail-field">
-                <label className="account-detail-label">
-                  Fax <span className="text-danger">*</span>
-                </label>
+                <label className="account-detail-label">Fax</label>
 
                 <input
                   className="account-detail-input"
                   name="fax"
                   value={form.fax}
                   onChange={updateField}
-                  required
+                  placeholder="Masukkan nomor fax (opsional)"
                   disabled={saving}
                 />
               </div>

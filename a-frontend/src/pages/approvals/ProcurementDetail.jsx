@@ -1136,9 +1136,7 @@ function ProcurementDetail() {
               </div>
 
               <div className="col-md-6 procurement-detail-field">
-                <label className="procurement-detail-label">
-                  Fax {canEdit && <span className="text-danger">*</span>}
-                </label>
+                <label className="procurement-detail-label">Fax</label>
                 <input
                   type="text"
                   name="fax"
@@ -1146,8 +1144,7 @@ function ProcurementDetail() {
                   onChange={handleChange}
                   disabled={!canEdit}
                   className="procurement-detail-input"
-                  placeholder="Masukkan nomor fax"
-                  required={canEdit}
+                  placeholder="Masukkan nomor fax (opsional)"
                 />
               </div>
 

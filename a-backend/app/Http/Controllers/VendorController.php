@@ -1021,7 +1021,7 @@ class VendorController extends Controller
             // CONTACT
             'phone' => ['required', 'string', 'max:50'],
             'mobile_phone' => ['required', 'string', 'max:50'],
-            'fax' => ['required', 'string', 'max:50'],
+            'fax' => ['nullable', 'string', 'max:50'],
             'pic_vendor' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
 
