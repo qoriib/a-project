@@ -633,7 +633,7 @@ class VendorRequestSeeder extends Seeder
                 'completed_at' => null,
                 'final_pdf_path' => null,
             ],
-            // Update 8: DRAFT Requester (PT Surya Energi Persada)
+            // Update 8: PENDING_L1 Asisten Kadiv (PT Surya Energi Persada)
             [
                 'vendor_name' => 'PT Surya Energi Persada',
                 'form_number' => 'HRIS-VMS-U-20260426001',
@@ -643,8 +643,8 @@ class VendorRequestSeeder extends Seeder
                 'cat_code' => 'VMS_009',
                 'requested_by_nik' => $scmNik,
                 'requested_by_email' => $scmEmail,
-                'status' => 'DRAFT',
-                'current_stage' => 'REQUESTER',
+                'status' => 'PENDING_L1',
+                'current_stage' => 'ASISTEN_KADIV',
                 'submitted_at' => now()->subDays(1),
                 'completed_at' => null,
                 'final_pdf_path' => null,

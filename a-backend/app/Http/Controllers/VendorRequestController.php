@@ -521,26 +521,18 @@ class VendorRequestController extends Controller
             'approvalHistories.actor',
             'details',
         ])
-            ->whereIn('request_type', ['UPDATE', 'IMPORT_EXISTING', 'EXISTING']);
+            ->where('request_type', 'UPDATE')
+            ->whereNotIn('status', ['DRAFT', 'draft']);
 
-        // Jika bukan Admin, tampilkan pengajuan yang diajukan oleh user atau divisinya
+        // Jika bukan Admin (misalnya Requester), hanya tampilkan pengajuan terkait akun user itu sendiri
         if (!$user->isAdmin()) {
             $query->where(function ($q) use ($user) {
                 $q->where('requested_by_nik', $user->nik)
-                    ->orWhere('requested_by_email', $user->email)
-                    ->orWhereHas('vendor', function ($vq) use ($user) {
-                        $vq->where('created_by', $user->id);
-                    });
-
-                if (!empty($user->division)) {
-                    $q->orWhereHas('requester', function ($rq) use ($user) {
-                        $rq->where('division', $user->division);
-                    });
-                }
+                    ->orWhere('requested_by_email', $user->email);
             });
         }
 
-        $requests = $query->latest()->get();
+        $requests = $query->latest('submitted_at')->latest('id')->get();
 
         // Tambahkan informasi penolakan terakhir.
         $requests->each(function ($vendorRequest) {
