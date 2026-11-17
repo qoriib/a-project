@@ -1,0 +1,334 @@
+.vcc-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #d92d47;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.vcc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.vcc-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vcc-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: #fef2f2;
+  color: #d92d47;
+  border: 1px solid #fecaca;
+}
+
+.vcc-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.vcc-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.vcc-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.vcc-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ROLE NOTICE BOX */
+.vcc-role-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.vcc-role-notice-icon {
+  font-size: 16px;
+  color: #d92d47;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vcc-role-notice strong {
+  color: #0f172a;
+}
+
+/* TABS */
+.vcc-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+}
+
+.vcc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.vcc-tab:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+
+.vcc-tab.active {
+  background: #d92d47;
+  color: #ffffff;
+  border-color: #d92d47;
+}
+
+.vcc-tab-count {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.vcc-tab.active .vcc-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* COMPARISON TABLE */
+.vcc-table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.vcc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.vcc-table thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.vcc-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.1s;
+}
+
+.vcc-table tbody tr:hover {
+  background: #fcfcfc;
+}
+
+.vcc-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.vcc-table td {
+  padding: 14px 16px;
+  vertical-align: top;
+}
+
+/* FIELD COLUMN */
+.vcc-field-name {
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.vcc-field-role {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.vcc-field-role.requester {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.vcc-field-role.accounting {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.vcc-field-role.tax {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.vcc-field-role.sap {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* DATA BOXES */
+.vcc-old-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.vcc-old-box .vcc-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #b91c1c;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  opacity: 0.85;
+}
+
+.vcc-new-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.vcc-new-box .vcc-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+/* STATUS PILL */
+.vcc-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* EMPTY STATE */
+.vcc-empty {
+  text-align: center;
+  padding: 24px 16px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* INLINE FIELD CHANGED HIGHLIGHT IN FORMS */
+.procurement-detail-field.field-has-diff,
+.account-detail-field.field-has-diff {
+  position: relative;
+}
+
+.field-diff-badge {
+  display: inline-block;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.field-old-hint {
+  display: block;
+  font-size: 11.5px;
+  color: #dc2626;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.field-old-hint span {
+  font-weight: 400;
+  color: #991b1b;
+  text-decoration: line-through;
+  margin-left: 4px;
+}
