@@ -792,7 +792,22 @@ class NewVendorImportController extends Controller
             ->lockForUpdate()
             ->first();
 
-        $reqnum = $sequence ? ($sequence->last_number + 1) : 1;
+        $reqnum = $sequence ? ((int) $sequence->last_number + 1) : 1;
+
+        do {
+            $candidate = sprintf(
+                'HRIS-VMS-%s-%s%03d',
+                $prefix,
+                now()->format('Ymd'),
+                $reqnum
+            );
+            $exists = DB::table('vendor_requests')
+                ->where('form_number', $candidate)
+                ->exists();
+            if ($exists) {
+                $reqnum++;
+            }
+        } while ($exists);
 
         DB::table('request_sequences')
             ->where('year', $year)
@@ -803,11 +818,6 @@ class NewVendorImportController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return sprintf(
-            'HRIS-VMS-%s-%s%03d',
-            $prefix,
-            now()->format('Ymd'),
-            $reqnum
-        );
+        return $candidate;
     }
 }

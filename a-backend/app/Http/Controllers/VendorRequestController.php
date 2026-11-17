@@ -2700,26 +2700,36 @@ class VendorRequestController extends Controller
         }
 
         // Nomor berikutnya
-        $nextNumber = (int) $sequence->last_number + 1;
+        $nextNumber = $sequence ? ((int) $sequence->last_number + 1) : 1;
+
+        // Pastikan nomor request benar-benar unik dan belum ada di vendor_requests
+        do {
+            $candidate = sprintf(
+                'HRIS-%s-%s-%s%03d',
+                $formType,
+                $prefix,
+                $date,
+                $nextNumber
+            );
+            $exists = DB::table('vendor_requests')
+                ->where('form_number', $candidate)
+                ->exists();
+            if ($exists) {
+                $nextNumber++;
+            }
+        } while ($exists);
 
         // Update counter
-        DB::table('request_sequences')
-            ->where('id', $sequence->id)
-            ->update([
-                'last_number' => $nextNumber,
-                'updated_at' => $now,
-            ]);
+        if ($sequence) {
+            DB::table('request_sequences')
+                ->where('id', $sequence->id)
+                ->update([
+                    'last_number' => $nextNumber,
+                    'updated_at' => $now,
+                ]);
+        }
 
-        // Format:
-        // HRIS-VMS-N-20261027000015
-        return sprintf(
-            'HRIS-%s-%s-%s%03d',
-            //  'HRIS-%s-%s-%s%d',
-            $formType,
-            $prefix,
-            $date,
-            $nextNumber
-        );
+        return $candidate;
     }
 
 

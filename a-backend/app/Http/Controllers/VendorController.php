@@ -341,7 +341,9 @@ class VendorController extends Controller
 
     private function createRequestNumber(string $requestType): string
     {
-        $year = (int) date('Y');
+        $now = now();
+        $year = (int) $now->format('Y');
+        $dateStr = $now->format('Ymd');
         $formType = 'VMS';
 
         $status = match (strtoupper($requestType)) {
@@ -359,6 +361,8 @@ class VendorController extends Controller
             'form_type' => $formType,
             'status' => $status,
             'last_number' => 0,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
         $sequence = DB::table('request_sequences')
@@ -368,27 +372,34 @@ class VendorController extends Controller
             ->lockForUpdate()
             ->first();
 
-        if (!$sequence) {
-            throw new \RuntimeException(
-                'Gagal mendapatkan request sequence.'
+        $reqnum = $sequence ? ((int) $sequence->last_number + 1) : 1;
+
+        // Pastikan nomor request benar-benar unik dan belum ada di vendor_requests
+        do {
+            $candidate = sprintf(
+                'HRIS-VMS-%s-%s%03d',
+                $prefix,
+                $dateStr,
+                $reqnum
             );
+            $exists = DB::table('vendor_requests')
+                ->where('form_number', $candidate)
+                ->exists();
+            if ($exists) {
+                $reqnum++;
+            }
+        } while ($exists);
+
+        if ($sequence) {
+            DB::table('request_sequences')
+                ->where('id', $sequence->id)
+                ->update([
+                    'last_number' => $reqnum,
+                    'updated_at' => $now,
+                ]);
         }
 
-        $reqnum = $sequence->last_number + 1;
-
-        DB::table('request_sequences')
-            ->where('id', $sequence->id)
-            ->update([
-                'last_number' => $reqnum,
-                'updated_at' => now(),
-            ]);
-
-        return sprintf(
-            'HRIS-VMS-%s-%s%03d',
-            $prefix,
-            now()->format('Ymd'),
-            $reqnum
-        );
+        return $candidate;
     }
 
     /*

@@ -977,6 +977,22 @@ class ExistingVendorImportController extends Controller
 
         $nextNumber = (int) ($sequence?->last_number ?? 0) + 1;
 
+        do {
+            $candidate = sprintf(
+                'HRIS-%s-%s-%s%03d',
+                $formType,
+                $prefix,
+                $now->format('Ymd'),
+                $nextNumber
+            );
+            $exists = DB::table('vendor_requests')
+                ->where('form_number', $candidate)
+                ->exists();
+            if ($exists) {
+                $nextNumber++;
+            }
+        } while ($exists);
+
         if ($sequence) {
             DB::table('request_sequences')
                 ->where('id', $sequence->id)
@@ -986,12 +1002,6 @@ class ExistingVendorImportController extends Controller
                 ]);
         }
 
-        return sprintf(
-            'HRIS-%s-%s-%s%03d',
-            $formType,
-            $prefix,
-            $now->format('Ymd'),
-            $nextNumber
-        );
+        return $candidate;
     }
 }
