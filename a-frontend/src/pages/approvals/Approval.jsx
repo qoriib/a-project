@@ -729,59 +729,6 @@ function Approval() {
         </div>
       </div>
 
-      {/* TYPE SWITCHER (NEW VENDOR vs EXISTING VENDOR) */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-        <button
-          type="button"
-          onClick={() => {
-            setSearch("");
-            setCardFilter("ALL");
-            setSearchParams({ type: "NEW", ...(activeTab !== "PROCESS" ? { tab: activeTab } : {}) });
-          }}
-          style={{
-            padding: "8px 18px",
-            borderRadius: "8px",
-            fontWeight: 600,
-            fontSize: "13px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            border: "1px solid #dc2626",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            backgroundColor: requestType === "NEW" ? "#dc2626" : "#fff",
-            color: requestType === "NEW" ? "#fff" : "#dc2626",
-          }}
-        >
-          <span>➕</span> Approval New Vendor
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setSearch("");
-            setCardFilter("ALL");
-            setSearchParams({ type: "UPDATE", ...(activeTab !== "PROCESS" ? { tab: activeTab } : {}) });
-          }}
-          style={{
-            padding: "8px 18px",
-            borderRadius: "8px",
-            fontWeight: 600,
-            fontSize: "13px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            border: "1px solid #dc2626",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            backgroundColor: requestType === "UPDATE" ? "#dc2626" : "#fff",
-            color: requestType === "UPDATE" ? "#fff" : "#dc2626",
-          }}
-        >
-          <span>📁</span> Approval Existing Vendor
-        </button>
-      </div>
-
       {/* TAB */}
 
       <div className="approval-tabs">
