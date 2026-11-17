@@ -65,7 +65,10 @@ function ExistingVendor() {
       });
       const resData = await response.json().catch(() => ({}));
       if (response.ok && Array.isArray(resData?.data)) {
-        setExistingRequests(resData.data);
+        const nonDraft = resData.data.filter(
+          (req) => String(req.status || "").toUpperCase() !== "DRAFT"
+        );
+        setExistingRequests(nonDraft);
       }
     } catch (err) {
       console.error("Gagal mengambil data pengajuan update vendor:", err);
@@ -198,6 +201,7 @@ function ExistingVendor() {
   });
 
   const filteredRequests = existingRequests.filter((req) => {
+    if (String(req.status || "").toUpperCase() === "DRAFT") return false;
     if (!keyword) return true;
     const vendor = req.vendor || {};
     return (
@@ -856,7 +860,7 @@ function ExistingVendor() {
                             onClick={() => handleRequestDetail(request)}
                             style={isRejected ? { background: "#fee2e2", color: "#b91c1c", border: "1px solid #fca5a5" } : {}}
                           >
-                            {isRejected ? "Revisi Draft" : isDraft ? "Lanjutkan Draft" : "Detail"}
+                            {isRejected ? "Revisi" : "Detail"}
                           </button>
                         </td>
                       </tr>
