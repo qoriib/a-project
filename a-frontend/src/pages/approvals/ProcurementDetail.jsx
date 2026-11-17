@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./ProcurementDetail.css";
 import { BASE_URL as API_URL, API_BASE_URL, getStorageUrl, getAuthUser } from "../../api/config";
-import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 const DOCUMENT_LIST = [
   {
@@ -1030,14 +1029,6 @@ function ProcurementDetail() {
               </div>
             </div>
           )}
-
-        {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
-        {requestData && (
-          <VendorChangeComparison
-            requestData={requestData}
-            currentRole="REQUESTER"
-          />
-        )}
 
         {/* FORM */}
         <form

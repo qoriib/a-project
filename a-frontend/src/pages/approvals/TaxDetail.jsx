@@ -7,7 +7,6 @@ import {
   getAuthHeaders,
 } from "../../api/config";
 import { AlertModal } from "../../components/common/AlertModal";
-import { VendorChangeComparison } from "../../components/common/VendorChangeComparison";
 
 function TaxDetail() {
   const { id } = useParams();
@@ -600,14 +599,6 @@ function TaxDetail() {
             </span>
           </div>
         </div>
-
-        {/* PERBANDINGAN PERUBAHAN UNTUK EXISTING VENDOR */}
-        {isUpdate && (
-          <VendorChangeComparison
-            requestData={request}
-            currentRole="TAX"
-          />
-        )}
 
         {/* DATA REQUESTER */}
 
