@@ -556,10 +556,10 @@ function SapDetail() {
     isUpdate && Array.isArray(newData.bank_accounts) && newData.bank_accounts.length > 0
       ? newData.bank_accounts
       : Array.isArray(vendor.bank_accounts)
-      ? vendor.bank_accounts
-      : Array.isArray(vendor.bankAccounts)
-      ? vendor.bankAccounts
-      : [];
+        ? vendor.bank_accounts
+        : Array.isArray(vendor.bankAccounts)
+          ? vendor.bankAccounts
+          : [];
 
   // ==========================================
   // GET LATEST DOCUMENTS
@@ -616,13 +616,6 @@ function SapDetail() {
               {request.current_stage || "-"}
             </span>
           </div>
-
-          <div className="account-request-item">
-            <span className="account-request-label">Tipe Pengajuan</span>
-            <span className="account-request-value">
-              {isUpdate ? "Update Existing Vendor" : "New Vendor"}
-            </span>
-          </div>
         </div>
 
         {/* DATA REQUESTER */}
@@ -640,9 +633,8 @@ function SapDetail() {
 
             <div className="row account-detail-row">
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.nama_perusahaan ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.nama_perusahaan ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Nama Perusahaan
@@ -663,9 +655,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.search_term ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.search_term ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Search Term
@@ -686,9 +677,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.business_type ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.business_type ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Business Type
@@ -709,9 +699,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.vendor_subcategories ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.vendor_subcategories ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Kategori
@@ -732,9 +721,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-12 account-detail-field ${
-                  diffMap.address ? "field-has-diff" : ""
-                }`}
+                className={`col-12 account-detail-field ${diffMap.address ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Street Address
@@ -755,9 +743,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.city ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.city ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   City
@@ -778,9 +765,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.postal_code ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.postal_code ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Postal Code
@@ -801,9 +787,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.country ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.country ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Country
@@ -824,9 +809,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.phone ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.phone ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Telephone
@@ -847,9 +831,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.mobile_phone ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.mobile_phone ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Mobile Phone
@@ -870,9 +853,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.fax ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.fax ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Fax
@@ -893,9 +875,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.pic_vendor ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.pic_vendor ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Contact Person
@@ -916,9 +897,8 @@ function SapDetail() {
               </div>
 
               <div
-                className={`col-md-6 account-detail-field ${
-                  diffMap.email ? "field-has-diff" : ""
-                }`}
+                className={`col-md-6 account-detail-field ${diffMap.email ? "field-has-diff" : ""
+                  }`}
               >
                 <label className="account-detail-label">
                   Email

@@ -300,8 +300,8 @@ function KadivDetail() {
     isUpdate && Array.isArray(newData.bank_accounts) && newData.bank_accounts.length > 0
       ? newData.bank_accounts
       : Array.isArray(vendor.bank_accounts ?? vendor.bankAccounts)
-      ? (vendor.bank_accounts ?? vendor.bankAccounts)
-      : [];
+        ? (vendor.bank_accounts ?? vendor.bankAccounts)
+        : [];
 
   const documents = Array.isArray(vendor.documents) ? vendor.documents : [];
 
@@ -418,8 +418,8 @@ function KadivDetail() {
       const body = isReject
         ? { rejection_reason: rejectReason.trim() }
         : action === "cancel_approve"
-        ? { reason: "Cancel approve dari antarmuka verifikator/approver" }
-        : {};
+          ? { reason: "Cancel approve dari antarmuka verifikator/approver" }
+          : {};
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -436,10 +436,10 @@ function KadivDetail() {
       if (!response.ok) {
         throw new Error(
           result.message ||
-            Object.values(result.errors || {})
-              .flat()
-              .join("\n") ||
-            "Gagal memproses pengajuan vendor.",
+          Object.values(result.errors || {})
+            .flat()
+            .join("\n") ||
+          "Gagal memproses pengajuan vendor.",
         );
       }
 
@@ -449,15 +449,15 @@ function KadivDetail() {
         title: isReject
           ? "Pengajuan Berhasil Ditolak"
           : action === "cancel_approve"
-          ? "Approval Berhasil Dibatalkan"
-          : "Pengajuan Berhasil Disetujui",
+            ? "Approval Berhasil Dibatalkan"
+            : "Pengajuan Berhasil Disetujui",
         message:
           result.message ||
           (isReject
             ? "Pengajuan vendor telah ditolak dan dikembalikan kepada Requester."
             : action === "cancel_approve"
-            ? "Approval dibatalkan dan pengajuan di-rollback ke tahap sebelumnya."
-            : "Pengajuan vendor berhasil disetujui dan diteruskan ke tahap berikutnya."),
+              ? "Approval dibatalkan dan pengajuan di-rollback ke tahap sebelumnya."
+              : "Pengajuan vendor berhasil disetujui dan diteruskan ke tahap berikutnya."),
         confirmText: "OK",
         onConfirm: () => navigate("/approval"),
       });
@@ -506,9 +506,8 @@ function KadivDetail() {
     const diff = fieldKey ? diffMap[fieldKey] : null;
     return (
       <div
-        className={`${full ? "col-12" : "col-md-6"} procurement-detail-field ${
-          diff ? "field-has-diff" : ""
-        }`}
+        className={`${full ? "col-12" : "col-md-6"} procurement-detail-field ${diff ? "field-has-diff" : ""
+          }`}
       >
         <label className="procurement-detail-label">
           {label}
@@ -611,13 +610,6 @@ function KadivDetail() {
             <span className="procurement-request-label">Tahap</span>
             <span className="procurement-request-value">
               {requestData.current_stage || "-"}
-            </span>
-          </div>
-
-          <div className="procurement-request-item">
-            <span className="procurement-request-label">Tipe Pengajuan</span>
-            <span className="procurement-request-value">
-              {isUpdate ? "Update Existing Vendor" : "New Vendor"}
             </span>
           </div>
         </div>
@@ -867,8 +859,8 @@ function KadivDetail() {
                           className="procurement-detail-input kadiv-bank-input"
                           value={showValue(
                             bank.account_name ??
-                              bank.benificiary ??
-                              bank.beneficiary,
+                            bank.benificiary ??
+                            bank.beneficiary,
                           )}
                           readOnly
                         />

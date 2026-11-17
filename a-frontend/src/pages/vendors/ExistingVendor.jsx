@@ -30,7 +30,7 @@ function ExistingVendor() {
   const canEdit = canSubmitUpdate;
   const canDelete = isAdmin;
 
-  // Role selain requester/admin langsung menampilkan tabel Data Vendor (Master) tanpa tab
+  // Role selain requester/admin langsung menampilkan tabel Data Vendor tanpa tab
   const activeTab = canSubmitUpdate && searchParams.get("tab") === "requests" ? "REQUESTS" : "VENDORS";
 
   const [vendors, setVendors] = useState([]);
@@ -463,7 +463,7 @@ function ExistingVendor() {
               setSearchParams({});
             }}
           >
-            Data Vendor (Master)
+            Data Vendor
             <span>{vendors.length}</span>
           </button>
 
@@ -487,273 +487,273 @@ function ExistingVendor() {
             ACTION IMPORT EXCEL (KHUSUS ADMIN)
         ========================================== */}
 
-      {isAdmin && (
-        <div className="existing-vendor-actions-row">
-          {/* IMPORT EXCEL */}
-          <div className="existing-action-card excel-card">
-            <div className="existing-action-icon excel">
-              <span>▤</span>
-            </div>
+          {isAdmin && (
+            <div className="existing-vendor-actions-row">
+              {/* IMPORT EXCEL */}
+              <div className="existing-action-card excel-card">
+                <div className="existing-action-icon excel">
+                  <span>▤</span>
+                </div>
 
-            <div className="existing-action-content">
-              <h5>Import Excel</h5>
+                <div className="existing-action-content">
+                  <h5>Import Excel</h5>
 
-              <p>
-                Impor data Existing Vendor beserta rekening bank dan withholding
-                tax melalui template Excel. Data otomatis langsung berstatus
-                Completed tanpa perlu proses approval.
-              </p>
+                  <p>
+                    Impor data Existing Vendor beserta rekening bank dan withholding
+                    tax melalui template Excel. Data otomatis langsung berstatus
+                    Completed tanpa perlu proses approval.
+                  </p>
 
-              <div className="excel-actions-inline">
-                {/* PILIH FILE */}
-                <label
-                  htmlFor="existing-vendor-excel-input"
-                  className={`excel-file-picker ${importing ? "disabled" : ""}`}
-                >
-                  <span className="excel-file-picker-icon">↑</span>
+                  <div className="excel-actions-inline">
+                    {/* PILIH FILE */}
+                    <label
+                      htmlFor="existing-vendor-excel-input"
+                      className={`excel-file-picker ${importing ? "disabled" : ""}`}
+                    >
+                      <span className="excel-file-picker-icon">↑</span>
 
-                  <span className="excel-file-picker-text">
-                    <strong>
-                      {selectedFile ? "Ganti File" : "Pilih File Excel"}
-                    </strong>
+                      <span className="excel-file-picker-text">
+                        <strong>
+                          {selectedFile ? "Ganti File" : "Pilih File Excel"}
+                        </strong>
 
-                    <small>
-                      {selectedFile
-                        ? selectedFile.name
-                        : "Format .xlsx atau .xls"}
-                    </small>
-                  </span>
-                </label>
+                        <small>
+                          {selectedFile
+                            ? selectedFile.name
+                            : "Format .xlsx atau .xls"}
+                        </small>
+                      </span>
+                    </label>
 
-                {/* INPUT FILE */}
-                <input
-                  ref={fileInputRef}
-                  id="existing-vendor-excel-input"
-                  className="excel-hidden-input"
-                  type="file"
-                  accept=".xlsx,.xls"
-                  disabled={importing}
-                  onChange={handleFileChange}
-                />
+                    {/* INPUT FILE */}
+                    <input
+                      ref={fileInputRef}
+                      id="existing-vendor-excel-input"
+                      className="excel-hidden-input"
+                      type="file"
+                      accept=".xlsx,.xls"
+                      disabled={importing}
+                      onChange={handleFileChange}
+                    />
 
-                {/* IMPORT BUTTON */}
-                <button
-                  type="button"
-                  className="existing-action-primary import-primary"
-                  onClick={handleImport}
-                  disabled={importing || !selectedFile}
-                >
-                  {importing ? (
-                    <>
-                      <span className="import-button-spinner" />
-                      Mengimpor...
-                    </>
-                  ) : (
-                    "Import Excel"
-                  )}
-                </button>
+                    {/* IMPORT BUTTON */}
+                    <button
+                      type="button"
+                      className="existing-action-primary import-primary"
+                      onClick={handleImport}
+                      disabled={importing || !selectedFile}
+                    >
+                      {importing ? (
+                        <>
+                          <span className="import-button-spinner" />
+                          Mengimpor...
+                        </>
+                      ) : (
+                        "Import Excel"
+                      )}
+                    </button>
 
-                <a
-                  href={`${API_URL}/vendors/template/existing`}
-                  onClick={handleDownloadTemplate}
-                  className="btn btn-outline-secondary"
-                  download="template-existing-vendor.xlsx"
-                  style={{ padding: "8px 14px", fontSize: "13px", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
-                >
-                  <span>📥</span> Template Excel
-                </a>
+                    <a
+                      href={`${API_URL}/vendors/template/existing`}
+                      onClick={handleDownloadTemplate}
+                      className="btn btn-outline-secondary"
+                      download="template-existing-vendor.xlsx"
+                      style={{ padding: "8px 14px", fontSize: "13px", borderRadius: "8px", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                    >
+                      <span>📥</span> Template Excel
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* MODAL VENDOR SUDAH TERDAFTAR */}
-      {duplicateVendorMessage && (
-        <div
-          className="duplicate-vendor-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setDuplicateVendorMessage("");
-            }
-          }}
-        >
-          <div
-            className="duplicate-vendor-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="duplicate-vendor-title"
-          >
-            <div className="duplicate-vendor-icon">
-              <span>!</span>
+          {/* MODAL VENDOR SUDAH TERDAFTAR */}
+          {duplicateVendorMessage && (
+            <div
+              className="duplicate-vendor-overlay"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) {
+                  setDuplicateVendorMessage("");
+                }
+              }}
+            >
+              <div
+                className="duplicate-vendor-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="duplicate-vendor-title"
+              >
+                <div className="duplicate-vendor-icon">
+                  <span>!</span>
+                </div>
+
+                <h4 id="duplicate-vendor-title">Vendor Sudah Terdaftar</h4>
+
+                <p className="duplicate-vendor-subtitle">
+                  Import tidak dapat dilanjutkan.
+                </p>
+
+                <div className="duplicate-vendor-detail">
+                  {duplicateVendorMessage}
+                </div>
+
+                <p className="duplicate-vendor-info">
+                  Periksa kembali Vendor Code dalam file Excel kamu. Data tidak akan
+                  ditimpa oleh proses import ini.
+                </p>
+
+                <button
+                  type="button"
+                  className="duplicate-vendor-close"
+                  onClick={() => setDuplicateVendorMessage("")}
+                >
+                  Mengerti
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* PESAN IMPORT */}
+          {importMessage && (
+            <div className="alert alert-success mt-3" role="status">
+              {importMessage}
+            </div>
+          )}
+
+          {importError && (
+            <div
+              className="alert alert-danger mt-3"
+              role="alert"
+              style={{ whiteSpace: "pre-line" }}
+            >
+              <strong>Import gagal.</strong>
+              <div className="mt-1">{importError}</div>
+            </div>
+          )}
+
+          {/* DAFTAR VENDOR */}
+          <div className="existing-vendor-list-card">
+            <div className="existing-vendor-list-header">
+              <div>
+                <h4>Daftar Existing Vendor</h4>
+                <p>Data seluruh existing vendor.</p>
+              </div>
+
+              <div className="existing-vendor-total">
+                {filteredVendors.length} Vendor
+              </div>
             </div>
 
-            <h4 id="duplicate-vendor-title">Vendor Sudah Terdaftar</h4>
+            {loading ? (
+              <div className="existing-vendor-empty">
+                Memuat data Existing Vendor...
+              </div>
+            ) : error ? (
+              <div className="alert alert-danger m-3" role="alert">
+                <p className="mb-2">{error}</p>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={() => setRefreshKey((current) => current + 1)}
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            ) : filteredVendors.length === 0 ? (
+              <div className="existing-vendor-empty">
+                <div className="empty-icon">📋</div>
+                <h5>
+                  {search ? "Vendor tidak ditemukan" : "Belum ada Existing Vendor"}
+                </h5>
+                <p>
+                  {search
+                    ? "Coba periksa kembali Vendor Code atau nama perusahaan."
+                    : "Vendor yang sudah terdaftar akan muncul di sini."}
+                </p>
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table existing-vendor-table">
+                  <thead>
+                    <tr>
+                      <th width="45">No.</th>
+                      <th>Vendor Code</th>
+                      <th>Nama Perusahaan</th>
+                      <th>Kategori</th>
+                      <th>PIC Vendor</th>
+                      <th>Email</th>
+                      <th>No. Telepon</th>
+                      <th>Kota</th>
+                      <th width="140">Aksi</th>
+                    </tr>
+                  </thead>
 
-            <p className="duplicate-vendor-subtitle">
-              Import tidak dapat dilanjutkan.
-            </p>
-
-            <div className="duplicate-vendor-detail">
-              {duplicateVendorMessage}
-            </div>
-
-            <p className="duplicate-vendor-info">
-              Periksa kembali Vendor Code dalam file Excel kamu. Data tidak akan
-              ditimpa oleh proses import ini.
-            </p>
-
-            <button
-              type="button"
-              className="duplicate-vendor-close"
-              onClick={() => setDuplicateVendorMessage("")}
-            >
-              Mengerti
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* PESAN IMPORT */}
-      {importMessage && (
-        <div className="alert alert-success mt-3" role="status">
-          {importMessage}
-        </div>
-      )}
-
-      {importError && (
-        <div
-          className="alert alert-danger mt-3"
-          role="alert"
-          style={{ whiteSpace: "pre-line" }}
-        >
-          <strong>Import gagal.</strong>
-          <div className="mt-1">{importError}</div>
-        </div>
-      )}
-
-      {/* DAFTAR VENDOR */}
-      <div className="existing-vendor-list-card">
-        <div className="existing-vendor-list-header">
-          <div>
-            <h4>Daftar Existing Vendor</h4>
-            <p>Data seluruh existing vendor.</p>
-          </div>
-
-          <div className="existing-vendor-total">
-            {filteredVendors.length} Vendor
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="existing-vendor-empty">
-            Memuat data Existing Vendor...
-          </div>
-        ) : error ? (
-          <div className="alert alert-danger m-3" role="alert">
-            <p className="mb-2">{error}</p>
-            <button
-              type="button"
-              className="btn btn-outline-danger btn-sm"
-              onClick={() => setRefreshKey((current) => current + 1)}
-            >
-              Coba Lagi
-            </button>
-          </div>
-        ) : filteredVendors.length === 0 ? (
-          <div className="existing-vendor-empty">
-            <div className="empty-icon">📋</div>
-            <h5>
-              {search ? "Vendor tidak ditemukan" : "Belum ada Existing Vendor"}
-            </h5>
-            <p>
-              {search
-                ? "Coba periksa kembali Vendor Code atau nama perusahaan."
-                : "Vendor yang sudah terdaftar akan muncul di sini."}
-            </p>
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table existing-vendor-table">
-              <thead>
-                <tr>
-                  <th width="45">No.</th>
-                  <th>Vendor Code</th>
-                  <th>Nama Perusahaan</th>
-                  <th>Kategori</th>
-                  <th>PIC Vendor</th>
-                  <th>Email</th>
-                  <th>No. Telepon</th>
-                  <th>Kota</th>
-                  <th width="140">Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredVendors.map((vendor, index) => (
-                  <tr key={vendor.id}>
-                    <td>{index + 1}</td>
-                    <td>
-                      <strong>{vendor.vendor_code || "-"}</strong>
-                    </td>
-                    <td>
-                      <strong>{vendor.nama_perusahaan || "-"}</strong>
-                    </td>
-                    <td>
-                      {vendor.kategori?.name ||
-                        vendor.kategori?.category_desc ||
-                        "-"}
-                    </td>
-                    <td>{vendor.pic_vendor || "-"}</td>
-                    <td>{vendor.email || "-"}</td>
-                    <td>{vendor.phone || vendor.mobile_phone || "-"}</td>
-                    <td>{vendor.city || "-"}</td>
-                    <td>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className="existing-detail-button"
-                          onClick={() => openDetail(vendor)}
-                        >
-                          Detail
-                        </button>
-
-                        {canEdit && (
-                          <button
-                            type="button"
-                            className="existing-edit-button"
-                            onClick={() => openEdit(vendor)}
+                  <tbody>
+                    {filteredVendors.map((vendor, index) => (
+                      <tr key={vendor.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <strong>{vendor.vendor_code || "-"}</strong>
+                        </td>
+                        <td>
+                          <strong>{vendor.nama_perusahaan || "-"}</strong>
+                        </td>
+                        <td>
+                          {vendor.kategori?.name ||
+                            vendor.kategori?.category_desc ||
+                            "-"}
+                        </td>
+                        <td>{vendor.pic_vendor || "-"}</td>
+                        <td>{vendor.email || "-"}</td>
+                        <td>{vendor.phone || vendor.mobile_phone || "-"}</td>
+                        <td>{vendor.city || "-"}</td>
+                        <td>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
                           >
-                            Edit
-                          </button>
-                        )}
+                            <button
+                              type="button"
+                              className="existing-detail-button"
+                              onClick={() => openDetail(vendor)}
+                            >
+                              Detail
+                            </button>
 
-                        {canDelete && (
-                          <button
-                            type="button"
-                            className="existing-delete-button"
-                            onClick={() => handleDelete(vendor.id)}
-                          >
-                            Hapus
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                className="existing-edit-button"
+                                onClick={() => openEdit(vendor)}
+                              >
+                                Edit
+                              </button>
+                            )}
+
+                            {canDelete && (
+                              <button
+                                type="button"
+                                className="existing-delete-button"
+                                onClick={() => handleDelete(vendor.id)}
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </>
-  )}
+        </>
+      )}
 
       {/* ==========================================
             TAB 2: PENGAJUAN UPDATE VENDOR
@@ -837,10 +837,10 @@ function ExistingVendor() {
                         <td>
                           {request.submitted_at
                             ? new Date(request.submitted_at).toLocaleDateString("id-ID", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
                             : "-"}
                         </td>
                         <td>

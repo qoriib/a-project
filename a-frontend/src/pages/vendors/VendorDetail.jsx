@@ -233,8 +233,6 @@ function VendorDetail() {
             <h4>Detail Existing Vendor</h4>
             <p>{vendor.nama_perusahaan || "Informasi vendor terdaftar"}</p>
           </div>
-
-          <span className="vendor-detail-readonly-badge">Read Only</span>
         </header>
 
         <section className="vendor-detail-section">
@@ -248,14 +246,14 @@ function VendorDetail() {
             {readOnlyField(
               "No. Request",
               vendor.latest_request?.form_number ||
-                vendor.latestRequest?.form_number ||
-                "-",
+              vendor.latestRequest?.form_number ||
+              "-",
             )}
             {readOnlyField(
               "Tipe Request",
               vendor.latest_request?.request_type ||
-                vendor.latestRequest?.request_type ||
-                (vendor.source_type === "EXISTING" ? "EXISTING" : "NEW"),
+              vendor.latestRequest?.request_type ||
+              (vendor.source_type === "EXISTING" ? "EXISTING" : "NEW"),
             )}
             {readOnlyField("Nama Perusahaan", vendor.nama_perusahaan)}
             {readOnlyField("Vendor Code", vendor.vendor_code)}

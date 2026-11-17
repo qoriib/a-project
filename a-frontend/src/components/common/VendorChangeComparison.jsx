@@ -281,7 +281,7 @@ export function VendorChangeComparison({
             <thead>
               <tr>
                 <th width="24%">Field / Bagian</th>
-                <th width="35%">Data Sebelumnya (Master)</th>
+                <th width="35%">Data Sebelumnya</th>
                 <th width="35%">Data Baru (Diajukan)</th>
                 <th width="6%">Status</th>
               </tr>
@@ -302,7 +302,7 @@ export function VendorChangeComparison({
 
                   <td>
                     <div className="vcc-old-box">
-                      <span className="vcc-tag">Sebelumnya (Master)</span>
+                      <span className="vcc-tag">Sebelumnya</span>
                       <div>{item.old}</div>
                     </div>
                   </td>

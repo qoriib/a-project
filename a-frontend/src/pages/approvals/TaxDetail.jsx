@@ -536,10 +536,10 @@ function TaxDetail() {
     isUpdate && Array.isArray(newData.bank_accounts) && newData.bank_accounts.length > 0
       ? newData.bank_accounts
       : Array.isArray(vendor.bank_accounts)
-      ? vendor.bank_accounts
-      : Array.isArray(vendor.bankAccounts)
-      ? vendor.bankAccounts
-      : [];
+        ? vendor.bank_accounts
+        : Array.isArray(vendor.bankAccounts)
+          ? vendor.bankAccounts
+          : [];
 
   const latestDocuments = Object.values(
     (Array.isArray(vendor.documents) ? vendor.documents : []).reduce(
@@ -591,13 +591,6 @@ function TaxDetail() {
               {request.current_stage || "-"}
             </span>
           </div>
-
-          <div className="account-request-item">
-            <span className="account-request-label">Tipe Pengajuan</span>
-            <span className="account-request-value">
-              {isUpdate ? "Update Existing Vendor" : "New Vendor"}
-            </span>
-          </div>
         </div>
 
         {/* DATA REQUESTER */}
@@ -637,9 +630,8 @@ function TaxDetail() {
               const diff = fieldKey ? diffMap[fieldKey] : null;
               return (
                 <div
-                  className={`col-md-6 account-detail-field ${
-                    diff ? "field-has-diff" : ""
-                  }`}
+                  className={`col-md-6 account-detail-field ${diff ? "field-has-diff" : ""
+                    }`}
                   key={label}
                 >
                   <label className="account-detail-label">
@@ -661,9 +653,8 @@ function TaxDetail() {
             })}
 
             <div
-              className={`col-12 account-detail-field ${
-                diffMap.address ? "field-has-diff" : ""
-              }`}
+              className={`col-12 account-detail-field ${diffMap.address ? "field-has-diff" : ""
+                }`}
             >
               <label className="account-detail-label">
                 Street Address

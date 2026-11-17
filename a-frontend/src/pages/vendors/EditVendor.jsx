@@ -230,7 +230,7 @@ function editVendor() {
     }));
 
     if (shouldRedirect) {
-      navigate("/approval?type=UPDATE");
+      navigate("/vendors/existing?tab=requests");
     }
   };
 
@@ -1121,28 +1121,6 @@ function editVendor() {
             <p>{vendor.nama_perusahaan || "Edit data vendor"}</p>
           </div>
         </div>
-
-        {isRequester && (
-          <div
-            style={{
-              background: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              borderRadius: "8px",
-              padding: "14px 18px",
-              margin: "0 0 24px 0",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "12px",
-            }}
-          >
-            <span style={{ fontSize: "20px" }}>ℹ️</span>
-            <div style={{ fontSize: "13px", color: "#1e40af", lineHeight: "1.5" }}>
-              <strong>Alur Approval Perubahan Data Vendor (Existing Vendor):</strong>
-              <br />
-              Sebagai Requester, Anda dapat mengajukan pembaruan data vendor (informasi umum perusahaan, kontak/PIC, rekening bank, dan dokumen). Pengajuan ini akan melalui proses verifikasi dan approval bertingkat (<strong>Asisten Kadiv → Kadiv SCM → Accounting → Tax → SAP</strong>) sebelum data master vendor diperbarui. Bagian Accounting, Tax, dan SAP bersifat read-only dan akan diverifikasi oleh masing-masing tim pada tahap approval terkait.
-            </div>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit}>
           {/* =================================================
