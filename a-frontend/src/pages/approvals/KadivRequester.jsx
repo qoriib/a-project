@@ -93,12 +93,17 @@ function KadivDetail() {
   // ALERT KEMBALI
   // ==========================================
 
+  const isUpdate =
+    requestData?.is_update ||
+    requestData?.request_type === "UPDATE" ||
+    requestData?.request_type === "EXISTING";
+
+  const targetApprovalUrl = isUpdate
+    ? "/approval?type=UPDATE"
+    : "/approval?type=NEW";
+
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate("/approval");
-    }
+    navigate(targetApprovalUrl);
   };
 
   // ==========================================
@@ -282,11 +287,6 @@ function KadivDetail() {
 
   // DATA REQUEST DAN VENDOR
 
-  const isUpdate =
-    requestData?.request_type === "UPDATE" ||
-    requestData?.request_type === "EXISTING" ||
-    requestData?.is_update === true;
-
   const detailRecord = requestData?.details?.[0] || {};
   const diffMap = requestData?.diff_data || detailRecord?.diff_data || {};
   const newData = requestData?.new_data || detailRecord?.new_data || {};
@@ -459,7 +459,7 @@ function KadivDetail() {
               ? "Approval dibatalkan dan pengajuan di-rollback ke tahap sebelumnya."
               : "Pengajuan vendor berhasil disetujui dan diteruskan ke tahap berikutnya."),
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (err) {
       console.error("Proses Kadiv:", err);
@@ -571,7 +571,7 @@ function KadivDetail() {
           <button
             type="button"
             className="procurement-detail-cancel"
-            onClick={() => navigate("/approval")}
+            onClick={() => navigate(targetApprovalUrl)}
           >
             Kembali
           </button>

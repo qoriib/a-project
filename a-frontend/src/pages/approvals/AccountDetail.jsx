@@ -20,6 +20,15 @@ function AccountDetail() {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const isUpdate =
+    request?.is_update ||
+    request?.request_type === "UPDATE" ||
+    request?.request_type === "EXISTING";
+
+  const targetApprovalUrl = isUpdate
+    ? "/approval?type=UPDATE"
+    : "/approval?type=NEW";
+
   const [permissions, setPermissions] = useState({
     can_view: false,
     can_edit: false,
@@ -113,7 +122,7 @@ function AccountDetail() {
       confirmText: "Ya, Kembali",
       cancelText: "Lanjut Periksa",
       showCancel: true,
-      onConfirm: () => navigate("/approval"),
+      onConfirm: () => navigate(targetApprovalUrl),
     });
   };
 
@@ -399,7 +408,7 @@ function AccountDetail() {
           ? "Data Accounting berhasil disimpan sebagai draft."
           : "Data Accounting berhasil disimpan dan dikirim ke tahap Tax.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error Accounting:", error);
@@ -449,7 +458,7 @@ function AccountDetail() {
         title: "Pengajuan Berhasil Disetujui",
         message: "Pengajuan vendor berhasil diteruskan ke tahap Tax.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error Approve Accounting:", error);
@@ -503,7 +512,7 @@ function AccountDetail() {
         title: "Approval Berhasil Dibatalkan",
         message: "Pengajuan berhasil di-rollback ke Level 2 (Kadiv SCM).",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error Cancel Approve Accounting:", error);
@@ -585,7 +594,7 @@ function AccountDetail() {
         message:
           "Pengajuan vendor berhasil dikembalikan kepada Requester untuk diperbaiki.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error Reject Accounting:", error);
@@ -628,7 +637,7 @@ function AccountDetail() {
           <button
             type="button"
             className="account-detail-cancel"
-            onClick={() => navigate("/approval")}
+            onClick={() => navigate(targetApprovalUrl)}
           >
             Kembali
           </button>
@@ -640,11 +649,6 @@ function AccountDetail() {
   // =====================================================
   // VENDOR DATA
   // =====================================================
-
-  const isUpdate =
-    request?.request_type === "UPDATE" ||
-    request?.request_type === "EXISTING" ||
-    request?.is_update === true;
 
   const detailRecord = request?.details?.[0] || {};
   const diffMap = request?.diff_data || detailRecord?.diff_data || {};
@@ -1236,7 +1240,7 @@ function AccountDetail() {
               <button
                 type="button"
                 className="account-detail-cancel"
-                onClick={() => navigate("/approval")}
+                onClick={() => navigate(targetApprovalUrl)}
               >
                 Kembali
               </button>

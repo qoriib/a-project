@@ -121,7 +121,11 @@ function ApprovalDetail() {
   };
 
   const handleBack = () => {
-    navigate("/approval");
+    const isUpdate =
+      request?.is_update ||
+      request?.request_type === "UPDATE" ||
+      request?.request_type === "EXISTING";
+    navigate(isUpdate ? "/approval?type=UPDATE" : "/approval?type=NEW");
   };
 
   if (loading) {

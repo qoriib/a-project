@@ -18,6 +18,15 @@ function SapDetail() {
 
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const isUpdate =
+    request?.is_update ||
+    request?.request_type === "UPDATE" ||
+    request?.request_type === "EXISTING";
+
+  const targetApprovalUrl = isUpdate
+    ? "/approval?type=UPDATE"
+    : "/approval?type=NEW";
   const [vendorCode, setVendorCode] = useState("");
   const [permissions, setPermissions] = useState({
     can_view: false,
@@ -96,7 +105,7 @@ function SapDetail() {
       confirmText: "Ya, Kembali",
       cancelText: "Lanjut Periksa",
       showCancel: true,
-      onConfirm: () => navigate("/approval"),
+      onConfirm: () => navigate(targetApprovalUrl),
     });
   };
 
@@ -235,7 +244,7 @@ function SapDetail() {
         title: "Draft SAP Berhasil Disimpan",
         message: "Draft SAP berhasil disimpan.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error menyimpan Draft SAP:", error);
@@ -320,7 +329,7 @@ function SapDetail() {
         message:
           "Vendor Code berhasil disimpan dan pengajuan vendor telah diselesaikan.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error menyimpan Vendor Code:", error);
@@ -421,7 +430,7 @@ function SapDetail() {
         title: "Approval Berhasil Dibatalkan",
         message: "Pengajuan berhasil di-rollback ke Level 4 (Tax).",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       showAlert({
@@ -477,7 +486,7 @@ function SapDetail() {
         title: "Pengajuan Berhasil Ditolak",
         message: "Request berhasil ditolak dan dikembalikan kepada Requester.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error Reject vendor:", error);
@@ -529,7 +538,7 @@ function SapDetail() {
           <button
             type="button"
             className="account-detail-cancel mt-3"
-            onClick={() => navigate("/approval")}
+            onClick={() => navigate(targetApprovalUrl)}
           >
             Kembali
           </button>
@@ -537,11 +546,6 @@ function SapDetail() {
       </div>
     );
   }
-
-  const isUpdate =
-    request?.request_type === "UPDATE" ||
-    request?.request_type === "EXISTING" ||
-    request?.is_update === true;
 
   const detailRecord = request?.details?.[0] || {};
   const diffMap = request?.diff_data || detailRecord?.diff_data || {};
@@ -1349,7 +1353,7 @@ function SapDetail() {
               <button
                 type="button"
                 className="account-detail-cancel"
-                onClick={() => navigate("/approval")}
+                onClick={() => navigate(targetApprovalUrl)}
               >
                 Kembali
               </button>

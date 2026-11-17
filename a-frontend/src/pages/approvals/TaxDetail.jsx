@@ -18,6 +18,15 @@ function TaxDetail() {
   // ==========================================
 
   const [request, setRequest] = useState(null);
+
+  const isUpdate =
+    request?.is_update ||
+    request?.request_type === "UPDATE" ||
+    request?.request_type === "EXISTING";
+
+  const targetApprovalUrl = isUpdate
+    ? "/approval?type=UPDATE"
+    : "/approval?type=NEW";
   const [permissions, setPermissions] = useState({
     can_view: false,
     can_edit: false,
@@ -241,7 +250,7 @@ function TaxDetail() {
       confirmText: "Ya, Kembali",
       cancelText: "Lanjut Periksa",
       showCancel: true,
-      onConfirm: () => navigate("/approval"),
+      onConfirm: () => navigate(targetApprovalUrl),
     });
   };
 
@@ -307,7 +316,7 @@ function TaxDetail() {
         message:
           "Data Tax berhasil disimpan dan pengajuan vendor telah dikirim ke tahap selanjutnya.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error submit Tax:", error);
@@ -370,7 +379,7 @@ function TaxDetail() {
         title: "Draft Berhasil Disimpan",
         message: "Data Tax berhasil disimpan sebagai Draft.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error save Draft Tax:", error);
@@ -439,7 +448,7 @@ function TaxDetail() {
           ? "Pengajuan dikembalikan kepada Requester untuk diperbaiki."
           : "Pengajuan berhasil disetujui dan diteruskan ke tahap SAP.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       console.error("Error approval Tax:", error);
@@ -517,11 +526,6 @@ function TaxDetail() {
       </div>
     );
   }
-
-  const isUpdate =
-    request?.request_type === "UPDATE" ||
-    request?.request_type === "EXISTING" ||
-    request?.is_update === true;
 
   const detailRecord = request?.details?.[0] || {};
   const diffMap = request?.diff_data || detailRecord?.diff_data || {};
@@ -1018,7 +1022,7 @@ function TaxDetail() {
               <button
                 type="button"
                 className="account-detail-cancel"
-                onClick={() => navigate("/approval")}
+                onClick={() => navigate(targetApprovalUrl)}
               >
                 Kembali
               </button>

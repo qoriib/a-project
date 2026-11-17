@@ -213,7 +213,11 @@ function ProcurementDetail() {
       if (role === "REQUESTER" || role === "PROCUREMENT") {
         navigate("/vendors/add");
       } else {
-        navigate("/approval");
+        const isUpdate =
+          requestData?.is_update ||
+          requestData?.request_type === "UPDATE" ||
+          requestData?.request_type === "EXISTING";
+        navigate(isUpdate ? "/approval?type=UPDATE" : "/approval?type=NEW");
       }
     }
   };
@@ -904,13 +908,21 @@ function ProcurementDetail() {
         );
       }
 
+      const isUpdate =
+        requestData?.is_update ||
+        requestData?.request_type === "UPDATE" ||
+        requestData?.request_type === "EXISTING";
+      const targetApprovalUrl = isUpdate
+        ? "/approval?type=UPDATE"
+        : "/approval?type=NEW";
+
       showAlert({
         type: "success",
         title:
           action === "approve" ? "Pengajuan Disetujui" : "Pengajuan Ditolak",
         message: data.message || "Status pengajuan berhasil diperbarui.",
         confirmText: "OK",
-        onConfirm: () => navigate("/approval"),
+        onConfirm: () => navigate(targetApprovalUrl),
       });
     } catch (error) {
       showAlert({
