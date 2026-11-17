@@ -230,7 +230,7 @@ function editVendor() {
     }));
 
     if (shouldRedirect) {
-      navigate(isRequester ? "/vendors/existing?tab=requests" : "/vendors/existing");
+      navigate("/approval?type=UPDATE");
     }
   };
 

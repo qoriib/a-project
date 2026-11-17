@@ -271,7 +271,7 @@ function AddExistingVendor() {
 
       alert("Existing vendor berhasil disimpan");
 
-      navigate("/vendors/existing");
+      navigate("/approval?type=UPDATE");
     } catch (error) {
       console.error("Error:", error);
 
