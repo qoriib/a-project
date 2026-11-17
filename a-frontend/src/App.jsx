@@ -57,27 +57,30 @@ function App() {
           {/* Overview Dashboard - Seluruh pengguna terautentikasi */}
           <Route path="/dashboard" element={<Dashboard />} />
 
-          {/* Master Vendor - Seluruh pengguna terautentikasi dapat melihat daftar vendor */}
-          <Route path="/vendors/all" element={<VendorList />} />
+          {/* Master Vendor - Seluruh pengguna terautentikasi dapat melihat daftar Existing Vendor */}
+          <Route path="/vendors/all" element={<ExistingVendor />} />
+          <Route path="/vendors/existing" element={<ExistingVendor />} />
           <Route path="/vendors/detail/:id" element={<VendorDetail />} />
 
           {/* Rute Khusus Requester & Admin (Input Form Vendor & Import) */}
           <Route element={<RoleRoute allowedRoles={["REQUESTER"]} />}>
             <Route path="/vendors/add" element={<NewVendor />} />
             <Route path="/vendors/add/new" element={<AddVendor />} />
-            <Route path="/vendors/existing" element={<ExistingVendor />} />
             <Route path="/vendors/existing/add" element={<AddExistingVendor />} />
             <Route path="/vendors/edit/:id" element={<EditVendor />} />
             <Route path="/vendors-requests" element={<VendorRequest />} />
           </Route>
 
-          {/* Rute Khusus Approver & Admin (Alur Approval 5 Level) */}
-          <Route element={<RoleRoute allowedRoles={["APPROVER"]} />}>
-            <Route path="/approval" element={<Approval />} />
-            <Route path="/approval/:id" element={<ApprovalDetail />} />
+          {/* Rute Detail & Form Pengajuan Vendor & Approval (Bisa diakses oleh Requester, Approver, & Admin) */}
+          <Route element={<RoleRoute allowedRoles={["REQUESTER", "APPROVER"]} />}>
             <Route path="/procurement/:id" element={<ProcurementDetail />} />
             <Route path="/vendor-requests/:id" element={<KadivRequester />} />
+            <Route path="/approval" element={<Approval />} />
+            <Route path="/approval/:id" element={<ApprovalDetail />} />
+          </Route>
 
+          {/* Rute Khusus Approver & Admin (Alur Approval 5 Level) */}
+          <Route element={<RoleRoute allowedRoles={["APPROVER"]} />}>
             {/* Level 3: Accounting */}
             <Route path="/account" element={<Account />} />
             <Route path="/account/:id" element={<AccountDetail />} />

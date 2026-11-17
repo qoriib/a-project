@@ -568,93 +568,65 @@ function Dashboard() {
         </div>
 
         <div className="welcome-actions">
-          {/* Untuk Requester dan Admin: Tambah Vendor & Existing Vendor */}
-          {(isAdmin || isRequester) && (
+          {/* Untuk Administrator: Hanya tombol User Management, navigasi lain cukup lewat sidemenu */}
+          {isAdmin ? (
+            <button
+              type="button"
+              className="dashboard-action-btn user-management-button"
+              onClick={() => navigate("/user")}
+            >
+              <span className="dashboard-btn-icon">
+                <i className="bi bi-people-fill"></i>
+              </span>
+              <span>User Management</span>
+              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+            </button>
+          ) : (
             <>
-              <button
-                type="button"
-                className="dashboard-action-btn existing-vendor-button"
-                onClick={() => navigate("/vendors/existing")}
-              >
-                <span className="dashboard-btn-icon">
-                  <i className="bi bi-database"></i>
-                </span>
-                <span>Existing Vendor</span>
-                <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-              </button>
+              {/* Untuk Requester: Tambah Vendor & Existing Vendor */}
+              {isRequester && (
+                <>
+                  <button
+                    type="button"
+                    className="dashboard-action-btn existing-vendor-button"
+                    onClick={() => navigate("/vendors/existing")}
+                  >
+                    <span className="dashboard-btn-icon">
+                      <i className="bi bi-database"></i>
+                    </span>
+                    <span>Existing Vendor</span>
+                    <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+                  </button>
 
-              <button
-                type="button"
-                className="dashboard-action-btn add-vendor-button"
-                onClick={() => navigate("/vendors/add")}
-              >
-                <span className="dashboard-btn-icon">
-                  <i className="bi bi-plus-lg"></i>
-                </span>
-                <span>Tambah Vendor</span>
-                <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-              </button>
+                  <button
+                    type="button"
+                    className="dashboard-action-btn add-vendor-button"
+                    onClick={() => navigate("/vendors/add")}
+                  >
+                    <span className="dashboard-btn-icon">
+                      <i className="bi bi-plus-lg"></i>
+                    </span>
+                    <span>Tambah Vendor</span>
+                    <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+                  </button>
+                </>
+              )}
+
+              {/* Untuk Approver: Tombol Cepat ke Antrean Approval */}
+              {isApprover && (
+                <button
+                  type="button"
+                  className="dashboard-action-btn approval-vendor-button"
+                  onClick={() => navigate("/approval")}
+                >
+                  <span className="dashboard-btn-icon">
+                    <i className="bi bi-check2-circle"></i>
+                  </span>
+                  <span>Proses Approval</span>
+                  <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
+                </button>
+              )}
             </>
-          )}
-
-          {/* Untuk Approver (dan Admin): Tombol Cepat ke Antrean Approval */}
-          {(isAdmin || isApprover) && (
-            <button
-              type="button"
-              className="dashboard-action-btn approval-vendor-button"
-              onClick={() => navigate("/approval")}
-            >
-              <span className="dashboard-btn-icon">
-                <i className="bi bi-check2-circle"></i>
-              </span>
-              <span>Proses Approval</span>
-              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-            </button>
-          )}
-
-          {/* Untuk Accounting Lead: Tombol Cepat ke Accounting */}
-          {(isAdmin || isAccounting) && (
-            <button
-              type="button"
-              className="dashboard-action-btn approval-vendor-button"
-              onClick={() => navigate("/account")}
-            >
-              <span className="dashboard-btn-icon">
-                <i className="bi bi-cash-stack"></i>
-              </span>
-              <span>Proses Accounting</span>
-              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-            </button>
-          )}
-
-          {/* Untuk Tax Specialist: Tombol Cepat ke Tax */}
-          {(isAdmin || isTax) && (
-            <button
-              type="button"
-              className="dashboard-action-btn approval-vendor-button"
-              onClick={() => navigate("/tax")}
-            >
-              <span className="dashboard-btn-icon">
-                <i className="bi bi-receipt-cutoff"></i>
-              </span>
-              <span>Proses Tax</span>
-              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-            </button>
-          )}
-
-          {/* Untuk SAP Team: Tombol Cepat ke SAP */}
-          {(isAdmin || isSap) && (
-            <button
-              type="button"
-              className="dashboard-action-btn approval-vendor-button"
-              onClick={() => navigate("/sap")}
-            >
-              <span className="dashboard-btn-icon">
-                <i className="bi bi-laptop"></i>
-              </span>
-              <span>Proses SAP</span>
-              <i className="bi bi-arrow-up-right dashboard-btn-arrow"></i>
-            </button>
           )}
         </div>
       </div>
@@ -929,7 +901,7 @@ function Dashboard() {
           <button
             type="button"
             className="view-all-button"
-            onClick={() => navigate("/vendors/all")}
+            onClick={() => navigate("/vendors/existing")}
           >
             Lihat Semua
           </button>
@@ -947,8 +919,6 @@ function Dashboard() {
 
                 <th>EMAIL</th>
 
-                <th>STATUS</th>
-
                 <th>TERDAFTAR</th>
               </tr>
             </thead>
@@ -956,8 +926,6 @@ function Dashboard() {
             <tbody>
               {latestVendors.length > 0 ? (
                 latestVendors.map((vendor) => {
-                  const status = getVendorStatus(vendor);
-
                   const vendorType = getVendorType(vendor);
 
                   return (
@@ -966,10 +934,6 @@ function Dashboard() {
 
                       <td>
                         <div className="vendor-name">
-                          <div className="vendor-avatar">
-                            {vendor.nama_perusahaan?.charAt(0).toUpperCase()}
-                          </div>
-
                           <strong>{vendor.nama_perusahaan}</strong>
                         </div>
                       </td>
@@ -995,18 +959,6 @@ function Dashboard() {
 
                       <td>{vendor.email || "-"}</td>
 
-                      {/* STATUS */}
-
-                      <td>
-                        {status ? (
-                          <span className={`status ${getStatusClass(status)}`}>
-                            {status}
-                          </span>
-                        ) : (
-                          <span className="status">-</span>
-                        )}
-                      </td>
-
                       {/* TANGGAL */}
 
                       <td>{formatDate(vendor.created_at)}</td>
@@ -1015,7 +967,7 @@ function Dashboard() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-4">
+                  <td colSpan="5" className="text-center py-4">
                     Belum ada vendor
                   </td>
                 </tr>

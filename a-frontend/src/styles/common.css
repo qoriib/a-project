@@ -274,3 +274,259 @@
   font-weight: 700;
   margin-left: 2px;
 }
+
+/* =========================================================
+   COMMON FORM ACTION BUTTON STYLING (BASE & VARIANTS)
+   Standardized button sizing, typography, and color variants
+   across all form pages (Account, Tax, SAP, Kadiv, Procurement,
+   Edit Vendor, Add Vendor).
+========================================================= */
+
+/* Action bar containers */
+.form-actions,
+.account-detail-actions,
+.procurement-detail-actions,
+.add-vendor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e9edf3;
+}
+
+/* Common Base Button Specification */
+.form-btn,
+.account-detail-actions button,
+.procurement-detail-actions button,
+.add-vendor-actions button,
+.account-detail-cancel,
+.account-detail-draft,
+.account-detail-reject,
+.account-detail-cancel-approve,
+.account-detail-save,
+.procurement-detail-cancel,
+.procurement-detail-draft,
+.procurement-detail-save,
+.procurement-reject-button,
+.procurement-cancel-approve-button,
+.procurement-approve-button,
+.kadiv-reject-button,
+.kadiv-cancel-approve-button,
+.kadiv-approve-button,
+.kadiv-reject-confirm,
+.add-vendor-cancel,
+.add-vendor-draft,
+.add-vendor-save {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  min-width: 110px !important;
+  padding: 0 16px !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  gap: 6px !important;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+/* Disabled state */
+.form-btn:disabled,
+.account-detail-actions button:disabled,
+.procurement-detail-actions button:disabled,
+.add-vendor-actions button:disabled,
+.account-detail-cancel:disabled,
+.account-detail-draft:disabled,
+.account-detail-reject:disabled,
+.account-detail-cancel-approve:disabled,
+.account-detail-save:disabled,
+.procurement-detail-cancel:disabled,
+.procurement-detail-draft:disabled,
+.procurement-detail-save:disabled,
+.kadiv-reject-button:disabled,
+.kadiv-cancel-approve-button:disabled,
+.kadiv-approve-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  box-shadow: none !important;
+}
+
+/* --- Color Variant 1: Neutral / Kembali / Batal --- */
+.form-btn-neutral,
+.form-btn-cancel,
+.account-detail-cancel,
+.procurement-detail-cancel,
+.add-vendor-cancel {
+  background-color: #ffffff !important;
+  border-color: #d4dce7 !important;
+  color: #526176 !important;
+  box-shadow: none !important;
+}
+
+.form-btn-neutral:hover:not(:disabled),
+.form-btn-cancel:hover:not(:disabled),
+.account-detail-cancel:hover:not(:disabled),
+.procurement-detail-cancel:hover:not(:disabled),
+.add-vendor-cancel:hover:not(:disabled) {
+  background-color: #f6f8fb !important;
+  border-color: #bac5d3 !important;
+  color: #334155 !important;
+}
+
+/* --- Color Variant 2: Draft (Simpan Draft) --- */
+.form-btn-draft,
+.account-detail-draft,
+.procurement-detail-draft,
+.add-vendor-draft {
+  background-color: #f8f6fc !important;
+  border-color: #ded9ed !important;
+  color: #5e5087 !important;
+  box-shadow: none !important;
+}
+
+.form-btn-draft:hover:not(:disabled),
+.account-detail-draft:hover:not(:disabled),
+.procurement-detail-draft:hover:not(:disabled),
+.add-vendor-draft:hover:not(:disabled) {
+  background-color: #efebf8 !important;
+  border-color: #cfc6e6 !important;
+  color: #483a73 !important;
+}
+
+/* --- Color Variant 3: Danger / Reject / Tolak --- */
+.form-btn-danger,
+.form-btn-reject,
+.account-detail-reject,
+.procurement-reject-button,
+.kadiv-reject-button,
+.kadiv-reject-confirm {
+  background-color: #ffffff !important;
+  border-color: #f0d4d7 !important;
+  color: #c43d49 !important;
+  box-shadow: none !important;
+}
+
+.form-btn-danger:hover:not(:disabled),
+.form-btn-reject:hover:not(:disabled),
+.account-detail-reject:hover:not(:disabled),
+.procurement-reject-button:hover:not(:disabled),
+.kadiv-reject-button:hover:not(:disabled),
+.kadiv-reject-confirm:hover:not(:disabled) {
+  background-color: #fff3f4 !important;
+  border-color: #e6a8ae !important;
+  color: #a32632 !important;
+}
+
+/* --- Color Variant 4: Warning (Cancel Approve) --- */
+.form-btn-warning,
+.account-detail-cancel-approve,
+.procurement-cancel-approve-button,
+.kadiv-cancel-approve-button {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: #212529 !important;
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2) !important;
+}
+
+.form-btn-warning:hover:not(:disabled),
+.account-detail-cancel-approve:hover:not(:disabled),
+.procurement-cancel-approve-button:hover:not(:disabled),
+.kadiv-cancel-approve-button:hover:not(:disabled) {
+  background-color: #e0a800 !important;
+  border-color: #d39e00 !important;
+  color: #212529 !important;
+}
+
+/* --- Color Variant 5: Primary (Simpan / Approve / Setujui / Kirim) --- */
+.form-btn-primary,
+.account-detail-save,
+.procurement-detail-save,
+.kadiv-approve-button,
+.add-vendor-save {
+  background-color: #1769c2 !important;
+  border-color: #1769c2 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(23, 105, 194, 0.16) !important;
+}
+
+.form-btn-primary:hover:not(:disabled),
+.account-detail-save:hover:not(:disabled),
+.procurement-detail-save:hover:not(:disabled),
+.kadiv-approve-button:hover:not(:disabled),
+.add-vendor-save:hover:not(:disabled) {
+  background-color: #1256a4 !important;
+  border-color: #1256a4 !important;
+  color: #ffffff !important;
+}
+
+/* --- Color Variant 6: Success (Green Approve alternate) --- */
+.form-btn-success,
+.procurement-approve-button {
+  background-color: #198754 !important;
+  border-color: #198754 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(25, 135, 84, 0.16) !important;
+}
+
+.form-btn-success:hover:not(:disabled),
+.procurement-approve-button:hover:not(:disabled) {
+  background-color: #157347 !important;
+  border-color: #157347 !important;
+  color: #ffffff !important;
+}
+
+/* =========================================================
+   PDF BUTTON COMMON
+========================================================= */
+.approval-pdf-button {
+  min-width: 76px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #d9dee7;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.approval-pdf-button:hover {
+  transform: translateY(-1px);
+  border-color: #bfc7d4;
+  background: #f8fafc;
+  color: #1f2937;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.approval-pdf-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.approval-pdf-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.15);
+  outline-offset: 2px;
+}
+
+

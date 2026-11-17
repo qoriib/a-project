@@ -57,6 +57,16 @@ export function DashboardLayout() {
         path === "/vendors/existing" || path.startsWith("/vendors/existing/")
       );
     }
+    if (menu === "approval-new") {
+      const isAppr = path === "/approval" || path.startsWith("/approval/");
+      const type = new URLSearchParams(location.search).get("type");
+      return isAppr && type !== "UPDATE" && type !== "EXISTING";
+    }
+    if (menu === "approval-existing") {
+      const isAppr = path === "/approval" || path.startsWith("/approval/");
+      const type = new URLSearchParams(location.search).get("type");
+      return isAppr && (type === "UPDATE" || type === "EXISTING");
+    }
     if (menu === "approval") {
       return path === "/approval" || path.startsWith("/approval/");
     }
@@ -115,9 +125,16 @@ export function DashboardLayout() {
       };
     }
     if (path === "/approval" || path.startsWith("/approval/")) {
+      const type = new URLSearchParams(location.search).get("type");
+      if (type === "UPDATE" || type === "EXISTING") {
+        return {
+          title: "Approval Existing Vendor",
+          description: "Kelola proses approval pembaruan data vendor yang sudah terdaftar",
+        };
+      }
       return {
-        title: "Approval",
-        description: "Kelola proses approval vendor",
+        title: "Approval New Vendor",
+        description: "Kelola proses approval registrasi vendor baru",
       };
     }
     if (path === "/account" || path.startsWith("/account/")) {
@@ -192,23 +209,23 @@ export function DashboardLayout() {
 
   // Pembatasan menu sesuai role:
   // - Dashboard: Seluruh pengguna
-  // - All Vendor: Seluruh pengguna (master daftar vendor IBS)
+  // - All Vendor: Digabungkan dengan menu Existing Vendor
   // - New Vendor: Admin dan Requester/Procurement
-  // - Existing Vendor: Admin dan Requester/Procurement
+  // - Existing Vendor: Seluruh pengguna (Admin: import/edit/delete, Requester: edit, Approver: read-only)
   // - Approval: Admin dan Approver (Asisten Kadiv, Kadiv, Accounting, Tax, SAP)
   // - Accounting: Admin dan Accounting Lead (L3)
   // - Tax: Admin dan Tax Specialist (L4)
   // - SAP Team: Admin dan SAP Team (L5)
   // - History SAP: Admin dan SAP Team (L5)
   // - User Management: Khusus Administrator
-  const canSeeAllVendor = true;
+  const canSeeAllVendor = false; // Digabungkan dengan Existing Vendor
   const canSeeNewVendor = isAdmin || isRequester;
-  const canSeeExistingVendor = isAdmin || isRequester;
+  const canSeeExistingVendor = true; // Seluruh pengguna dapat melihat master vendor
   const canSeeApproval = isAdmin || isApprover;
-  const canSeeAccounting = isAdmin || isAccounting;
-  const canSeeTax = isAdmin || isTax;
-  const canSeeSap = isAdmin || isSap;
-  const canSeeSapHistory = isAdmin || isSap;
+  const canSeeAccounting = false; // Menu Accounting dipusatkan di Approval portal
+  const canSeeTax = false; // Menu Tax dipusatkan di Approval portal
+  const canSeeSap = false; // Menu SAP dipusatkan di Approval portal
+  const canSeeSapHistory = false; // Riwayat SAP dipusatkan di Approval portal
   const canSeeUserManagement = isAdmin;
 
   const getRoleDisplayName = (role, admin) => {
@@ -305,15 +322,27 @@ export function DashboardLayout() {
             </button>
           )}
 
-          {/* APPROVAL */}
+          {/* APPROVAL NEW VENDOR */}
           {canSeeApproval && (
             <button
               type="button"
-              className={`nav-item ${isActive("approval") ? "active" : ""}`}
-              onClick={() => navigate("/approval")}
+              className={`nav-item ${isActive("approval-new") ? "active" : ""}`}
+              onClick={() => navigate("/approval?type=NEW")}
             >
               <span className="nav-icon">✅</span>
-              {sidebarOpen && <span>Approval</span>}
+              {sidebarOpen && <span>Approval New Vendor</span>}
+            </button>
+          )}
+
+          {/* APPROVAL EXISTING VENDOR */}
+          {canSeeApproval && (
+            <button
+              type="button"
+              className={`nav-item ${isActive("approval-existing") ? "active" : ""}`}
+              onClick={() => navigate("/approval?type=UPDATE")}
+            >
+              <span className="nav-icon">📝</span>
+              {sidebarOpen && <span>Approval Existing Vendor</span>}
             </button>
           )}
 

@@ -162,6 +162,37 @@
   box-shadow: 0 6px 15px rgba(22, 163, 74, 0.25);
 }
 
+/* USER MANAGEMENT */
+
+.user-management-button {
+  min-height: 46px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #ffffff;
+  background: #1769c2;
+  border: 1px solid #1769c2;
+  box-shadow: 0 3px 9px rgba(23, 105, 194, 0.2);
+}
+
+.user-management-button:hover {
+  color: #ffffff;
+  background: #1256a4;
+  border-color: #1256a4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(23, 105, 194, 0.25);
+}
+
 /* =========================================================
    BUTTON ICONS
 ========================================================= */

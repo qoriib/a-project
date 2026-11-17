@@ -320,9 +320,6 @@ export function Login() {
           <p className="login-footer-text">
             &copy; {new Date().getFullYear()} PT Inti Bangun Sejahtera Tbk. All rights reserved.
           </p>
-          <div className="login-footer-security">
-            <span>🔒 Enterprise System & Security</span>
-          </div>
         </div>
       </div>
     </div>
