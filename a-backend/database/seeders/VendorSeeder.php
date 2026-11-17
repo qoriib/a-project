@@ -288,12 +288,12 @@ class VendorSeeder extends Seeder
             ],
 
             // =========================================================================
-            // B. NEW VENDORS: COMPLETED (Sudah disetujui sampai selesai & ada kode SAP)
+            // B. NEW VENDORS: COMPLETED (Sudah disetujui sampai selesai & ada kode SAP -> Masuk Existing)
             // =========================================================================
             [
                 'nama_perusahaan' => 'PT Bakti Mega Konstruksi',
                 'vendor_code' => '1000209',
-                'source_type' => 'NEW',
+                'source_type' => 'EXISTING',
                 'search_term' => 'BAKTI MEGA',
                 'pic_vendor' => 'Wahyudi Pratama',
                 'email' => 'info@baktimega.co.id',
@@ -319,7 +319,7 @@ class VendorSeeder extends Seeder
             [
                 'nama_perusahaan' => 'CV Borneo Sarana Komunika',
                 'vendor_code' => '1000212',
-                'source_type' => 'NEW',
+                'source_type' => 'EXISTING',
                 'search_term' => 'BORNEO KOMUNIKA',
                 'pic_vendor' => 'Raden Mas Danang',
                 'email' => 'admin@borneokomunika.co.id',
@@ -862,8 +862,12 @@ class VendorSeeder extends Seeder
         ];
 
         foreach ($vendors as $vendorData) {
+            $matchKey = !empty($vendorData['vendor_code'])
+                ? ['vendor_code' => $vendorData['vendor_code']]
+                : ['nama_perusahaan' => $vendorData['nama_perusahaan']];
+
             Vendor::updateOrCreate(
-                ['nama_perusahaan' => $vendorData['nama_perusahaan']],
+                $matchKey,
                 $vendorData
             );
         }

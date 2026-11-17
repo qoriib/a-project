@@ -22,6 +22,17 @@ class ExistingVendorImportController extends Controller
      */
     public function import(Request $request)
     {
+        $user = $request->user() ?: \Illuminate\Support\Facades\Auth::user();
+        if (!$user && auth('sanctum')->check()) {
+            $user = auth('sanctum')->user();
+        }
+        $isAdmin = (bool) ($user?->is_admin ?? false) || strtoupper($user?->role?->name ?? $user?->role ?? '') === 'ADMIN';
+        if (!$isAdmin) {
+            return response()->json([
+                'message' => 'Hanya Administrator yang memiliki hak akses untuk mengimpor data Existing Vendor via Excel.',
+            ], 403);
+        }
+
         $request->validate([
             'file' => [
                 'required',
@@ -463,14 +474,17 @@ class ExistingVendorImportController extends Controller
                         ]);
                     }
 
-                    // Existing vendor juga memiliki no request (UPDATE) dan tercatat di vendor_requests
+                    // Existing vendor yang diimpor via Excel langsung berstatus COMPLETED tanpa perlu approval
                     $formNumber = $this->createRequestNumber('UPDATE');
                     DB::table('vendor_requests')->insert([
                         'vendor_id' => $vendorId,
-                        'request_type' => 'UPDATE',
+                        'request_type' => 'IMPORT_EXISTING',
                         'form_number' => $formNumber,
+                        'internal_vendor_code' => $code,
+                        'sap_vendor_code' => $code,
                         'requested_by_nik' => $request->user()?->nik ?? '90000000',
-                        'status' => 'Approved',
+                        'requested_by_email' => $request->user()?->email,
+                        'status' => 'COMPLETED',
                         'current_stage' => 'COMPLETED',
                         'submitted_at' => $now,
                         'completed_at' => $now,
@@ -523,6 +537,17 @@ class ExistingVendorImportController extends Controller
      */
     public function importDocuments(Request $request)
     {
+        $user = $request->user() ?: \Illuminate\Support\Facades\Auth::user();
+        if (!$user && auth('sanctum')->check()) {
+            $user = auth('sanctum')->user();
+        }
+        $isAdmin = (bool) ($user?->is_admin ?? false) || strtoupper($user?->role?->name ?? $user?->role ?? '') === 'ADMIN';
+        if (!$isAdmin) {
+            return response()->json([
+                'message' => 'Hanya Administrator yang memiliki hak akses untuk mengimpor dokumen Existing Vendor.',
+            ], 403);
+        }
+
         $request->validate([
             'file' => [
                 'required',

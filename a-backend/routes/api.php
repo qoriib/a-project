@@ -222,15 +222,16 @@ Route::middleware('auth:sanctum')->group(function () {
             'index'
         ]);
 
-        // SEMUA NEW VENDOR - KHUSUS ADMIN
+        // SEMUA NEW VENDOR - KHUSUS ADMIN & REQUESTER
         Route::get('/new-vendors', [
             VendorRequestController::class,
             'allNewVendorRequests'
         ]);
 
-        Route::get('/stage/{stage}', [
+        // SEMUA UPDATE EXISTING VENDOR - KHUSUS ADMIN & REQUESTER
+        Route::get('/existing-vendors', [
             VendorRequestController::class,
-            'byStage'
+            'allExistingVendorRequests'
         ]);
 
         Route::get('/stage/{stage}', [
@@ -241,6 +242,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/completed', [
             VendorRequestController::class,
             'completed'
+        ]);
+
+        Route::get('/rejected', [
+            VendorRequestController::class,
+            'rejected'
         ]);
 
         Route::get('/{id}', [

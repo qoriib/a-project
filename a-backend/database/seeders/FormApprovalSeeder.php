@@ -110,9 +110,9 @@ class FormApprovalSeeder extends Seeder
             if ($reqStatus === 'REJECTED') {
                 if (str_contains($vendorName, 'Berkah Jaya Mandiri')) {
                     $rejectAtPriority = 1;
-                } elseif (str_contains($vendorName, 'Sinar Abadi Towerindo')) {
+                } elseif (str_contains($vendorName, 'Sinar Abadi Towerindo') || str_contains($vendorName, 'Mitra Perizinan Nusantara') || (str_contains($vendorName, 'Borneo Sarana Komunika') && $req->request_type === 'UPDATE')) {
                     $rejectAtPriority = 2;
-                } elseif (str_contains($vendorName, 'Finansial Makmur Abadi')) {
+                } elseif (str_contains($vendorName, 'Finansial Makmur Abadi') || str_contains($vendorName, 'Prima Daya Cemerlang')) {
                     $rejectAtPriority = 3;
                 } elseif (str_contains($vendorName, 'Pajak Suspended Pratama')) {
                     $rejectAtPriority = 4;

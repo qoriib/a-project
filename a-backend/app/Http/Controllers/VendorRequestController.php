@@ -148,11 +148,29 @@ class VendorRequestController extends Controller
         $roleName = strtoupper($user->role?->name ?? '');
         $upperStage = strtoupper($stage);
 
+        // Strict role-to-stage mapping: Tiap role/level HANYA dapat mengakses stage miliknya sendiri
+        // Kecuali Administrator yang memiliki akses penuh ke seluruh stage.
+        $roleAllowedStages = [
+            'REQUESTER' => ['REQUESTER', 'REJECTED'],
+            'PROCUREMENT' => ['REQUESTER', 'REJECTED'],
+            'ASISTEN_KADIV' => ['ASISTEN_KADIV'],
+            'KADIV' => ['KADIV'],
+            'ACCOUNTING' => ['ACCOUNTING'],
+            'TAX' => ['TAX'],
+            'SAP' => ['SAP'],
+        ];
+
+        $allowedStages = $roleAllowedStages[$roleName] ?? [];
+
+        if (!in_array($upperStage, $allowedStages, true)) {
+            return $default;
+        }
+
         $hasRole = false;
         $canEdit = false;
         $canApprove = false;
 
-        if ($upperStage === 'REQUESTER' && in_array($roleName, ['REQUESTER', 'PROCUREMENT'])) {
+        if (in_array($upperStage, ['REQUESTER', 'REJECTED']) && in_array($roleName, ['REQUESTER', 'PROCUREMENT'])) {
             $hasRole = true;
             $canEdit = true;
         } elseif ($upperStage === 'ASISTEN_KADIV' && $roleName === 'ASISTEN_KADIV') {
@@ -175,16 +193,11 @@ class VendorRequestController extends Controller
             $canApprove = true;
         }
 
-        // Check master_approval_layer
+        // Check master_approval_layer untuk stage ini (khusus NIK user sendiri)
         $today = now()->toDateString();
         $inLayer = DB::table('master_approval_layer')
             ->where('stage', $upperStage)
-            ->where(function ($q) use ($user) {
-                $q->where('nik', $user->nik);
-                if (!empty($user->substitute_nik)) {
-                    $q->orWhere('nik', $user->substitute_nik);
-                }
-            })
+            ->where('nik', $user->nik)
             ->whereDate('start_date', '<=', $today)
             ->where(function ($q) use ($today) {
                 $q->whereNull('end_date')->orWhereDate('end_date', '>=', $today);
@@ -255,16 +268,26 @@ class VendorRequestController extends Controller
             }
         }
 
+        $isRequesterRevision = (
+            strtoupper($stage) === 'REQUESTER' &&
+            (strtoupper($vendorRequest->current_stage ?? '') === 'REJECTED' ||
+             strtoupper($vendorRequest->status ?? '') === 'REJECTED')
+        );
+
         if (
             strtoupper($vendorRequest->current_stage ?? '') !==
-            strtoupper($stage)
+            strtoupper($stage) &&
+            !$isRequesterRevision
         ) {
             return response()->json([
                 'message' => 'Request tidak berada pada tahap yang sesuai (' . $vendorRequest->current_stage . ').',
             ], 422);
         }
 
-        if (in_array(strtoupper($vendorRequest->status ?? ''), ['REJECTED', 'COMPLETED', 'DONE'])) {
+        if (
+            in_array(strtoupper($vendorRequest->status ?? ''), ['COMPLETED', 'DONE']) ||
+            (strtoupper($vendorRequest->status ?? '') === 'REJECTED' && !$isRequesterRevision)
+        ) {
             return response()->json([
                 'message' => 'Request sudah berstatus ' . $vendorRequest->status . ' dan tidak dapat diedit.',
             ], 422);
@@ -475,6 +498,87 @@ class VendorRequestController extends Controller
         ], 200);
     }
 
+    public function allExistingVendorRequests(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        $query = VendorRequest::with([
+            'vendor.kategori',
+            'vendor.vendorSubcategories.category',
+            'vendor.bankAccounts',
+            'vendor.documents',
+            'vendor.accountGroup',
+            'vendor.reconAccount',
+            'vendor.paymentTerm',
+            'vendor.withholdingTaxes',
+            'requester',
+            'approvalHistories.actor',
+            'details',
+        ])
+            ->whereIn('request_type', ['UPDATE', 'IMPORT_EXISTING', 'EXISTING']);
+
+        // Jika bukan Admin, tampilkan pengajuan yang diajukan oleh user atau divisinya
+        if (!$user->isAdmin()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('requested_by_nik', $user->nik)
+                    ->orWhere('requested_by_email', $user->email)
+                    ->orWhereHas('vendor', function ($vq) use ($user) {
+                        $vq->where('created_by', $user->id);
+                    });
+
+                if (!empty($user->division)) {
+                    $q->orWhereHas('requester', function ($rq) use ($user) {
+                        $rq->where('division', $user->division);
+                    });
+                }
+            });
+        }
+
+        $requests = $query->latest()->get();
+
+        // Tambahkan informasi penolakan terakhir.
+        $requests->each(function ($vendorRequest) {
+            $rejection = $vendorRequest->approvalHistories
+                ->whereIn('status', ['Rejected', 'REJECTED'])
+                ->sortByDesc('acted_at')
+                ->first();
+
+            if (!$rejection) {
+                $vendorRequest->rejection_info = null;
+                return;
+            }
+
+            $stageLabels = [
+                'REQUESTER' => 'Requester',
+                'ASISTEN_KADIV' => 'Asisten Kadiv',
+                'KADIV' => 'Kadiv SCM',
+                'ACCOUNTING' => 'Accounting',
+                'TAX' => 'Tax',
+                'SAP' => 'SAP',
+            ];
+
+            $vendorRequest->rejection_info = [
+                'stage' => $rejection->approval_stage,
+                'name' => $rejection->actor?->name ?? $rejection->acted_by_name,
+                'role' => $rejection->approval_stage,
+                'label' => 'Ditolak pada tahap ' . ($stageLabels[$rejection->approval_stage] ?? $rejection->approval_stage),
+                'notes' => $rejection->notes,
+                'acted_at' => $rejection->acted_at,
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Data pengajuan Update Vendor berhasil diambil.',
+            'data' => $requests,
+        ], 200);
+    }
+
 
 
     /*
@@ -521,9 +625,45 @@ class VendorRequestController extends Controller
             'vendor.withholdingTaxes',
             'requester',
             'approvalHistories.actor',
-        ])
-            ->whereIn('request_type', ['CREATE', 'UPDATE', 'NEW', 'EXISTING'])
-            ->where('current_stage', $stage);
+        ]);
+
+        if ($request->filled('type')) {
+            $reqType = strtoupper($request->query('type'));
+            if ($reqType === 'UPDATE' || $reqType === 'EXISTING') {
+                $query->whereIn('request_type', ['UPDATE', 'EXISTING', 'IMPORT_EXISTING']);
+            } else {
+                $query->whereIn('request_type', ['CREATE', 'NEW']);
+            }
+        } else {
+            $query->whereIn('request_type', ['CREATE', 'UPDATE', 'NEW', 'EXISTING', 'IMPORT_EXISTING']);
+        }
+
+        if ($stage === 'REQUESTER') {
+            $query->where(function ($q) {
+                $q->where('current_stage', 'REQUESTER')
+                    ->orWhere('current_stage', 'REJECTED')
+                    ->orWhere('status', 'REJECTED');
+            });
+
+            if (!$permissions['is_admin']) {
+                $user = $request->user();
+                $query->where(function ($q) use ($user) {
+                    $q->where('requested_by_nik', $user->nik)
+                        ->orWhere('requested_by_email', $user->email)
+                        ->orWhereHas('vendor', function ($vq) use ($user) {
+                            $vq->where('created_by', $user->id);
+                        });
+
+                    if (!empty($user->division)) {
+                        $q->orWhereHas('requester', function ($rq) use ($user) {
+                            $rq->where('division', $user->division);
+                        });
+                    }
+                });
+            }
+        } else {
+            $query->where('current_stage', $stage);
+        }
 
         // Jika bukan admin, jangan tampilkan request yang sudah selesai di tahap lain
         if (!$permissions['is_admin']) {
@@ -564,8 +704,51 @@ class VendorRequestController extends Controller
             $stage
         );
 
-        // Seluruh user berhak melihat data pengajuan pada alur approval
-        $permissions['can_view'] = true;
+        $user = $request->user();
+        $roleName = strtoupper($user?->role?->name ?? '');
+
+        // Hak akses pengajuan non-admin: hanya tahap miliknya, atau yang pernah diajukan/diproses sebelumnya
+        if ($user && !$user->isAdmin()) {
+            $roleAllowedStages = [
+                'REQUESTER' => ['REQUESTER', 'REJECTED'],
+                'PROCUREMENT' => ['REQUESTER', 'REJECTED'],
+                'ASISTEN_KADIV' => ['ASISTEN_KADIV'],
+                'KADIV' => ['KADIV'],
+                'ACCOUNTING' => ['ACCOUNTING'],
+                'TAX' => ['TAX'],
+                'SAP' => ['SAP'],
+            ];
+
+            $allowedStages = $roleAllowedStages[$roleName] ?? [];
+            $isMyStage = in_array($stage, $allowedStages, true);
+            $isRequesterOfRequest = ($requestData->requested_by_nik === $user->nik || $requestData->requested_by_email === $user->email);
+            $wasInvolved = $requestData->approvalHistories()->where('acted_by_nik', $user->nik)->exists();
+
+            if (!$isMyStage && !$isRequesterOfRequest && !$wasInvolved) {
+                return response()->json([
+                    'message' => 'Anda tidak memiliki hak akses untuk melihat pengajuan pada tahap ini.',
+                ], 403);
+            }
+
+            // Izinkan view jika memang tahapnya atau pernah terlibat
+            $permissions['can_view'] = true;
+        } else {
+            $permissions['can_view'] = true;
+        }
+
+        // Jika request berstatus REJECTED dan user adalah Requester/Procurement atau Admin, beri izin edit (revisi draft)
+        if (
+            (strtoupper($requestData->status ?? '') === 'REJECTED' || strtoupper($requestData->current_stage ?? '') === 'REJECTED') &&
+            (in_array($roleName, ['REQUESTER', 'PROCUREMENT']) || ($user && $user->isAdmin()))
+        ) {
+            $permissions['can_edit'] = true;
+        }
+
+        $latestDetail = $requestData->details()->latest()->first();
+        $requestData->diff_data = $latestDetail?->diff_data ?? [];
+        $requestData->old_data = $latestDetail?->old_data ?? [];
+        $requestData->new_data = $latestDetail?->new_data ?? [];
+        $requestData->is_update = in_array(strtoupper($requestData->request_type), ['UPDATE', 'EXISTING'], true);
 
         return response()->json([
             'data' => $requestData,
@@ -1048,6 +1231,8 @@ class VendorRequestController extends Controller
             if ($validated['action'] === 'draft') {
 
                 $vendorRequest->update([
+                    'form_number' => $vendorRequest->form_number
+                        ?: $this->createRequestNumber($vendorRequest->request_type ?: 'CREATE'),
                     'status' => 'DRAFT',
                     'current_stage' => 'REQUESTER',
                     'submitted_at' => null,
@@ -1071,13 +1256,22 @@ class VendorRequestController extends Controller
 
             $vendorRequest->update([
                 'form_number' => $vendorRequest->form_number
-                    ?: $this->createRequestNumber('CREATE'),
+                    ?: $this->createRequestNumber($vendorRequest->request_type ?: 'CREATE'),
 
                 'status' => 'PENDING_L1',
                 'current_stage' => 'ASISTEN_KADIV',
                 'submitted_at' => now(),
                 'rejection_reason' => null,
             ]);
+
+            // Reset status FormApproval jika sebelumnya ditolak
+            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('status', 'REJECTED')
+                ->update(['status' => 'WAITING']);
+
+            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', 'ASISTEN_KADIV')
+                ->update(['status' => 'IN_PROGRESS']);
 
             $this->recordApprovalHistory(
                 $vendorRequest,
@@ -1818,9 +2012,10 @@ class VendorRequestController extends Controller
         DB::beginTransaction();
 
         try {
-            // Simpan Vendor Code dari SAP.
+            // Simpan Vendor Code dari SAP dan ubah source_type vendor menjadi EXISTING (karena telah selesai seluruh tahap approval).
             $vendorRequest->vendor->update([
                 'vendor_code' => trim($validated['vendor_code']),
+                'source_type' => 'EXISTING',
             ]);
 
             // Jika UPDATE, terapkan perubahan data dari vendor_request_details ke vendor master
@@ -1841,6 +2036,30 @@ class VendorRequestController extends Controller
                                 'subcategory' => $sc['subcategory'],
                                 'category_other' => $sc['category_other'] ?? null,
                             ]);
+                        }
+                    }
+
+                    if (!empty($newPayload['withholding_tax_ids'])) {
+                        $vendorRequest->vendor->withholdingTaxes()->sync($newPayload['withholding_tax_ids']);
+                    }
+
+                    if (!empty($newPayload['bank_accounts']) && is_array($newPayload['bank_accounts'])) {
+                        foreach ($newPayload['bank_accounts'] as $bank) {
+                            if (!empty($bank['id'])) {
+                                $vendorRequest->vendor->bankAccounts()->where('id', $bank['id'])->update([
+                                    'bank_name' => $bank['bank_name'],
+                                    'account_number' => $bank['account_number'],
+                                    'account_name' => $bank['account_name'],
+                                    'swift_code' => $bank['swift_code'] ?? null,
+                                ]);
+                            } else {
+                                $vendorRequest->vendor->bankAccounts()->create([
+                                    'bank_name' => $bank['bank_name'],
+                                    'account_number' => $bank['account_number'],
+                                    'account_name' => $bank['account_name'],
+                                    'swift_code' => $bank['swift_code'] ?? null,
+                                ]);
+                            }
                         }
                     }
                 }
@@ -2001,9 +2220,19 @@ class VendorRequestController extends Controller
             'requester',
             'approvalHistories.actor',
         ])
-            ->whereIn('request_type', ['CREATE', 'UPDATE', 'NEW', 'EXISTING', 'IMPORT_EXISTING'])
             ->where('current_stage', 'COMPLETED')
             ->whereIn('status', ['COMPLETED', 'Approved', 'APPROVED', 'DONE']);
+
+        if ($request->filled('type')) {
+            $reqType = strtoupper($request->query('type'));
+            if ($reqType === 'UPDATE' || $reqType === 'EXISTING') {
+                $query->whereIn('request_type', ['UPDATE', 'EXISTING', 'IMPORT_EXISTING']);
+            } else {
+                $query->whereIn('request_type', ['CREATE', 'NEW']);
+            }
+        } else {
+            $query->whereIn('request_type', ['CREATE', 'UPDATE', 'NEW', 'EXISTING', 'IMPORT_EXISTING']);
+        }
 
         if ($user && !$user->isAdmin()) {
             $roleName = strtoupper($user->role?->name ?? '');
@@ -2014,17 +2243,96 @@ class VendorRequestController extends Controller
                         ->orWhereHas('vendor', function ($vq) use ($user) {
                             $vq->where('created_by', $user->id);
                         });
-
-                    if (!empty($user->division)) {
-                        $q->orWhereHas('requester', function ($rq) use ($user) {
-                            $rq->where('division', $user->division);
-                        });
-                    }
+                });
+            } else {
+                $query->where(function ($q) use ($user) {
+                    $q->whereHas('approvalHistories', function ($hq) use ($user) {
+                        $hq->where(function ($sub) use ($user) {
+                            $sub->where('acted_by', $user->id)
+                                ->orWhere('acted_by_nik', $user->nik)
+                                ->orWhere('acted_by_email', $user->email);
+                        })->whereIn('status', ['Approved', 'APPROVED', 'COMPLETED', 'Approved (Completed)']);
+                    })
+                    ->orWhere('requested_by_nik', $user->nik)
+                    ->orWhere('requested_by_email', $user->email)
+                    ->orWhereHas('vendor', function ($vq) use ($user) {
+                        $vq->where('created_by', $user->id);
+                    });
                 });
             }
         }
 
         $requests = $query->latest('completed_at')->latest('updated_at')->get();
+
+        return response()->json($requests);
+    }
+
+    public function rejected(Request $request)
+    {
+        $user = $request->user();
+
+        $query = VendorRequest::with([
+            'vendor.kategori',
+            'vendor.vendorSubcategories.category',
+            'requester',
+            'approvalHistories.actor',
+        ])
+            ->where(function ($q) {
+                $q->where('current_stage', 'REJECTED')
+                    ->orWhere('status', 'REJECTED');
+            });
+
+        if ($request->filled('type')) {
+            $reqType = strtoupper($request->query('type'));
+            if ($reqType === 'UPDATE' || $reqType === 'EXISTING') {
+                $query->whereIn('request_type', ['UPDATE', 'EXISTING', 'IMPORT_EXISTING']);
+            } else {
+                $query->whereIn('request_type', ['CREATE', 'NEW']);
+            }
+        } else {
+            $query->whereIn('request_type', ['CREATE', 'UPDATE', 'NEW', 'EXISTING', 'IMPORT_EXISTING']);
+        }
+
+        // Filter stage jika diminta (misal stage=ACCOUNTING / TAX / SAP)
+        if ($request->filled('stage')) {
+            $stage = strtoupper($request->query('stage'));
+            $query->where(function ($q) use ($stage) {
+                $q->whereHas('approvalHistories', function ($hq) use ($stage) {
+                    $hq->where('approval_stage', $stage)
+                        ->where('status', 'REJECTED');
+                });
+            });
+        }
+
+        if ($user && !$user->isAdmin()) {
+            $roleName = strtoupper($user->role?->name ?? '');
+            if (in_array($roleName, ['REQUESTER', 'PROCUREMENT'])) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('requested_by_nik', $user->nik)
+                        ->orWhere('requested_by_email', $user->email)
+                        ->orWhereHas('vendor', function ($vq) use ($user) {
+                            $vq->where('created_by', $user->id);
+                        });
+                });
+            } else {
+                $query->where(function ($q) use ($user) {
+                    $q->whereHas('approvalHistories', function ($hq) use ($user) {
+                        $hq->where(function ($sub) use ($user) {
+                            $sub->where('acted_by', $user->id)
+                                ->orWhere('acted_by_nik', $user->nik)
+                                ->orWhere('acted_by_email', $user->email);
+                        })->whereIn('status', ['REJECTED', 'Rejected']);
+                    })
+                    ->orWhere('requested_by_nik', $user->nik)
+                    ->orWhere('requested_by_email', $user->email)
+                    ->orWhereHas('vendor', function ($vq) use ($user) {
+                        $vq->where('created_by', $user->id);
+                    });
+                });
+            }
+        }
+
+        $requests = $query->latest('updated_at')->get();
 
         return response()->json($requests);
     }

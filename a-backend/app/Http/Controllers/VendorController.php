@@ -293,17 +293,6 @@ class VendorController extends Controller
         ])
             ->whereNotNull('vendor_code')
             ->where('vendor_code', '!=', '')
-            ->where(function ($query) {
-                $query->where('source_type', 'EXISTING')
-                    ->orWhere(function ($newQuery) {
-                        $newQuery->where('source_type', 'NEW')
-                            ->whereHas('requests', function ($requestQuery) {
-                                $requestQuery
-                                    ->whereIn('status', ['Approved', 'COMPLETED', 'DONE'])
-                                    ->where('current_stage', 'COMPLETED');
-                            });
-                    });
-            })
             ->latest()
             ->get();
 
@@ -326,10 +315,18 @@ class VendorController extends Controller
             'creator',
             'accountGroup',
             'reconAccount',
+            'latestRequest',
+            'requests',
         ])
-            ->where('source_type', 'EXISTING')
             ->whereNotNull('vendor_code')
             ->where('vendor_code', '!=', '')
+            ->where(function ($query) {
+                $query->where('source_type', 'EXISTING')
+                    ->orWhereHas('requests', function ($rq) {
+                        $rq->where('current_stage', 'COMPLETED')
+                            ->orWhere('status', 'COMPLETED');
+                    });
+            })
             ->orderBy('nama_perusahaan')
             ->get();
 
@@ -757,9 +754,7 @@ class VendorController extends Controller
                 'vendor_id' => $vendor->id,
                 'request_type' => 'CREATE',
                 'cat_code' => $catCode,
-                'form_number' => $action === 'submit'
-                    ? $this->createRequestNumber('CREATE')
-                    : null,
+                'form_number' => $this->createRequestNumber('CREATE'),
 
                 'requested_by_nik' => $user->nik,
                 'requested_by_email' => $user->email,
@@ -916,6 +911,7 @@ class VendorController extends Controller
             'accountGroup',
             'reconAccount',
             'withholdingTaxes',
+            'latestRequest',
         ])->findOrFail($id);
 
         if (empty($vendor->kategori_id) && $vendor->vendorSubcategories->isNotEmpty()) {
@@ -944,6 +940,15 @@ class VendorController extends Controller
         }
         if (!$user) {
             $user = \App\Models\User::first();
+        }
+
+        $role = strtoupper($user->role?->name ?? $user->role ?? '');
+        $isAdmin = (bool) ($user->is_admin ?? false) || $role === 'ADMIN';
+        $canUpdate = $isAdmin || in_array($role, ['REQUESTER', 'PROCUREMENT']);
+        if (!$canUpdate) {
+            return response()->json([
+                'message' => 'Hanya Administrator dan Requester yang memiliki hak akses untuk mengedit data vendor.',
+            ], 403);
         }
 
         if (blank($vendor->vendor_code)) {
@@ -1064,7 +1069,7 @@ class VendorController extends Controller
 
             // DATA SAP / ACCOUNTING
             'company_code_purch_org' => [
-                'required',
+                'nullable',
                 'string',
                 'max:255',
             ],
@@ -1131,7 +1136,7 @@ class VendorController extends Controller
             ],
 
             // WITHHOLDING TAX
-            'withholding_tax_ids' => ['present', 'array'],
+            'withholding_tax_ids' => ['nullable', 'array'],
 
             'withholding_tax_ids.*' => [
                 'integer',
@@ -1143,6 +1148,15 @@ class VendorController extends Controller
         $validated = $request->validate(
             array_merge($rules, $this->generalDocumentRules())
         );
+
+        // Jika Requester yang mengedit, data Accounting, Tax, dan SAP tidak boleh diubah oleh Requester
+        if (!$isAdmin) {
+            $validated['account_group_id'] = $vendor->account_group_id;
+            $validated['recon_account_id'] = $vendor->recon_account_id;
+            $validated['payment_method'] = $vendor->payment_method;
+            $validated['company_code_purch_org'] = $vendor->company_code_purch_org ?: '1200 / 1300 (PROJECT BAKTI)';
+            $validated['withholding_tax_ids'] = $vendor->withholdingTaxes()->pluck('withholding_taxes.id')->toArray();
+        }
 
         $subcategoryError = $this->validateVendorSubcategories(
             $validated['vendor_subcategories']
@@ -1159,7 +1173,7 @@ class VendorController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | VALIDASI KEPEMILIKAN REKENING
+        | VALIDASI KEPEMILIKAN REKENING (KHUSUS ADMIN DIRECT UPDATE)
         |--------------------------------------------------------------------------
         */
 
@@ -1173,33 +1187,35 @@ class VendorController extends Controller
             ->pluck('id')
             ->map(fn($bankId) => (int) $bankId);
 
-        $bankIdsToDelete = $existingBankIds->diff($submittedBankIds);
+        if ($isAdmin) {
+            $bankIdsToDelete = $existingBankIds->diff($submittedBankIds);
 
-        $hasDocuments = VendorDocument::whereIn(
-            'bank_account_id',
-            $bankIdsToDelete
-        )->exists();
+            $hasDocuments = VendorDocument::whereIn(
+                'bank_account_id',
+                $bankIdsToDelete
+            )->exists();
 
-        if ($hasDocuments) {
-            return response()->json([
-                'message' => 'Rekening tidak dapat dihapus karena masih memiliki dokumen.',
-                'errors' => [
-                    'bank_accounts' => [
-                        'Hapus atau pindahkan dokumen rekening terlebih dahulu.',
+            if ($hasDocuments) {
+                return response()->json([
+                    'message' => 'Rekening tidak dapat dihapus karena masih memiliki dokumen.',
+                    'errors' => [
+                        'bank_accounts' => [
+                            'Hapus atau pindahkan dokumen rekening terlebih dahulu.',
+                        ],
                     ],
-                ],
-            ], 422);
-        }
+                ], 422);
+            }
 
-        if ($submittedBankIds->diff($existingBankIds)->isNotEmpty()) {
-            return response()->json([
-                'message' => 'Ada rekening bank yang bukan milik vendor ini.',
-                'errors' => [
-                    'bank_accounts' => [
-                        'Muat ulang halaman dan periksa kembali rekening bank.',
+            if ($submittedBankIds->diff($existingBankIds)->isNotEmpty()) {
+                return response()->json([
+                    'message' => 'Ada rekening bank yang bukan milik vendor ini.',
+                    'errors' => [
+                        'bank_accounts' => [
+                            'Muat ulang halaman dan periksa kembali rekening bank.',
+                        ],
                     ],
-                ],
-            ], 422);
+                ], 422);
+            }
         }
 
         DB::beginTransaction();
@@ -1209,11 +1225,6 @@ class VendorController extends Controller
             |--------------------------------------------------------------------------
             | 1. SIAPKAN DATA LAMA (OLD) DAN DATA BARU (NEW) BESERTA DIFF
             |--------------------------------------------------------------------------
-            |
-            | Perubahan data baru diterapkan ke tabel vendors setelah disetujui
-            | hingga tahap SAP (COMPLETED). Tabel vendor_request_details menyimpan
-            | riwayat lengkap perbandingan old_data, new_data, dan diff_data.
-            |
             */
 
             $documentFields = array_keys(self::GENERAL_DOCUMENTS);
@@ -1229,7 +1240,38 @@ class VendorController extends Controller
                 ))
                 ->all();
 
+            $fieldMeta = [
+                'nama_perusahaan' => ['label' => 'Nama Perusahaan', 'role' => 'REQUESTER'],
+                'search_term' => ['label' => 'Search Term', 'role' => 'REQUESTER'],
+                'business_type' => ['label' => 'Business Type', 'role' => 'REQUESTER'],
+                'address' => ['label' => 'Alamat Perusahaan', 'role' => 'REQUESTER'],
+                'city' => ['label' => 'Kota', 'role' => 'REQUESTER'],
+                'postal_code' => ['label' => 'Kode Pos', 'role' => 'REQUESTER'],
+                'country' => ['label' => 'Negara', 'role' => 'REQUESTER'],
+                'phone' => ['label' => 'Nomor Telepon', 'role' => 'REQUESTER'],
+                'mobile_phone' => ['label' => 'No. Handphone / PIC', 'role' => 'REQUESTER'],
+                'fax' => ['label' => 'Fax', 'role' => 'REQUESTER'],
+                'pic_vendor' => ['label' => 'Contact Person / PIC', 'role' => 'REQUESTER'],
+                'email' => ['label' => 'Email Perusahaan', 'role' => 'REQUESTER'],
+                'npwp' => ['label' => 'NPWP', 'role' => 'REQUESTER'],
+                'payment_term_id' => ['label' => 'Term of Payment', 'role' => 'REQUESTER'],
+                'order_currency' => ['label' => 'Mata Uang (Order Currency)', 'role' => 'REQUESTER'],
+                'account_group_id' => ['label' => 'Account Group', 'role' => 'ACCOUNTING'],
+                'recon_account_id' => ['label' => 'Recon Account', 'role' => 'ACCOUNTING'],
+                'payment_method' => ['label' => 'Payment Method', 'role' => 'ACCOUNTING'],
+                'company_code_purch_org' => ['label' => 'Company Code / Purch Org', 'role' => 'SAP'],
+                'vendor_code' => ['label' => 'Vendor Code SAP', 'role' => 'SAP'],
+            ];
+
             $oldSnapshot = $vendor->toArray();
+            $oldSnapshot['bank_accounts'] = $vendor->bankAccounts->map(fn($b) => [
+                'bank_name' => $b->bank_name,
+                'account_number' => $b->account_number,
+                'account_name' => $b->account_name,
+                'swift_code' => $b->swift_code,
+            ])->toArray();
+            $oldSnapshot['vendor_subcategories'] = $vendor->vendorSubcategories->pluck('subcategory')->toArray();
+
             $newPayload = array_merge($vendorData, [
                 'vendor_subcategories' => $validated['vendor_subcategories'] ?? [],
                 'bank_accounts' => $validated['bank_accounts'] ?? [],
@@ -1243,160 +1285,183 @@ class VendorController extends Controller
                 if ((string)$oldVal !== (string)$v) {
                     $diffData[$k] = [
                         'field' => $k,
+                        'label' => $fieldMeta[$k]['label'] ?? ucwords(str_replace('_', ' ', $k)),
+                        'role' => $fieldMeta[$k]['role'] ?? 'REQUESTER',
                         'old' => $oldVal,
                         'new' => $v,
                     ];
                 }
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | 2. CATAT REQUEST UPDATE DAN RIWAYAT PERUBAHAN
-            |--------------------------------------------------------------------------
-            */
-
-            $formNumber = $this->createRequestNumber('UPDATE');
-
-            $firstSubcat = collect($validated['vendor_subcategories'] ?? [])->first();
-            $catId = $firstSubcat['category_id'] ?? $vendor->kategori_id;
-            $catCode = null;
-            if ($catId) {
-                $cat = DB::table('vendor_categories')->find($catId);
-                $catCode = $cat->cat_code ?? null;
-            }
-
-            $actedById = $user?->id ?? 1;
-            $actedByName = $user?->name ?? 'Requester';
-            $actedByNik = $user?->nik ?? '90000000';
-            $actedByEmail = $user?->email ?? null;
-
-            $updateRequest = VendorRequest::create([
-                'vendor_id' => $vendor->id,
-                'request_type' => 'UPDATE',
-                'cat_code' => $catCode,
-                'form_number' => $formNumber,
-                'requested_by_nik' => $actedByNik,
-                'requested_by_email' => $actedByEmail,
-                'status' => 'PENDING_L1',
-                'current_stage' => 'ASISTEN_KADIV',
-                'submitted_at' => now(),
-            ]);
-
-            \App\Models\VendorRequestDetail::create([
-                'vendor_request_id' => $updateRequest->id,
-                'old_data' => $oldSnapshot,
-                'new_data' => $newPayload,
-                'diff_data' => $diffData,
-                'changed_by_nik' => $actedByNik,
-                'changed_by_email' => $actedByEmail,
-            ]);
-
-            $updateRequest->approvalHistories()->create([
-                'approval_stage' => 'REQUESTER',
-                'acted_by' => $actedById,
-                'acted_by_name' => $actedByName,
-                'acted_by_nik' => $actedByNik,
-                'acted_by_email' => $actedByEmail,
-                'status' => 'Submitted',
-                'notes' => 'Pengajuan perbaikan/update data vendor dikirim oleh Requester.',
-                'acted_at' => now(),
-                'signature_token' => bin2hex(random_bytes(32)),
-            ]);
-
-            // Inisialisasi Form Approvals untuk alur update ini
-            if ($catCode) {
-                $layers = DB::table('master_approval_layer')
-                    ->where('cat_code', $catCode)
-                    ->where('type', 'Approval')
-                    ->orderBy('priority')
-                    ->get();
-
-                foreach ($layers as $layer) {
-                    \App\Models\FormApproval::firstOrCreate(
-                        [
-                            'vendor_request_id' => $updateRequest->id,
-                            'priority' => $layer->priority,
-                        ],
-                        [
-                            'stage' => $layer->stage,
-                            'nik' => $layer->nik,
-                            'email' => $layer->email,
-                            'status' => $layer->priority === 1 ? 'IN_PROGRESS' : 'WAITING',
-                        ]
-                    );
-                }
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 3. HAPUS REKENING YANG DIHAPUS DARI FORM
-            |--------------------------------------------------------------------------
-            */
-
-            $vendor->bankAccounts()
-                ->get()
-                ->each(function ($bankAccount) use ($submittedBankIds) {
-                    if (!$submittedBankIds->contains((int) $bankAccount->id)) {
-                        $bankAccount->delete();
-                    }
-                });
-
-            /*
-            |--------------------------------------------------------------------------
-            | 4. UPDATE ATAU TAMBAHKAN REKENING
-            |--------------------------------------------------------------------------
-            */
-
-            foreach ($validated['bank_accounts'] as $index => $bank) {
-                $bankData = [
-                    'bank_name' => $bank['bank_name'],
-                    'account_number' => $bank['account_number'],
-                    'account_name' => $bank['account_name'],
-                    'swift_code' => $bank['swift_code'] ?? null,
-                    'is_primary' => false,
+            // Cek perbedaan Rekening Bank
+            $oldBankList = collect($oldSnapshot['bank_accounts'])->map(fn($b) => "{$b['bank_name']} - {$b['account_number']} ({$b['account_name']})")->values();
+            $newBankList = collect($validated['bank_accounts'] ?? [])->map(fn($b) => "{$b['bank_name']} - {$b['account_number']} ({$b['account_name']})")->values();
+            if ($oldBankList->join('|') !== $newBankList->join('|')) {
+                $diffData['bank_accounts'] = [
+                    'field' => 'bank_accounts',
+                    'label' => 'Rekening Bank',
+                    'role' => 'REQUESTER',
+                    'old' => $oldBankList->join("\n") ?: 'Belum ada rekening',
+                    'new' => $newBankList->join("\n") ?: 'Belum ada rekening',
+                    'old_items' => $oldSnapshot['bank_accounts'],
+                    'new_items' => $validated['bank_accounts'] ?? [],
                 ];
+            }
 
-                if (!empty($bank['id'])) {
-                    $bankAccount = $vendor->bankAccounts()
-                        ->where('id', $bank['id'])
-                        ->firstOrFail();
+            // Cek perbedaan Subkategori
+            $oldSubcats = collect($oldSnapshot['vendor_subcategories'])->join(', ');
+            $newSubcats = collect($validated['vendor_subcategories'] ?? [])->pluck('subcategory')->join(', ');
+            if ($oldSubcats !== $newSubcats) {
+                $diffData['vendor_subcategories'] = [
+                    'field' => 'vendor_subcategories',
+                    'label' => 'Subkategori',
+                    'role' => 'REQUESTER',
+                    'old' => $oldSubcats ?: '-',
+                    'new' => $newSubcats ?: '-',
+                ];
+            }
 
-                    $bankAccount->update($bankData);
-                } else {
-                    $bankAccount = $vendor->bankAccounts()
-                        ->create($bankData);
-                }
+            $updateRequest = null;
+            $formNumber = null;
 
+            if ($isAdmin) {
                 /*
-                | Simpan dokumen rekening.
-                | Setiap file menjadi record REKENING tersendiri.
+                |--------------------------------------------------------------------------
+                | DIRECT UPDATE OLEH ADMINISTRATOR
+                |--------------------------------------------------------------------------
                 */
+                $vendor->update($vendorData);
 
-                $bankDocuments = $request->file(
-                    "bank_accounts.{$index}.documents",
-                    []
+                $vendor->vendorSubcategories()->delete();
+                $vendor->vendorSubcategories()->createMany(
+                    $validated['vendor_subcategories']
                 );
 
-                foreach ($bankDocuments as $file) {
-                    $this->saveDocument(
-                        $vendor,
-                        $file,
-                        'REKENING',
-                        (int) $bankAccount->id,
-                        $request
+                $vendor->bankAccounts()
+                    ->get()
+                    ->each(function ($bankAccount) use ($submittedBankIds) {
+                        if (!$submittedBankIds->contains((int) $bankAccount->id)) {
+                            $bankAccount->delete();
+                        }
+                    });
+
+                foreach ($validated['bank_accounts'] as $index => $bank) {
+                    $bankData = [
+                        'bank_name' => $bank['bank_name'],
+                        'account_number' => $bank['account_number'],
+                        'account_name' => $bank['account_name'],
+                        'swift_code' => $bank['swift_code'] ?? null,
+                        'is_primary' => false,
+                    ];
+
+                    if (!empty($bank['id'])) {
+                        $bankAccount = $vendor->bankAccounts()
+                            ->where('id', $bank['id'])
+                            ->firstOrFail();
+
+                        $bankAccount->update($bankData);
+                    } else {
+                        $bankAccount = $vendor->bankAccounts()
+                            ->create($bankData);
+                    }
+
+                    $bankDocuments = $request->file(
+                        "bank_accounts.{$index}.documents",
+                        []
                     );
+
+                    foreach ($bankDocuments as $file) {
+                        $this->saveDocument(
+                            $vendor,
+                            $file,
+                            'REKENING',
+                            (int) $bankAccount->id,
+                            $request
+                        );
+                    }
+                }
+
+                $vendor->withholdingTaxes()->sync(
+                    $validated['withholding_tax_ids']
+                );
+            } else {
+                /*
+                |--------------------------------------------------------------------------
+                | PENGAJUAN UPDATE OLEH REQUESTER (MELALUI ALUR APPROVAL)
+                |--------------------------------------------------------------------------
+                */
+                $formNumber = $this->createRequestNumber('UPDATE');
+
+                $firstSubcat = collect($validated['vendor_subcategories'] ?? [])->first();
+                $catId = $firstSubcat['category_id'] ?? $vendor->kategori_id;
+                $catCode = null;
+                if ($catId) {
+                    $cat = DB::table('vendor_categories')->find($catId);
+                    $catCode = $cat->cat_code ?? null;
+                }
+
+                $actedById = $user?->id ?? 1;
+                $actedByName = $user?->name ?? 'Requester';
+                $actedByNik = $user?->nik ?? '90000000';
+                $actedByEmail = $user?->email ?? null;
+
+                $updateRequest = VendorRequest::create([
+                    'vendor_id' => $vendor->id,
+                    'request_type' => 'UPDATE',
+                    'cat_code' => $catCode,
+                    'form_number' => $formNumber,
+                    'requested_by_nik' => $actedByNik,
+                    'requested_by_email' => $actedByEmail,
+                    'status' => 'PENDING_L1',
+                    'current_stage' => 'ASISTEN_KADIV',
+                    'submitted_at' => now(),
+                ]);
+
+                \App\Models\VendorRequestDetail::create([
+                    'vendor_request_id' => $updateRequest->id,
+                    'old_data' => $oldSnapshot,
+                    'new_data' => $newPayload,
+                    'diff_data' => $diffData,
+                    'changed_by_nik' => $actedByNik,
+                    'changed_by_email' => $actedByEmail,
+                ]);
+
+                $updateRequest->approvalHistories()->create([
+                    'approval_stage' => 'REQUESTER',
+                    'acted_by' => $actedById,
+                    'acted_by_name' => $actedByName,
+                    'acted_by_nik' => $actedByNik,
+                    'acted_by_email' => $actedByEmail,
+                    'status' => 'Submitted',
+                    'notes' => 'Pengajuan perbaikan/update data vendor dikirim oleh Requester.',
+                    'acted_at' => now(),
+                    'signature_token' => bin2hex(random_bytes(32)),
+                ]);
+
+                // Inisialisasi Form Approvals untuk alur update ini
+                if ($catCode) {
+                    $layers = DB::table('master_approval_layer')
+                        ->where('cat_code', $catCode)
+                        ->where('type', 'Approval')
+                        ->orderBy('priority')
+                        ->get();
+
+                    foreach ($layers as $layer) {
+                        \App\Models\FormApproval::firstOrCreate(
+                            [
+                                'vendor_request_id' => $updateRequest->id,
+                                'priority' => $layer->priority,
+                            ],
+                            [
+                                'stage' => $layer->stage,
+                                'nik' => $layer->nik,
+                                'email' => $layer->email,
+                                'status' => $layer->priority === 1 ? 'IN_PROGRESS' : 'WAITING',
+                            ]
+                        );
+                    }
                 }
             }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 5. SIMPAN WITHHOLDING TAX
-            |--------------------------------------------------------------------------
-            */
-
-            $vendor->withholdingTaxes()->sync(
-                $validated['withholding_tax_ids']
-            );
 
             /*
             |--------------------------------------------------------------------------
@@ -1431,8 +1496,12 @@ class VendorController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Vendor berhasil diperbarui.',
+                'message' => $isAdmin
+                    ? 'Data vendor berhasil diperbarui secara langsung oleh Administrator.'
+                    : 'Pengajuan perubahan data vendor berhasil dikirim ke antrean approval (Level 1: Asisten Kadiv).',
                 'vendor' => $updatedVendor,
+                'request_id' => $updateRequest->id ?? null,
+                'form_number' => $formNumber ?? null,
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();

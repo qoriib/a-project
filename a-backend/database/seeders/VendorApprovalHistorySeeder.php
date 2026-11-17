@@ -55,7 +55,9 @@ class VendorApprovalHistorySeeder extends Seeder
                     'acted_by_name' => $requesterActor?->name ?? 'Staff Requester',
                     'acted_by_nik' => $requesterActor?->nik ?? $req->requested_by_nik,
                     'acted_by_email' => $requesterActor?->email ?? $req->requested_by_email,
-                    'notes' => 'Pengajuan registrasi vendor baru dikirim untuk verifikasi kelengkapan berkas.',
+                    'notes' => $req->request_type === 'UPDATE'
+                        ? 'Pengajuan permohonan perubahan data vendor dikirim untuk verifikasi kelengkapan berkas.'
+                        : 'Pengajuan registrasi vendor baru dikirim untuk verifikasi kelengkapan berkas.',
                     'acted_at' => $submittedAt,
                     'signature_token' => bin2hex(random_bytes(32)),
                 ]
@@ -172,6 +174,40 @@ class VendorApprovalHistorySeeder extends Seeder
                         ['vendor_request_id' => $req->id, 'approval_stage' => 'SAP', 'status' => 'REJECTED'],
                         ['acted_by' => $sapActor?->id, 'acted_by_name' => $sapActor?->name, 'acted_by_nik' => $sapActor?->nik, 'acted_by_email' => $sapActor?->email, 'notes' => $rejectionReason, 'acted_at' => $submittedAt->copy()->addHours(10), 'signature_token' => bin2hex(random_bytes(32))]
                     );
+                } elseif (str_contains($vendorName, 'Prima Daya Cemerlang')) {
+                    // Update Rekening ditolak di Level 3 oleh Accounting
+                    VendorApprovalHistory::updateOrCreate(
+                        ['vendor_request_id' => $req->id, 'approval_stage' => 'ASISTEN_KADIV', 'status' => 'Approved'],
+                        ['acted_by' => $asistenActor?->id, 'acted_by_name' => $asistenActor?->name, 'acted_by_nik' => $asistenActor?->nik, 'acted_by_email' => $asistenActor?->email, 'notes' => 'Pemeriksaan berkas perubahan rekening diverifikasi awal.', 'acted_at' => $submittedAt->copy()->addHours(2), 'signature_token' => bin2hex(random_bytes(32))]
+                    );
+                    VendorApprovalHistory::updateOrCreate(
+                        ['vendor_request_id' => $req->id, 'approval_stage' => 'KADIV', 'status' => 'Approved'],
+                        ['acted_by' => $kadivActor?->id, 'acted_by_name' => $kadivActor?->name, 'acted_by_nik' => $kadivActor?->nik, 'acted_by_email' => $kadivActor?->email, 'notes' => 'Persetujuan perubahan rekening disetujui Kadiv SCM.', 'acted_at' => $submittedAt->copy()->addHours(4), 'signature_token' => bin2hex(random_bytes(32))]
+                    );
+                    VendorApprovalHistory::updateOrCreate(
+                        ['vendor_request_id' => $req->id, 'approval_stage' => 'ACCOUNTING', 'status' => 'REJECTED'],
+                        ['acted_by' => $accActor?->id, 'acted_by_name' => $accActor?->name, 'acted_by_nik' => $accActor?->nik, 'acted_by_email' => $accActor?->email, 'notes' => $rejectionReason, 'acted_at' => $submittedAt->copy()->addHours(7), 'signature_token' => bin2hex(random_bytes(32))]
+                    );
+                } elseif (str_contains($vendorName, 'Mitra Perizinan Nusantara')) {
+                    // Update Izin ditolak di Level 2 oleh Kadiv BR
+                    VendorApprovalHistory::updateOrCreate(
+                        ['vendor_request_id' => $req->id, 'approval_stage' => 'ASISTEN_KADIV', 'status' => 'Approved'],
+                        ['acted_by' => $asistenActor?->id, 'acted_by_name' => $asistenActor?->name, 'acted_by_nik' => $asistenActor?->nik, 'acted_by_email' => $asistenActor?->email, 'notes' => 'Berkas update awal diperiksa Asisten Kadiv BR.', 'acted_at' => $submittedAt->copy()->addHours(2), 'signature_token' => bin2hex(random_bytes(32))]
+                    );
+                    VendorApprovalHistory::updateOrCreate(
+                        ['vendor_request_id' => $req->id, 'approval_stage' => 'KADIV', 'status' => 'REJECTED'],
+                        ['acted_by' => $kadivActor?->id, 'acted_by_name' => $kadivActor?->name, 'acted_by_nik' => $kadivActor?->nik, 'acted_by_email' => $kadivActor?->email, 'notes' => $rejectionReason, 'acted_at' => $submittedAt->copy()->addHours(5), 'signature_token' => bin2hex(random_bytes(32))]
+                    );
+                } elseif (str_contains($vendorName, 'Borneo Sarana Komunika') && $req->request_type === 'UPDATE') {
+                    // Update Rekening ditolak di Level 2 oleh Kadiv SCM
+                    VendorApprovalHistory::updateOrCreate(
+                        ['vendor_request_id' => $req->id, 'approval_stage' => 'ASISTEN_KADIV', 'status' => 'Approved'],
+                        ['acted_by' => $asistenActor?->id, 'acted_by_name' => $asistenActor?->name, 'acted_by_nik' => $asistenActor?->nik, 'acted_by_email' => $asistenActor?->email, 'notes' => 'Pemeriksaan berkas perubahan rekening diverifikasi awal oleh Asisten Kadiv SCM.', 'acted_at' => $submittedAt->copy()->addHours(2), 'signature_token' => bin2hex(random_bytes(32))]
+                    );
+                    VendorApprovalHistory::updateOrCreate(
+                        ['vendor_request_id' => $req->id, 'approval_stage' => 'KADIV', 'status' => 'REJECTED'],
+                        ['acted_by' => $kadivActor?->id, 'acted_by_name' => $kadivActor?->name, 'acted_by_nik' => $kadivActor?->nik, 'acted_by_email' => $kadivActor?->email, 'notes' => $rejectionReason, 'acted_at' => $submittedAt->copy()->addHours(5), 'signature_token' => bin2hex(random_bytes(32))]
+                    );
                 }
                 continue;
             }
@@ -230,47 +266,61 @@ class VendorApprovalHistorySeeder extends Seeder
                 $stagesToRecord = ['ASISTEN_KADIV'];
             }
 
+            $isUpdate = ($req->request_type === 'UPDATE');
+
             $stepConfig = [
                 'ASISTEN_KADIV' => [
                     'actor' => $asistenActor,
                     'stage' => 'ASISTEN_KADIV',
                     'status' => 'Approved',
-                    'notes' => 'Kelengkapan dokumen legalitas (NPWP, KTP, NIB, Rekening Koran) telah diverifikasi dan valid.',
+                    'notes' => $isUpdate
+                        ? 'Kelengkapan berkas permohonan perubahan data vendor telah diverifikasi dan disetujui.'
+                        : 'Kelengkapan dokumen legalitas (NPWP, KTP, NIB, Rekening Koran) telah diverifikasi dan valid.',
                     'hours' => 2,
                 ],
                 'KADIV' => [
                     'actor' => $kadivActor,
                     'stage' => 'KADIV',
                     'status' => 'Approved',
-                    'notes' => 'Disetujui oleh Kepala Divisi untuk dilanjutkan ke proses input Account Group dan Pajak.',
+                    'notes' => $isUpdate
+                        ? 'Pengajuan perubahan data vendor disetujui oleh Kepala Divisi.'
+                        : 'Disetujui oleh Kepala Divisi untuk dilanjutkan ke proses input Account Group dan Pajak.',
                     'hours' => 4,
                 ],
                 'ACCOUNTING' => [
                     'actor' => $accActor,
                     'stage' => 'ACCOUNTING',
                     'status' => 'Approved',
-                    'notes' => 'Data Account Group (Z020) dan Reconciliation Account (31000310) telah diinput dan disetujui.',
+                    'notes' => $isUpdate
+                        ? 'Verifikasi data perbankan & termin pembayaran vendor disetujui oleh Tim Akuntansi.'
+                        : 'Data Account Group (Z020) dan Reconciliation Account (31000310) telah diinput dan disetujui.',
                     'hours' => 6,
                 ],
                 'TAX' => [
                     'actor' => $taxActor,
                     'stage' => 'TAX',
                     'status' => 'Approved',
-                    'notes' => 'Withholding Tax (PPh 23 / PPh 4(2)) telah ditentukan dan disetujui oleh Tim Perpajakan.',
+                    'notes' => $isUpdate
+                        ? 'Verifikasi kepatuhan pajak & withholding tax perubahan data vendor disetujui oleh Tim Perpajakan.'
+                        : 'Withholding Tax (PPh 23 / PPh 4(2)) telah ditentukan dan disetujui oleh Tim Perpajakan.',
                     'hours' => 8,
                 ],
                 'SAP_STEP1' => [
                     'actor' => $sapActor,
                     'stage' => 'SAP',
                     'status' => 'Approved',
-                    'notes' => 'Review formulir registrasi lengkap disetujui oleh SAP Team. Form Full Approved PDF telah dibuat.',
+                    'notes' => $isUpdate
+                        ? 'Pemeriksaan formulir perubahan data vendor disetujui oleh SAP Team.'
+                        : 'Review formulir registrasi lengkap disetujui oleh SAP Team. Form Full Approved PDF telah dibuat.',
                     'hours' => 10,
                 ],
                 'SAP_STEP2' => [
                     'actor' => $sapActor,
                     'stage' => 'SAP',
                     'status' => 'Approved',
-                    'notes' => 'Kode Vendor SAP [' . ($req->sap_vendor_code ?? '1000201') . '] berhasil di-submit dan diterbitkan. Registrasi selesai (COMPLETED).',
+                    'notes' => $isUpdate
+                        ? 'Perubahan data vendor berhasil disinkronkan ke Master SAP [' . ($req->sap_vendor_code ?? '1000201') . ']. Pengajuan update selesai (COMPLETED).'
+                        : 'Kode Vendor SAP [' . ($req->sap_vendor_code ?? '1000201') . '] berhasil di-submit dan diterbitkan. Registrasi selesai (COMPLETED).',
                     'hours' => 12,
                 ],
             ];
