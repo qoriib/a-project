@@ -463,10 +463,16 @@ function AddVendor() {
   const closeModal = () => {
     if (modal.loading) return;
 
+    const wasSuccess = modal.type === "success";
+
     setModal((prev) => ({
       ...prev,
       open: false,
     }));
+
+    if (wasSuccess) {
+      navigate("/vendors/add");
+    }
   };
 
   const openConfirmModal = ({
@@ -1822,7 +1828,7 @@ function AddVendor() {
                       open: false,
                     }));
 
-                    navigate(-1);
+                    navigate("/vendors/add");
                   },
                 });
               }}
