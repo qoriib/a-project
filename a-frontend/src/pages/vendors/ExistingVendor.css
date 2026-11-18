@@ -631,10 +631,10 @@
 }
 
 /* =========================================================
-   DELETE BUTTON
+   STATUS TOGGLE BUTTONS (ACTIVE / NONACTIVE)
 ========================================================= */
 
-.existing-delete-button {
+.existing-deactivate-button {
   padding: 6px 12px;
   border: 1px solid #dc3545;
   border-radius: 6px;
@@ -646,8 +646,25 @@
   transition: all 0.2s ease;
 }
 
-.existing-delete-button:hover {
+.existing-deactivate-button:hover {
   background: #dc3545;
+  color: #ffffff;
+}
+
+.existing-activate-button {
+  padding: 6px 12px;
+  border: 1px solid #198754;
+  border-radius: 6px;
+  background: #eafaf1;
+  color: #198754;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.existing-activate-button:hover {
+  background: #198754;
   color: #ffffff;
 }
 

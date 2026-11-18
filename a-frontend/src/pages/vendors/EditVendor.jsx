@@ -840,6 +840,11 @@ function editVendor() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (vendor?.is_active === false && !isAdmin) {
+      alert("Vendor ini sedang dinonaktifkan oleh Administrator dan tidak dapat diajukan perbaikan.");
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess("");
@@ -1121,6 +1126,18 @@ function editVendor() {
             <p>{vendor.nama_perusahaan || "Edit data vendor"}</p>
           </div>
         </div>
+
+        {vendor.is_active === false && (
+          <div
+            className={`alert ${isAdmin ? "alert-warning" : "alert-danger"} mb-4`}
+            style={{ fontSize: "13px" }}
+          >
+            <strong>Status Vendor: Nonaktif.</strong>{" "}
+            {isAdmin
+              ? "Vendor ini saat ini berstatus nonaktif. Anda dapat mengaktifkannya kembali melalui halaman Data Vendor Existing atau Detail Vendor."
+              : "Vendor ini sedang dinonaktifkan oleh Administrator. Pengajuan perubahan data tidak dapat dilakukan."}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* =================================================
@@ -2104,7 +2121,7 @@ function editVendor() {
             <button
               type="submit"
               className="account-detail-save"
-              disabled={saving}
+              disabled={saving || (vendor.is_active === false && !isAdmin)}
             >
               {saving ? "Menyimpan..." : (isRequester ? "Kirim Pengajuan Update" : "Simpan Perubahan")}
             </button>

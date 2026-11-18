@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./VendorDetail.css";
+import "./ExistingVendor.css";
 import {
   API_BASE_URL as API_URL,
   STORAGE_BASE_URL as STORAGE_URL,
@@ -45,6 +46,43 @@ function VendorDetail() {
       navigate("/vendors/existing");
     } else {
       navigate("/vendors/all");
+    }
+  };
+
+  const handleToggleStatus = async () => {
+    if (!vendor) return;
+    const isCurrentlyActive = vendor.is_active !== false;
+    const actionText = isCurrentlyActive ? "menonaktifkan" : "mengaktifkan";
+    const confirmChange = window.confirm(
+      `Apakah Anda yakin ingin ${actionText} vendor "${vendor.nama_perusahaan}"?`
+    );
+
+    if (!confirmChange) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/vendors/${vendor.id}/toggle-status`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ is_active: !isCurrentlyActive }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Gagal ${actionText} vendor`);
+      }
+
+      setVendor((prev) => ({ ...prev, is_active: !isCurrentlyActive }));
+      alert(data.message || `Vendor berhasil di${isCurrentlyActive ? "nonaktifkan" : "aktifkan"}.`);
+    } catch (error) {
+      console.error(`Gagal ${actionText} vendor:`, error);
+      alert(error.message);
     }
   };
 
@@ -229,7 +267,18 @@ function VendorDetail() {
       <div className="vendor-detail-card">
         <header className="vendor-detail-header">
           <div>
-            <span className="vendor-detail-eyebrow">VENDOR MASTER DATA</span>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <span className="vendor-detail-eyebrow">VENDOR MASTER DATA</span>
+              {vendor.is_active !== false ? (
+                <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style={{ fontSize: "11px", fontWeight: "600", borderRadius: "4px" }}>
+                  Aktif
+                </span>
+              ) : (
+                <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style={{ fontSize: "11px", fontWeight: "600", borderRadius: "4px" }}>
+                  Nonaktif
+                </span>
+              )}
+            </div>
             <h4>Detail Existing Vendor</h4>
             <p>{vendor.nama_perusahaan || "Informasi vendor terdaftar"}</p>
           </div>
@@ -243,6 +292,10 @@ function VendorDetail() {
 
           <h6 className="vendor-detail-subsection-title">Informasi Vendor</h6>
           <div className="vendor-detail-grid">
+            {readOnlyField(
+              "Status Vendor",
+              vendor.is_active !== false ? "Aktif" : "Nonaktif"
+            )}
             {readOnlyField(
               "No. Request",
               vendor.latest_request?.form_number ||
@@ -480,11 +533,29 @@ function VendorDetail() {
             Kembali
           </button>
 
+          {isAdmin && (
+            <button
+              type="button"
+              className={vendor.is_active !== false ? "existing-deactivate-button" : "existing-activate-button"}
+              onClick={handleToggleStatus}
+            >
+              {vendor.is_active !== false ? "Nonaktifkan Vendor" : "Aktifkan Vendor"}
+            </button>
+          )}
+
           {canEdit && (
             <button
               type="button"
               className="vendor-detail-button vendor-detail-button-edit"
-              onClick={() => navigate(`/vendors/edit/${vendor.id}`)}
+              onClick={() => {
+                if (vendor.is_active === false) {
+                  alert("Vendor ini sedang nonaktif dan tidak dapat diajukan perbaikan.");
+                  return;
+                }
+                navigate(`/vendors/edit/${vendor.id}`);
+              }}
+              style={vendor.is_active === false ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+              title={vendor.is_active === false ? "Vendor sedang nonaktif" : "Edit vendor"}
             >
               Edit Vendor
             </button>

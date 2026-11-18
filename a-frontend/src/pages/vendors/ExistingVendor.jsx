@@ -28,7 +28,6 @@ function ExistingVendor() {
   // Hanya Requester dan Admin yang dapat mengajukan update vendor
   const canSubmitUpdate = isAdmin || isRequester;
   const canEdit = canSubmitUpdate;
-  const canDelete = isAdmin;
 
   // Role selain requester/admin langsung menampilkan tabel Data Vendor tanpa tab
   const activeTab = canSubmitUpdate && searchParams.get("tab") === "requests" ? "REQUESTS" : "VENDORS";
@@ -223,39 +222,45 @@ function ExistingVendor() {
     }
   };
 
-  // Hapus vendor (khusus Admin)
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Apakah Anda yakin ingin menghapus vendor ini?",
+  // Toggle Status Aktif / Nonaktif (khusus Admin)
+  const handleToggleStatus = async (vendor) => {
+    const isCurrentlyActive = vendor.is_active !== false;
+    const actionText = isCurrentlyActive ? "menonaktifkan" : "mengaktifkan";
+    const confirmChange = window.confirm(
+      `Apakah Anda yakin ingin ${actionText} vendor "${vendor.nama_perusahaan}"?`
     );
 
-    if (!confirmDelete) {
+    if (!confirmChange) {
       return;
     }
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/vendors/${id}`, {
-        method: "DELETE",
+      const response = await fetch(`${API_URL}/vendors/${vendor.id}/toggle-status`, {
+        method: "POST",
         headers: {
           Accept: "application/json",
+          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
+        body: JSON.stringify({ is_active: !isCurrentlyActive }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Gagal menghapus vendor");
+        throw new Error(data.message || `Gagal ${actionText} vendor`);
       }
 
       setVendors((previousVendors) =>
-        previousVendors.filter((vendor) => vendor.id !== id),
+        previousVendors.map((item) =>
+          item.id === vendor.id ? { ...item, is_active: !isCurrentlyActive } : item
+        )
       );
 
-      alert("Vendor berhasil dihapus.");
+      alert(data.message || `Vendor berhasil di${isCurrentlyActive ? "nonaktifkan" : "aktifkan"}.`);
     } catch (error) {
-      console.error("Gagal menghapus vendor:", error);
+      console.error(`Gagal ${actionText} vendor:`, error);
       alert(error.message);
     }
   };
@@ -685,68 +690,98 @@ function ExistingVendor() {
                       <th>Email</th>
                       <th>No. Telepon</th>
                       <th>Kota</th>
-                      <th width="140">Aksi</th>
+                      <th width="90">Status</th>
+                      <th width="160">Aksi</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {filteredVendors.map((vendor, index) => (
-                      <tr key={vendor.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <strong>{vendor.vendor_code || "-"}</strong>
-                        </td>
-                        <td>
-                          <strong>{vendor.nama_perusahaan || "-"}</strong>
-                        </td>
-                        <td>
-                          {vendor.kategori?.name ||
-                            vendor.kategori?.category_desc ||
-                            "-"}
-                        </td>
-                        <td>{vendor.pic_vendor || "-"}</td>
-                        <td>{vendor.email || "-"}</td>
-                        <td>{vendor.phone || vendor.mobile_phone || "-"}</td>
-                        <td>{vendor.city || "-"}</td>
-                        <td>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              className="existing-detail-button"
-                              onClick={() => openDetail(vendor)}
+                    {filteredVendors.map((vendor, index) => {
+                      const isActive = vendor.is_active !== false;
+                      return (
+                        <tr key={vendor.id}>
+                          <td>{index + 1}</td>
+                          <td>
+                            <strong>{vendor.vendor_code || "-"}</strong>
+                          </td>
+                          <td>
+                            <strong>{vendor.nama_perusahaan || "-"}</strong>
+                          </td>
+                          <td>
+                            {vendor.kategori?.name ||
+                              vendor.kategori?.category_desc ||
+                              "-"}
+                          </td>
+                          <td>{vendor.pic_vendor || "-"}</td>
+                          <td>{vendor.email || "-"}</td>
+                          <td>{vendor.phone || vendor.mobile_phone || "-"}</td>
+                          <td>{vendor.city || "-"}</td>
+                          <td>
+                            {isActive ? (
+                              <span
+                                className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"
+                                style={{ fontSize: "11px", fontWeight: "600", borderRadius: "4px" }}
+                              >
+                                Aktif
+                              </span>
+                            ) : (
+                              <span
+                                className="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"
+                                style={{ fontSize: "11px", fontWeight: "600", borderRadius: "4px" }}
+                              >
+                                Nonaktif
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                              }}
                             >
-                              Detail
-                            </button>
-
-                            {canEdit && (
                               <button
                                 type="button"
-                                className="existing-edit-button"
-                                onClick={() => openEdit(vendor)}
+                                className="existing-detail-button"
+                                onClick={() => openDetail(vendor)}
                               >
-                                Edit
+                                Detail
                               </button>
-                            )}
 
-                            {canDelete && (
-                              <button
-                                type="button"
-                                className="existing-delete-button"
-                                onClick={() => handleDelete(vendor.id)}
-                              >
-                                Hapus
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  className="existing-edit-button"
+                                  onClick={() => {
+                                    if (!isActive) {
+                                      alert("Vendor ini sedang nonaktif dan tidak dapat diajukan perbaikan.");
+                                      return;
+                                    }
+                                    openEdit(vendor);
+                                  }}
+                                  style={!isActive ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                                  title={!isActive ? "Vendor sedang nonaktif" : "Edit vendor"}
+                                >
+                                  Edit
+                                </button>
+                              )}
+
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  className={isActive ? "existing-deactivate-button" : "existing-activate-button"}
+                                  onClick={() => handleToggleStatus(vendor)}
+                                  title={isActive ? "Nonaktifkan vendor ini" : "Aktifkan kembali vendor ini"}
+                                >
+                                  {isActive ? "Nonaktifkan" : "Aktifkan"}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
