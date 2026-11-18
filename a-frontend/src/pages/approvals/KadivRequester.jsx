@@ -28,6 +28,8 @@ function KadivDetail() {
   const [error, setError] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const [modal, setModal] = useState({
     open: false,
@@ -157,11 +159,22 @@ function KadivDetail() {
   // ==========================================
 
   const confirmCancelApprove = () => {
+    if (!cancelReason.trim()) {
+      showAlert({
+        type: "error",
+        title: "Alasan Pembatalan Belum Diisi",
+        message:
+          "Mohon isi alasan pembatalan approval terlebih dahulu agar role sebelumnya dapat mengetahui alasannya.",
+        confirmText: "Mengerti",
+      });
+      return;
+    }
+
     showAlert({
       type: "warning",
       title: "Batalkan Approval (Cancel Approve)?",
       message:
-        "Apakah kamu yakin ingin membatalkan approval pengajuan vendor ini? Pengajuan akan di-rollback ke tahap sebelumnya.",
+        "Apakah kamu yakin ingin membatalkan approval pengajuan vendor ini? Pengajuan akan di-rollback ke tahap sebelumnya beserta alasan pembatalan.",
       confirmText: "Ya, Cancel Approve",
       cancelText: "Periksa Kembali",
       showCancel: true,
@@ -418,7 +431,10 @@ function KadivDetail() {
       const body = isReject
         ? { rejection_reason: rejectReason.trim() }
         : action === "cancel_approve"
-          ? { reason: "Cancel approve dari antarmuka verifikator/approver" }
+          ? {
+              reason: cancelReason.trim(),
+              cancellation_reason: cancelReason.trim(),
+            }
           : {};
 
       const response = await fetch(endpoint, {
@@ -613,6 +629,27 @@ function KadivDetail() {
             </span>
           </div>
         </div>
+
+        {/* CANCELLATION NOTICE */}
+        {requestData?.cancellation_reason && (
+          <div className="cancellation-notice-banner">
+            <div className="cancellation-notice-header">
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: "18px" }}>⚠️</span>
+                <h5 className="cancellation-notice-title">
+                  Approval Dibatalkan (Cancel Approve dari Tahap Berikutnya)
+                </h5>
+              </div>
+              <span className="cancellation-notice-badge">Rollback</span>
+            </div>
+            <div className="cancellation-notice-body">
+              <div className="text-muted small mb-1 font-weight-bold">Alasan Pembatalan:</div>
+              <div className="cancellation-notice-reason">
+                {requestData.cancellation_reason}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* FORM READ-ONLY */}
 
@@ -974,6 +1011,52 @@ function KadivDetail() {
           </div>
         )}
 
+        {/* ALASAN CANCEL APPROVE */}
+        {showCancelForm && (
+          <div className="kadiv-reject-panel account-cancel-form">
+            <label htmlFor="cancelReason">
+              Alasan Pembatalan Approval (Cancel Approve) <span className="text-danger">*</span>
+            </label>
+
+            <p className="account-section-description">
+              Pengajuan akan di-rollback ke tahap sebelumnya beserta alasan pembatalan ini agar dapat diperbaiki.
+            </p>
+
+            <textarea
+              id="cancelReason"
+              className="procurement-detail-input procurement-detail-textarea"
+              rows={4}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Tuliskan alasan pembatalan approval secara jelas..."
+              disabled={processing}
+            />
+
+            <div className="kadiv-reject-actions">
+              <button
+                type="button"
+                className="procurement-detail-cancel"
+                disabled={processing}
+                onClick={() => {
+                  setShowCancelForm(false);
+                  setCancelReason("");
+                }}
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                className="kadiv-cancel-approve-button"
+                disabled={processing || !cancelReason.trim()}
+                onClick={confirmCancelApprove}
+              >
+                {processing ? "Memproses..." : "Konfirmasi Cancel Approve"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ACTION */}
 
         <div className="procurement-detail-actions">
@@ -986,7 +1069,7 @@ function KadivDetail() {
             Kembali
           </button>
 
-          {canApprove && !showRejectForm && (
+          {canApprove && !showRejectForm && !showCancelForm && (
             <>
               <button
                 type="button"
@@ -995,6 +1078,7 @@ function KadivDetail() {
                 onClick={() => {
                   setRejectReason("");
                   setShowRejectForm(true);
+                  setShowCancelForm(false);
                 }}
               >
                 Tolak
@@ -1004,7 +1088,11 @@ function KadivDetail() {
                 type="button"
                 className="kadiv-cancel-approve-button"
                 disabled={processing}
-                onClick={confirmCancelApprove}
+                onClick={() => {
+                  setCancelReason("");
+                  setShowCancelForm(true);
+                  setShowRejectForm(false);
+                }}
               >
                 Cancel Approve
               </button>

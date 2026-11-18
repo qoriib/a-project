@@ -2045,3 +2045,102 @@
   font-weight: 600;
   letter-spacing: 0.5px;
 }
+
+/* CANCEL APPROVE FORM & CANCELLATION NOTICE */
+.account-detail-page .account-cancel-form,
+.account-cancel-form {
+  width: 100%;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  background: #fffbf5;
+}
+
+.account-detail-page .account-cancel-form h6,
+.account-cancel-form h6 {
+  margin: 0 0 7px;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-detail-page .account-cancel-form textarea,
+.account-cancel-form textarea {
+  display: block;
+  width: 100%;
+  min-height: 90px;
+  margin-top: 7px;
+  margin-bottom: 4px;
+  padding: 9px 10px;
+  border: 1px solid #fdba74;
+  border-radius: 6px;
+  background: #fff;
+  color: #273548;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.account-detail-page .account-cancel-form textarea:focus,
+.account-cancel-form textarea:focus {
+  border-color: #ea580c;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+}
+
+.cancellation-notice-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  margin-bottom: 22px;
+}
+
+.cancellation-notice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cancellation-notice-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9a3412;
+}
+
+.cancellation-notice-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: #ea580c;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cancellation-notice-body {
+  font-size: 13px;
+  color: #431407;
+  line-height: 1.6;
+}
+
+.cancellation-notice-reason {
+  background: #ffffff;
+  border: 1px dashed #fdba74;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-top: 6px;
+  color: #7c2d12;
+  font-weight: 500;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

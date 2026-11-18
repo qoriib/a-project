@@ -42,6 +42,8 @@ function TaxDetail() {
 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const [savingDraft, setSavingDraft] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -400,13 +402,18 @@ function TaxDetail() {
 
   const handleApproval = async (action) => {
     const isReject = action === "reject";
-    const reason = rejectionReason.trim();
+    const isCancel = action === "cancel-approve";
+    const reason = isReject ? rejectionReason.trim() : cancelReason.trim();
 
-    if (isReject && !reason) {
+    if ((isReject || isCancel) && !reason) {
       showAlert({
         type: "error",
-        title: "Alasan Penolakan Belum Diisi",
-        message: "Silakan isi alasan penolakan terlebih dahulu.",
+        title: isReject
+          ? "Alasan Penolakan Belum Diisi"
+          : "Alasan Pembatalan Belum Diisi",
+        message: isReject
+          ? "Silakan isi alasan penolakan terlebih dahulu."
+          : "Silakan isi alasan pembatalan approval terlebih dahulu agar Accounting dapat mengetahui.",
       });
       return;
     }
@@ -414,12 +421,18 @@ function TaxDetail() {
     try {
       setProcessingApproval(true);
 
+      const body = isReject
+        ? { rejection_reason: reason }
+        : isCancel
+        ? { reason, cancellation_reason: reason }
+        : {};
+
       const response = await fetch(
         `${API_BASE_URL}/vendor-requests/${id}/${action}`,
         {
           method: "POST",
           headers: getAuthHeaders(true),
-          body: JSON.stringify(isReject ? { rejection_reason: reason } : {}),
+          body: JSON.stringify(body),
         },
       );
 
@@ -430,6 +443,8 @@ function TaxDetail() {
           type: "error",
           title: isReject
             ? "Gagal Menolak Pengajuan"
+            : isCancel
+            ? "Gagal Membatalkan Approval"
             : "Gagal Menyetujui Pengajuan",
           message: result.message || "Terjadi kesalahan.",
         });
@@ -438,14 +453,20 @@ function TaxDetail() {
 
       setShowRejectForm(false);
       setRejectionReason("");
+      setShowCancelForm(false);
+      setCancelReason("");
 
       showAlert({
         type: "success",
         title: isReject
           ? "Pengajuan Berhasil Ditolak"
+          : isCancel
+          ? "Approval Berhasil Dibatalkan"
           : "Pengajuan Berhasil Disetujui",
         message: isReject
           ? "Pengajuan dikembalikan kepada Requester untuk diperbaiki."
+          : isCancel
+          ? "Pengajuan berhasil di-rollback ke Level 3 (Accounting)."
           : "Pengajuan berhasil disetujui dan diteruskan ke tahap SAP.",
         confirmText: "OK",
         onConfirm: () => navigate(targetApprovalUrl),
@@ -469,6 +490,7 @@ function TaxDetail() {
 
   const openRejectForm = () => {
     setRejectionReason("");
+    setShowCancelForm(false);
     setShowRejectForm(true);
   };
 
@@ -596,6 +618,27 @@ function TaxDetail() {
             </span>
           </div>
         </div>
+
+        {/* CANCELLATION NOTICE */}
+        {request?.cancellation_reason && (
+          <div className="cancellation-notice-banner">
+            <div className="cancellation-notice-header">
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: "18px" }}>⚠️</span>
+                <h5 className="cancellation-notice-title">
+                  Approval Dibatalkan (Cancel Approve dari Tahap SAP)
+                </h5>
+              </div>
+              <span className="cancellation-notice-badge">Rollback</span>
+            </div>
+            <div className="cancellation-notice-body">
+              <div className="text-muted small mb-1 font-weight-bold">Alasan Pembatalan:</div>
+              <div className="cancellation-notice-reason">
+                {request.cancellation_reason}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* DATA REQUESTER */}
 
@@ -954,7 +997,7 @@ function TaxDetail() {
               ACTION BUTTONS
           ================================================= */}
 
-          {(canEdit || canApprove) && !showRejectForm && (
+          {(canEdit || canApprove) && !showRejectForm && !showCancelForm && (
             <div className="account-detail-actions">
               <button
                 type="button"
@@ -989,18 +1032,11 @@ function TaxDetail() {
                 type="button"
                 className="account-detail-cancel-approve"
                 disabled={isProcessing}
-                onClick={() =>
-                  showAlert({
-                    type: "warning",
-                    title: "Batalkan Approval (Cancel Approve)?",
-                    message:
-                      "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 3 (Accounting).",
-                    confirmText: "Ya, Rollback",
-                    cancelText: "Kembali",
-                    showCancel: true,
-                    onConfirm: () => handleApproval("cancel-approve"),
-                  })
-                }
+                onClick={() => {
+                  setCancelReason("");
+                  setShowCancelForm(true);
+                  setShowRejectForm(false);
+                }}
               >
                 Cancel Approve
               </button>
@@ -1013,6 +1049,74 @@ function TaxDetail() {
               >
                 {submitting ? "Mengirim..." : "Simpan & Kirim ke SAP"}
               </button>
+            </div>
+          )}
+
+          {/* CANCEL APPROVE FORM */}
+          {showCancelForm && (canApprove || canEdit) && (
+            <div className="account-reject-form account-cancel-form">
+              <h6>Alasan Pembatalan Approval (Cancel Approve)</h6>
+
+              <p className="account-section-description">
+                Pengajuan akan di-rollback ke Level 3 (Accounting) beserta alasan pembatalan ini agar dapat diperbaiki.
+              </p>
+
+              <label className="account-detail-label">
+                Alasan Pembatalan <span className="text-danger">*</span>
+              </label>
+
+              <textarea
+                className="account-detail-input account-detail-textarea"
+                rows={4}
+                placeholder="Tuliskan alasan pembatalan approval secara jelas..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                disabled={isProcessing}
+              />
+
+              <div className="account-detail-actions">
+                <button
+                  type="button"
+                  className="account-detail-cancel"
+                  onClick={() => {
+                    setShowCancelForm(false);
+                    setCancelReason("");
+                  }}
+                  disabled={isProcessing}
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="button"
+                  className="account-detail-cancel-approve"
+                  onClick={() => {
+                    if (!cancelReason.trim()) {
+                      showAlert({
+                        type: "error",
+                        title: "Alasan Pembatalan Belum Diisi",
+                        message:
+                          "Silakan isi alasan pembatalan approval terlebih dahulu.",
+                      });
+                      return;
+                    }
+
+                    showAlert({
+                      type: "warning",
+                      title: "Batalkan Approval (Cancel Approve)?",
+                      message:
+                        "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 3 (Accounting) beserta alasan pembatalan.",
+                      confirmText: "Ya, Rollback",
+                      cancelText: "Kembali",
+                      showCancel: true,
+                      onConfirm: () => handleApproval("cancel-approve"),
+                    });
+                  }}
+                  disabled={isProcessing || !cancelReason.trim()}
+                >
+                  {processingApproval ? "Memproses..." : "Konfirmasi Cancel Approve"}
+                </button>
+              </div>
             </div>
           )}
 

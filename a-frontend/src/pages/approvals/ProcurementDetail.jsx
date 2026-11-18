@@ -1042,6 +1042,42 @@ function ProcurementDetail() {
             </div>
           )}
 
+          {/* CANCELLATION NOTICE */}
+          {requestData?.cancellation_reason && (
+            <div className="procurement-rejection-notice procurement-cancellation-notice">
+              <div className="procurement-rejection-header">
+                <div className="procurement-rejection-mark" style={{ background: "#fff7ed", color: "#c2410c" }}>
+                  ⚠️
+                </div>
+                <div className="procurement-rejection-title-wrap">
+                  <h5 className="procurement-rejection-title" style={{ color: "#9a3412" }}>
+                    Approval Dibatalkan (Cancel Approve)
+                  </h5>
+                  <p className="procurement-rejection-subtitle" style={{ color: "#7c2d12" }}>
+                    Pengajuan vendor dibatalkan oleh approver dan dikembalikan ke Draft untuk diperbaiki.
+                  </p>
+                </div>
+                <span className="procurement-rejection-badge" style={{ borderColor: "#fdba74", color: "#c2410c", background: "#fff" }}>
+                  Cancel Approve
+                </span>
+              </div>
+
+              <div className="procurement-rejection-body">
+                <span className="procurement-rejection-label">
+                  Alasan Pembatalan (Cancel Approve)
+                </span>
+                <p className="procurement-rejection-reason" style={{ borderColor: "#fed7aa", background: "#fffbf5" }}>
+                  {requestData.cancellation_reason}
+                </p>
+              </div>
+
+              <div className="procurement-rejection-hint" style={{ background: "#fff7ed", color: "#7c2d12", borderColor: "#fed7aa" }}>
+                Silakan periksa catatan pembatalan di atas, perbaiki data jika diperlukan, lalu klik{" "}
+                <strong>Simpan & Kirim</strong> untuk mengajukan ulang.
+              </div>
+            </div>
+          )}
+
         {/* FORM */}
         <form
           ref={formRef}

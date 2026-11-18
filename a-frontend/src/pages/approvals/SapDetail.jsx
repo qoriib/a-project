@@ -37,6 +37,8 @@ function SapDetail() {
 
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   const [rejecting, setRejecting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -348,6 +350,7 @@ function SapDetail() {
 
   const openRejectForm = () => {
     setRejectionReason("");
+    setShowCancelForm(false);
     setShowRejectForm(true);
   };
 
@@ -480,13 +483,23 @@ function SapDetail() {
   // ==========================================
 
   const confirmCancelApprove = () => {
+    if (!cancelReason.trim()) {
+      showAlert({
+        type: "error",
+        title: "Alasan Pembatalan Belum Diisi",
+        message:
+          "Mohon isi alasan pembatalan approval terlebih dahulu agar role sebelumnya dapat mengetahui alasannya.",
+      });
+      return;
+    }
+
     const isPhase2State = request?.status === "FORM_APPROVED";
     showAlert({
       type: "warning",
       title: "Batalkan Approval (Cancel Approve)?",
       message: isPhase2State
-        ? "Apakah kamu yakin ingin membatalkan approval form? Pengajuan akan dikembalikan ke Tahap 1 (Review SAP)."
-        : "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 4 (Tax).",
+        ? "Apakah kamu yakin ingin membatalkan approval form? Pengajuan akan dikembalikan ke Tahap 1 (Review SAP) beserta alasan pembatalan."
+        : "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 4 (Tax) beserta alasan pembatalan.",
       confirmText: "Ya, Rollback",
       cancelText: "Kembali",
       showCancel: true,
@@ -504,9 +517,8 @@ function SapDetail() {
           method: "POST",
           headers: getAuthHeaders(true),
           body: JSON.stringify({
-            reason: isPhase2State
-              ? "Cancel approve dari Phase 2 kode SAP kembali ke review form"
-              : "Cancel approve dari bagian SAP",
+            reason: cancelReason.trim(),
+            cancellation_reason: cancelReason.trim(),
           }),
         }
       );
@@ -521,6 +533,9 @@ function SapDetail() {
         });
         return;
       }
+
+      setShowCancelForm(false);
+      setCancelReason("");
 
       showAlert({
         type: "success",
@@ -745,6 +760,27 @@ function SapDetail() {
             </span>
           </div>
         </div>
+
+        {/* CANCELLATION NOTICE */}
+        {request?.cancellation_reason && (
+          <div className="cancellation-notice-banner">
+            <div className="cancellation-notice-header">
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: "18px" }}>⚠️</span>
+                <h5 className="cancellation-notice-title">
+                  Approval Dibatalkan (Cancel Approve)
+                </h5>
+              </div>
+              <span className="cancellation-notice-badge">Rollback</span>
+            </div>
+            <div className="cancellation-notice-body">
+              <div className="text-muted small mb-1 font-weight-bold">Alasan Pembatalan:</div>
+              <div className="cancellation-notice-reason">
+                {request.cancellation_reason}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* DATA REQUESTER */}
 
@@ -1497,7 +1533,7 @@ function SapDetail() {
           )}
 
           {/* ACTION BUTTONS PHASE 1 */}
-          {isPhase1 && (canEdit || canApprove) && !showRejectForm && (
+          {isPhase1 && (canEdit || canApprove) && !showRejectForm && !showCancelForm && (
             <div className="account-detail-actions">
               <button
                 type="button"
@@ -1520,7 +1556,11 @@ function SapDetail() {
               <button
                 type="button"
                 className="account-detail-cancel-approve"
-                onClick={confirmCancelApprove}
+                onClick={() => {
+                  setCancelReason("");
+                  setShowCancelForm(true);
+                  setShowRejectForm(false);
+                }}
                 disabled={approving || rejecting}
               >
                 Cancel Approve
@@ -1538,7 +1578,7 @@ function SapDetail() {
           )}
 
           {/* ACTION BUTTONS PHASE 2 */}
-          {isPhase2 && (canEdit || canApprove) && !showRejectForm && (
+          {isPhase2 && (canEdit || canApprove) && !showRejectForm && !showCancelForm && (
             <div className="account-detail-actions">
               <button
                 type="button"
@@ -1563,7 +1603,11 @@ function SapDetail() {
               <button
                 type="button"
                 className="account-detail-cancel-approve"
-                onClick={confirmCancelApprove}
+                onClick={() => {
+                  setCancelReason("");
+                  setShowCancelForm(true);
+                  setShowRejectForm(false);
+                }}
                 disabled={submitting || savingDraft || rejecting}
               >
                 Cancel Approve
@@ -1577,6 +1621,55 @@ function SapDetail() {
               >
                 {submitting ? "Menyimpan..." : "Simpan & Selesaikan"}
               </button>
+            </div>
+          )}
+
+          {/* CANCEL APPROVE FORM */}
+          {showCancelForm && (canApprove || canEdit) && (
+            <div className="account-reject-form account-cancel-form">
+              <h6>Alasan Pembatalan Approval (Cancel Approve)</h6>
+
+              <p className="account-section-description">
+                {isPhase2
+                  ? "Pengajuan akan dikembalikan ke Tahap 1 (Review SAP) beserta alasan pembatalan ini."
+                  : "Pengajuan akan di-rollback ke Level 4 (Tax) beserta alasan pembatalan ini agar dapat diperbaiki."}
+              </p>
+
+              <label className="account-detail-label">
+                Alasan Pembatalan <span className="text-danger">*</span>
+              </label>
+
+              <textarea
+                className="account-detail-input account-detail-textarea"
+                rows={4}
+                placeholder="Tuliskan alasan pembatalan approval secara jelas..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                disabled={rejecting}
+              />
+
+              <div className="account-detail-actions">
+                <button
+                  type="button"
+                  className="account-detail-cancel"
+                  onClick={() => {
+                    setShowCancelForm(false);
+                    setCancelReason("");
+                  }}
+                  disabled={rejecting}
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="button"
+                  className="account-detail-cancel-approve"
+                  onClick={confirmCancelApprove}
+                  disabled={rejecting || !cancelReason.trim()}
+                >
+                  {rejecting ? "Memproses..." : "Konfirmasi Cancel Approve"}
+                </button>
+              </div>
             </div>
           )}
 
