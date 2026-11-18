@@ -535,17 +535,23 @@ function Approval() {
   const getStatusClass = (status) => {
     switch (status) {
       case "Pending":
+      case "PENDING_L1":
+      case "PENDING_L2":
+      case "PENDING_L3":
+      case "PENDING_L4":
+      case "PENDING_L5":
         return "approval-status pending";
 
       case "Under Review":
+      case "FORM_APPROVED":
         return "approval-status review";
 
       case "Approved":
+      case "COMPLETED":
         return "approval-status approved";
 
       case "Rejected":
-        return "approval-status rejected";
-
+      case "REJECTED":
       case "Revision Required":
         return "approval-status rejected";
 
@@ -885,7 +891,9 @@ function Approval() {
 
                           <td>
                             <span className={getStatusClass(request.status)}>
-                              {request.status || "-"}
+                              {request.status === "FORM_APPROVED"
+                                ? "Menunggu Kode SAP"
+                                : request.status || "-"}
                             </span>
                           </td>
 
@@ -910,6 +918,8 @@ function Approval() {
                                 >
                                   {request.current_stage === "REQUESTER"
                                     ? "Lanjutkan Draft"
+                                    : request.status === "FORM_APPROVED"
+                                    ? "Input Kode SAP"
                                     : "Proses"}{" "}
                                   <span>→</span>
                                 </button>

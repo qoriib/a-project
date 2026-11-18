@@ -289,12 +289,14 @@ function Sap() {
                         <td>
                           <span
                             className={
-                              request.status === "Pending"
+                              request.status === "Pending" || request.status === "FORM_APPROVED"
                                 ? "vendor-status active"
                                 : "vendor-status inactive"
                             }
                           >
-                            {request.status || "-"}
+                            {request.status === "FORM_APPROVED"
+                              ? "Menunggu Kode SAP"
+                              : request.status || "-"}
                           </span>
                         </td>
 
@@ -304,7 +306,7 @@ function Sap() {
                             className="existing-detail-button"
                             onClick={() => handleDetail(request.id)}
                           >
-                            Proses
+                            {request.status === "FORM_APPROVED" ? "Input Kode SAP" : "Proses"}
                           </button>
                         </td>
                       </tr>

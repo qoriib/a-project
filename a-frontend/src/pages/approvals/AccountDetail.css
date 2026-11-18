@@ -1977,3 +1977,71 @@
   text-decoration: line-through;
   margin-left: 4px;
 }
+
+/* SAP TWO-PHASE WORKFLOW */
+.sap-phase-banner {
+  padding: 18px 22px;
+  border-radius: 10px;
+  margin-bottom: 22px;
+}
+
+.sap-phase-banner.phase-1 {
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+}
+
+.sap-phase-banner.phase-2 {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.sap-phase-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 12px;
+  border-radius: 14px;
+  margin-bottom: 8px;
+}
+
+.sap-phase-banner.phase-1 .sap-phase-badge {
+  background: #0284c7;
+  color: #fff;
+}
+
+.sap-phase-banner.phase-2 .sap-phase-badge {
+  background: #16a34a;
+  color: #fff;
+}
+
+.sap-phase-banner h5 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.sap-phase-banner p {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+.sap-pdf-preview-box {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.account-detail-input.sap-code-input {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}

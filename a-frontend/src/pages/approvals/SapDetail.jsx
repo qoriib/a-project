@@ -41,6 +41,7 @@ function SapDetail() {
   const [rejecting, setRejecting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [approving, setApproving] = useState(false);
 
   // ==========================================
   // STATE ALERT MODAL
@@ -83,7 +84,7 @@ function SapDetail() {
   };
 
   const closeModal = () => {
-    if (rejecting || savingDraft || submitting) return;
+    if (rejecting || savingDraft || submitting || approving) return;
 
     setModal((prev) => ({
       ...prev,
@@ -166,27 +167,23 @@ function SapDetail() {
   ).toUpperCase().trim();
   const isAdmin = userRole === "ADMIN" || storedUser?.is_admin === true || permissions.is_admin;
 
+  const isPhase2 = request?.status === "FORM_APPROVED";
+  const isCompleted =
+    request?.status === "COMPLETED" ||
+    request?.current_stage === "COMPLETED";
+  const isPhase1 = !isPhase2 && !isCompleted && request?.current_stage === "SAP";
+
   const canEdit =
     (permissions.can_edit || isAdmin) &&
     (isAdmin || userRole === "SAP") &&
     request?.current_stage === "SAP" &&
-    [
-      "PENDING_L5",
-      "FORM_APPROVED",
-      "Pending",
-      "Under Review",
-      "Revision Required",
-      "Draft",
-      "DRAFT",
-    ].includes(request?.status);
+    !isCompleted;
 
   const canApprove =
     (permissions.can_approve || isAdmin) &&
     (isAdmin || userRole === "SAP") &&
     request?.current_stage === "SAP" &&
-    ["PENDING_L5", "FORM_APPROVED", "Pending", "Under Review"].includes(
-      request?.status,
-    );
+    !isCompleted;
 
   // ==========================================
   // SAVE SAP DRAFT
@@ -384,15 +381,112 @@ function SapDetail() {
   };
 
   // ==========================================
+  // VIEW PDF
+  // ==========================================
+
+  const handleViewPdf = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/vendor-requests/${id}/pdf`,
+        {
+          headers: getAuthHeaders(false),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Gagal mengambil file PDF");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Error viewing PDF:", error);
+      showAlert({
+        type: "error",
+        title: "Gagal Membuka PDF",
+        message: "Dokumen PDF belum tersedia atau gagal dibuka.",
+      });
+    }
+  };
+
+  // ==========================================
+  // APPROVE PHASE 1 (FORM APPROVAL)
+  // ==========================================
+
+  const confirmApprovePhase1 = () => {
+    showAlert({
+      type: "warning",
+      title: "Approve Form Pengajuan Vendor?",
+      message:
+        "Apakah kamu yakin ingin menyetujui form pengajuan vendor ini? Dokumen PDF registrasi akan digenerate (Vendor Code masih kosong) dan pengajuan akan lanjut ke tahap pengisian Vendor Code SAP.",
+      confirmText: "Ya, Approve Form",
+      cancelText: "Periksa Kembali",
+      showCancel: true,
+      onConfirm: processApprovePhase1,
+    });
+  };
+
+  const processApprovePhase1 = async () => {
+    try {
+      setApproving(true);
+
+      const response = await fetch(
+        `${API_BASE_URL}/vendor-requests/${id}/approve`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(true),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Gagal approval form:", data);
+        showAlert({
+          type: "error",
+          title: "Gagal Menyetujui Form",
+          message:
+            data.message || "Gagal memproses approval form. Silakan coba kembali.",
+        });
+        return;
+      }
+
+      showAlert({
+        type: "success",
+        title: "Form Berhasil Diapprove",
+        message:
+          "Form registrasi vendor berhasil disetujui. Dokumen PDF telah diterbitkan (Vendor Code masih kosong). Silakan lanjutkan untuk mengisi Vendor Code SAP.",
+        confirmText: "Lanjut Isi Kode SAP",
+        onConfirm: () => {
+          fetchRequest();
+        },
+      });
+    } catch (error) {
+      console.error("Error approving SAP phase 1:", error);
+      showAlert({
+        type: "error",
+        title: "Terjadi Kesalahan",
+        message:
+          "Terjadi kesalahan saat menyetujui form. Silakan coba kembali.",
+      });
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  // ==========================================
   // CANCEL APPROVE SAP
   // ==========================================
 
   const confirmCancelApprove = () => {
+    const isPhase2State = request?.status === "FORM_APPROVED";
     showAlert({
       type: "warning",
       title: "Batalkan Approval (Cancel Approve)?",
-      message:
-        "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 4 (Tax).",
+      message: isPhase2State
+        ? "Apakah kamu yakin ingin membatalkan approval form? Pengajuan akan dikembalikan ke Tahap 1 (Review SAP)."
+        : "Apakah kamu yakin ingin membatalkan approval? Pengajuan akan di-rollback ke Level 4 (Tax).",
       confirmText: "Ya, Rollback",
       cancelText: "Kembali",
       showCancel: true,
@@ -403,13 +497,16 @@ function SapDetail() {
   const processCancelApprove = async () => {
     try {
       setRejecting(true);
+      const isPhase2State = request?.status === "FORM_APPROVED";
       const response = await fetch(
         `${API_BASE_URL}/vendor-requests/${id}/cancel-approve`,
         {
           method: "POST",
           headers: getAuthHeaders(true),
           body: JSON.stringify({
-            reason: "Cancel approve dari bagian SAP",
+            reason: isPhase2State
+              ? "Cancel approve dari Phase 2 kode SAP kembali ke review form"
+              : "Cancel approve dari bagian SAP",
           }),
         }
       );
@@ -428,9 +525,19 @@ function SapDetail() {
       showAlert({
         type: "success",
         title: "Approval Berhasil Dibatalkan",
-        message: "Pengajuan berhasil di-rollback ke Level 4 (Tax).",
+        message:
+          data.message ||
+          (isPhase2State
+            ? "Pengajuan berhasil dikembalikan ke Tahap 1 (Review SAP)."
+            : "Pengajuan berhasil di-rollback ke Level 4 (Tax)."),
         confirmText: "OK",
-        onConfirm: () => navigate(targetApprovalUrl),
+        onConfirm: () => {
+          if (isPhase2State) {
+            fetchRequest();
+          } else {
+            navigate(targetApprovalUrl);
+          }
+        },
       });
     } catch (error) {
       showAlert({
@@ -597,11 +704,20 @@ function SapDetail() {
       <div className="account-detail-card">
         {/* HEADER */}
 
-        <div className="account-detail-header">
+        <div className="account-detail-header d-flex justify-content-between align-items-center">
           <div>
             <h4>Detail Pengajuan Vendor</h4>
             <p>{displayVendor?.nama_perusahaan || "Detail data vendor"}</p>
           </div>
+          {request.final_pdf_path && (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary"
+              onClick={handleViewPdf}
+            >
+              📄 Lihat Dokumen PDF
+            </button>
+          )}
         </div>
 
         {/* REQUEST INFO */}
@@ -610,14 +726,22 @@ function SapDetail() {
           <div className="account-request-item">
             <span className="account-request-label">Status</span>
             <span className="account-request-value">
-              {request.status || "-"}
+              {request.status === "FORM_APPROVED"
+                ? "FORM_APPROVED (Menunggu Kode SAP)"
+                : request.status === "COMPLETED"
+                ? "COMPLETED (Selesai)"
+                : request.status || "-"}
             </span>
           </div>
 
           <div className="account-request-item">
             <span className="account-request-label">Tahap</span>
             <span className="account-request-value">
-              {request.current_stage || "-"}
+              {request.status === "FORM_APPROVED"
+                ? "Level 5 (Tahap 2: Input Kode SAP)"
+                : request.current_stage === "SAP"
+                ? "Level 5 (Tahap 1: Review SAP)"
+                : request.current_stage || "-"}
             </span>
           </div>
         </div>
@@ -1254,49 +1378,167 @@ function SapDetail() {
           </div>
         </div>
 
-        {/* DATA SAP */}
+        {/* DATA SAP & TAHAP WORKFLOW */}
 
-        <div className="account-section account-input-section">
-          <h5 className="account-section-title">Data SAP</h5>
-          <p className="account-section-description">
-            {canEdit
-              ? "Lengkapi Vendor Code dari SAP untuk vendor ini."
-              : "Informasi identitas Vendor Code di SAP."}
-          </p>
-
-          <div className="row account-detail-row">
-            <div className="col-md-6 account-detail-field">
-              <label className="account-detail-label">
-                Vendor Code {canEdit && <span className="text-danger">*</span>}
-              </label>
-
-              <input
-                type="text"
-                className="account-detail-input"
-                value={vendorCode}
-                onChange={(e) => setVendorCode(e.target.value)}
-                placeholder="Masukkan Vendor Code"
-                readOnly={!canEdit}
-                disabled={submitting || savingDraft || rejecting}
-              />
-
-              {isUpdate && vendor?.vendor_code && (
-                <div className="field-old-hint mt-2">
-                  Vendor Code SAP Terdaftar di Master: <strong>{vendor.vendor_code}</strong>
-                </div>
-              )}
-
-              {isUpdate && (
-                <div className="alert alert-info py-2 px-3 small mt-3">
-                  ℹ️ <strong>Pembaruan Existing Vendor:</strong> Vendor ini telah memiliki kode SAP <strong>{vendor?.vendor_code || vendorCode}</strong>. Menyetujui tahap akhir SAP ini akan secara otomatis memperbarui data master vendor dan menyelesaikan seluruh alur pengajuan.
-                </div>
-              )}
+        <div className="account-section account-input-section sap-workflow-section">
+          {/* TAHAP 1: VERIFIKASI & APPROVAL FORM OLEH TIM SAP */}
+          {isPhase1 && (
+            <div className="sap-phase-banner phase-1">
+              <span className="sap-phase-badge">Tahap 1 dari 2: Verifikasi & Approval Form</span>
+              <h5>Pemeriksaan Kelengkapan Data & Dokumen Vendor</h5>
+              <p>
+                Periksa seluruh kelengkapan profil perusahaan, rekening bank, data accounting, data perpajakan, dan dokumen legalitas di atas.
+                Pada tahap awal ini, form belum memerlukan pengisian Vendor Code SAP. Lakukan <strong>Approve</strong> untuk menyetujui formulir
+                dan men-generate dokumen PDF registrasi vendor (Vendor Code masih kosong di PDF). Pengajuan kemudian akan berpindah ke Tahap 2 untuk pengisian Vendor Code SAP.
+              </p>
             </div>
-          </div>
+          )}
 
-          {/* ACTION BUTTONS */}
+          {/* TAHAP 2: INPUT VENDOR CODE SAP (STATUS: FORM_APPROVED) */}
+          {isPhase2 && (
+            <>
+              <div className="sap-phase-banner phase-2">
+                <span className="sap-phase-badge">Tahap 2 dari 2: Input Vendor Code SAP</span>
+                <h5>Form Disetujui — Masukkan Vendor Code SAP</h5>
+                <p>
+                  Form registrasi vendor telah disetujui penuh oleh Tim SAP (L1 - L5 Approved). Dokumen PDF awal telah diterbitkan (Vendor Code masih kosong di PDF).
+                  Silakan masukkan Vendor Code resmi dari sistem SAP untuk menyelesaikan pengajuan dan mengaktifkan data vendor pada Master Vendor (Status Completed).
+                </p>
 
-          {(canEdit || canApprove) && !showRejectForm && (
+                {request.final_pdf_path && (
+                  <div className="sap-pdf-preview-box mt-3">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={handleViewPdf}
+                    >
+                      📄 Lihat PDF Form Approval (Vendor Code Kosong)
+                    </button>
+                    <span className="text-muted small">
+                      Dokumen PDF registrasi awal yang telah ditandatangani lengkap seluruh approver.
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <h5 className="account-section-title mt-4">Data SAP</h5>
+              <p className="account-section-description">
+                Lengkapi Vendor Code dari SAP untuk vendor ini agar pengajuan dapat diselesaikan.
+              </p>
+
+              <div className="row account-detail-row">
+                <div className="col-md-6 account-detail-field">
+                  <label className="account-detail-label">
+                    Vendor Code SAP <span className="text-danger">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    className="account-detail-input sap-code-input"
+                    value={vendorCode}
+                    onChange={(e) => setVendorCode(e.target.value)}
+                    placeholder="Masukkan Vendor Code (contoh: 1000215)"
+                    readOnly={!canEdit}
+                    disabled={submitting || savingDraft || rejecting}
+                    autoFocus
+                  />
+
+                  {isUpdate && vendor?.vendor_code && (
+                    <div className="field-old-hint mt-2">
+                      Vendor Code SAP Terdaftar di Master: <strong>{vendor.vendor_code}</strong>
+                    </div>
+                  )}
+
+                  {isUpdate && (
+                    <div className="alert alert-info py-2 px-3 small mt-3">
+                      ℹ️ <strong>Pembaruan Existing Vendor:</strong> Vendor ini telah memiliki kode SAP <strong>{vendor?.vendor_code || vendorCode}</strong>. Menyetujui tahap akhir SAP ini akan secara otomatis memperbarui data master vendor dan menyelesaikan seluruh alur pengajuan.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* STATUS COMPLETED: TAMPILAN READ ONLY DENGAN KODE SAP */}
+          {isCompleted && (
+            <div className="sap-phase-banner phase-2">
+              <span className="sap-phase-badge">Selesai (Completed)</span>
+              <h5>Pengajuan Vendor Telah Selesai</h5>
+              <p>
+                Vendor ini telah resmi terdaftar dan aktif di Master Vendor dengan Vendor Code <strong>{displayVendor?.vendor_code || vendorCode || "-"}</strong>.
+              </p>
+              {request.final_pdf_path && (
+                <div className="sap-pdf-preview-box mt-3">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-success"
+                    onClick={handleViewPdf}
+                  >
+                    📄 Unduh / Lihat PDF Final (Dengan Vendor Code)
+                  </button>
+                  <span className="text-muted small">
+                    Dokumen PDF registrasi final lengkap dengan Vendor Code dan seluruh QR tanda tangan.
+                  </span>
+                </div>
+              )}
+
+              <div className="row account-detail-row mt-3">
+                <div className="col-md-6 account-detail-field">
+                  <label className="account-detail-label">Vendor Code SAP</label>
+                  <input
+                    type="text"
+                    className="account-detail-input"
+                    value={displayVendor?.vendor_code || vendorCode || "-"}
+                    readOnly
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ACTION BUTTONS PHASE 1 */}
+          {isPhase1 && (canEdit || canApprove) && !showRejectForm && (
+            <div className="account-detail-actions">
+              <button
+                type="button"
+                className="account-detail-cancel"
+                onClick={confirmBack}
+                disabled={approving || rejecting}
+              >
+                Kembali
+              </button>
+
+              <button
+                type="button"
+                className="account-detail-reject"
+                onClick={openRejectForm}
+                disabled={approving || rejecting}
+              >
+                Reject
+              </button>
+
+              <button
+                type="button"
+                className="account-detail-cancel-approve"
+                onClick={confirmCancelApprove}
+                disabled={approving || rejecting}
+              >
+                Cancel Approve
+              </button>
+
+              <button
+                type="button"
+                className="account-detail-save"
+                onClick={confirmApprovePhase1}
+                disabled={approving || rejecting}
+              >
+                {approving ? "Menyetujui..." : "Approve"}
+              </button>
+            </div>
+          )}
+
+          {/* ACTION BUTTONS PHASE 2 */}
+          {isPhase2 && (canEdit || canApprove) && !showRejectForm && (
             <div className="account-detail-actions">
               <button
                 type="button"
@@ -1320,15 +1562,6 @@ function SapDetail() {
 
               <button
                 type="button"
-                className="account-detail-reject"
-                onClick={openRejectForm}
-                disabled={submitting || savingDraft || rejecting}
-              >
-                Reject
-              </button>
-
-              <button
-                type="button"
                 className="account-detail-cancel-approve"
                 onClick={confirmCancelApprove}
                 disabled={submitting || savingDraft || rejecting}
@@ -1347,8 +1580,8 @@ function SapDetail() {
             </div>
           )}
 
-          {/* READ ONLY BACK BUTTON */}
-          {!canEdit && !canApprove && (
+          {/* ACTION BUTTONS COMPLETED ATAU READ ONLY */}
+          {(isCompleted || (!canEdit && !canApprove)) && (
             <div className="account-detail-actions">
               <button
                 type="button"
