@@ -12,7 +12,7 @@ class VendorCategoryController extends Controller
     public function index(Request $request)
     {
         $today = now()->toDateString();
-        $user = $request->user();
+        $user = $request->user() ?: auth('sanctum')->user() ?: \Illuminate\Support\Facades\Auth::user();
 
         $query = VendorCategory::query()
             ->where(function ($q) use ($today) {
@@ -24,20 +24,42 @@ class VendorCategoryController extends Controller
                     ->orWhereDate('end_date', '>=', $today);
             });
 
-        // Filter berdasarkan kategori yang boleh diakses oleh divisi/NIK Requester jika bukan request seluruh master
-        $userRole = strtoupper((string) ($user->role ?? ''));
-        $isRequester = in_array($userRole, ['REQUESTER', 'PROCUREMENT']);
-        $bypassFilter = $request->boolean('all') || $request->input('all') === '1' || !$isRequester;
+        $isAdmin = false;
+        if ($user) {
+            $roleName = strtoupper($user->role?->name ?? (is_string($user->role) ? $user->role : '') ?? '');
+            $isAdmin = (bool) ($user->is_admin ?? false) || $roleName === 'ADMIN' || ($user && method_exists($user, 'isAdmin') && $user->isAdmin());
+        }
 
-        if (!$bypassFilter && $user && $user->nik) {
-            $allowedTypes = DB::table('requester_category_access')
-                ->where('nik', $user->nik)
-                ->whereDate('start_date', '<=', $today)
-                ->where(function ($q) use ($today) {
-                    $q->whereNull('end_date')
-                        ->orWhereDate('end_date', '>=', $today);
-                })
-                ->pluck('category_type');
+        // Filter berdasarkan kategori yang boleh diakses oleh divisi/NIK Requester jika bukan admin
+        $bypassFilter = ($request->boolean('all') || $request->input('all') === '1') && $isAdmin;
+
+        if (!$bypassFilter && $user) {
+            $allowedTypes = collect();
+
+            if (!empty($user->nik)) {
+                $accessTypes = DB::table('requester_category_access')
+                    ->where('nik', $user->nik)
+                    ->whereDate('start_date', '<=', $today)
+                    ->where(function ($q) use ($today) {
+                        $q->whereNull('end_date')
+                            ->orWhereDate('end_date', '>=', $today);
+                    })
+                    ->pluck('category_type');
+
+                if ($accessTypes->isNotEmpty()) {
+                    $allowedTypes = $allowedTypes->merge($accessTypes);
+                }
+            }
+
+            // Fallback / pencocokan berdasarkan divisi user (SCM atau BR)
+            $userDiv = strtoupper(trim((string) ($user->division ?? '')));
+            if ($userDiv === 'SCM') {
+                $allowedTypes->push('SCM');
+            } elseif ($userDiv === 'BR') {
+                $allowedTypes->push('BR');
+            }
+
+            $allowedTypes = $allowedTypes->unique()->values();
 
             if ($allowedTypes->isNotEmpty()) {
                 $query->where(function ($q) use ($allowedTypes, $request) {
@@ -47,6 +69,13 @@ class VendorCategoryController extends Controller
                     }
                 });
             }
+        }
+
+        // Support filter eksplisit via query param: ?category_type=SCM atau ?type=BR
+        if ($request->filled('category_type')) {
+            $query->where('category_type', strtoupper($request->input('category_type')));
+        } elseif ($request->filled('type')) {
+            $query->where('category_type', strtoupper($request->input('type')));
         }
 
         $categories = $query->orderBy('id')->get();
