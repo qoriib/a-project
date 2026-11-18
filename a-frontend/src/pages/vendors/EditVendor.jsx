@@ -444,7 +444,7 @@ function editVendor() {
 
         const endpoints = [
           `${API_URL}/vendors/${id}`,
-          `${API_URL}/vendor-categories?all=1`,
+          `${API_URL}/vendor-categories?include_id=${id}`,
           `${API_URL}/payment-terms`,
           `${API_URL}/account-groups`,
           `${API_URL}/recon-accounts`,
@@ -517,6 +517,35 @@ function editVendor() {
         );
 
         let categoriesList = getList(categoryResult.body);
+
+        // Filter kategori sesuai divisi user login (SCM hanya melihat SCM, BR hanya melihat BR)
+        const storedUser = localStorage.getItem("user");
+        let currentUser = null;
+        if (storedUser && storedUser !== "undefined") {
+          try { currentUser = JSON.parse(storedUser); } catch {}
+        }
+        const roleName = String(currentUser?.role?.name || currentUser?.role || "").toUpperCase();
+        const isAdmin = currentUser?.is_admin || roleName === "ADMIN";
+        const division = String(currentUser?.division || "").toUpperCase();
+
+        if (!isAdmin && division) {
+          if (division === "SCM") {
+            categoriesList = categoriesList.filter(
+              (c) =>
+                String(c.id) === existingCatId ||
+                String(c.category_type || "").toUpperCase() === "SCM" ||
+                (!c.category_type && !String(c.category_desc || c.name || "").startsWith("BR -"))
+            );
+          } else if (division === "BR") {
+            categoriesList = categoriesList.filter(
+              (c) =>
+                String(c.id) === existingCatId ||
+                String(c.category_type || "").toUpperCase() === "BR" ||
+                (!c.category_type && String(c.category_desc || c.name || "").startsWith("BR -"))
+            );
+          }
+        }
+
         if (existingCatId && !categoriesList.some((c) => String(c.id) === existingCatId)) {
           const fallbackCat =
             data?.kategori ||

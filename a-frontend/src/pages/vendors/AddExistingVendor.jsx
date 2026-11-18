@@ -1,10 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import "./AddVendor.css";
 import { API_BASE_URL, getAuthHeaders } from "../../api/config";
 
 function AddExistingVendor() {
   const navigate = useNavigate();
+
+  const storedUser = localStorage.getItem("user");
+  let currentUser = null;
+  if (storedUser && storedUser !== "undefined") {
+    try { currentUser = JSON.parse(storedUser); } catch {}
+  }
 
   // ==========================================
   // DATA MASTER
@@ -12,6 +18,32 @@ function AddExistingVendor() {
 
   const [categoryList, setCategoryList] = useState([]);
   const [paymentTermList, setPaymentTermList] = useState([]);
+
+  const filteredCategoryList = useMemo(() => {
+    if (!categoryList || categoryList.length === 0) return [];
+
+    const roleName = String(currentUser?.role?.name || currentUser?.role || "").toUpperCase();
+    const isAdmin = currentUser?.is_admin || roleName === "ADMIN";
+    if (isAdmin) return categoryList;
+
+    const division = String(currentUser?.division || "").toUpperCase();
+    if (division === "SCM") {
+      return categoryList.filter(
+        (c) =>
+          String(c.category_type || "").toUpperCase() === "SCM" ||
+          (!c.category_type && !String(c.category_desc || c.name || "").startsWith("BR -"))
+      );
+    }
+    if (division === "BR") {
+      return categoryList.filter(
+        (c) =>
+          String(c.category_type || "").toUpperCase() === "BR" ||
+          (!c.category_type && String(c.category_desc || c.name || "").startsWith("BR -"))
+      );
+    }
+
+    return categoryList;
+  }, [categoryList, currentUser]);
 
   // ==========================================
   // FORM DATA
@@ -560,7 +592,7 @@ function AddExistingVendor() {
               >
                 <option value="">Pilih Kategori</option>
 
-                {categoryList.map((category) => (
+                {filteredCategoryList.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.category_desc || category.name || category.cat_code}
                   </option>
