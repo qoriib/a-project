@@ -1697,8 +1697,11 @@ class VendorRequestController extends Controller
                 'vendor_code' => $validated['vendor_code'] ?? null,
             ]);
 
+            $currentStatus = strtoupper($vendorRequest->status ?? '');
+            $targetStatus = in_array($currentStatus, ['FORM_APPROVED', 'PENDING_L5']) ? $currentStatus : 'Pending';
+
             $vendorRequest->update([
-                'status' => 'Pending',
+                'status' => $targetStatus,
                 'current_stage' => 'SAP',
             ]);
 
@@ -1903,6 +1906,46 @@ class VendorRequestController extends Controller
         }
 
         $reason = $request->input('reason') ?? $request->input('notes') ?? ('Cancel Approve oleh ' . $stage);
+
+        // Kasus khusus SAP: Jika sedang di Phase 2 (status FORM_APPROVED / Menunggu Kode SAP),
+        // maka cancel-approve akan mengembalikan status ke Phase 1 (PENDING_L5 / Review Tim SAP).
+        if ($stage === 'SAP' && strtoupper($vendorRequest->status ?? '') === 'FORM_APPROVED') {
+            DB::beginTransaction();
+
+            try {
+                $this->recordApprovalHistory(
+                    $vendorRequest,
+                    'SAP',
+                    $this->getCurrentNik($request),
+                    'CANCEL_APPROVE',
+                    $reason
+                );
+
+                $vendorRequest->update([
+                    'current_stage' => 'SAP',
+                    'status' => 'PENDING_L5',
+                    'cancellation_reason' => $reason,
+                ]);
+
+                \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('stage', 'SAP')
+                    ->update(['status' => 'IN_PROGRESS']);
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Cancel Approve berhasil. Pengajuan dikembalikan ke Tahap Review SAP (Level 5).',
+                    'data' => $vendorRequest->fresh()->load($this->vendorRelations()),
+                ]);
+            } catch (\Throwable $e) {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'Gagal memproses Cancel Approve.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+        }
 
         DB::beginTransaction();
 

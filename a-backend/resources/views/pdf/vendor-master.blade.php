@@ -410,8 +410,8 @@
 
     <table class="action-table">
         <tr>
-            <td style="width:24%;">☒ New</td>
-            <td style="width:34%;">☐ Change (*Vendor Code is required)</td>
+            <td style="width:24%;">{{ in_array(strtoupper($vendorRequest->request_type ?? ''), ['UPDATE', 'EXISTING']) ? '☐' : '☒' }} New</td>
+            <td style="width:34%;">{{ in_array(strtoupper($vendorRequest->request_type ?? ''), ['UPDATE', 'EXISTING']) ? '☒' : '☐' }} Change (*Vendor Code is required)</td>
             <td style="width:23%;">☐ Delete/In Active (*Vendor Code is required)</td>
             <td style="width:19%;">☐ Block (*Vendor Code is required)</td>
         </tr>
@@ -427,7 +427,11 @@
             <td colspan="4">
                 <span class="vendor-code-label">Vendor Code*:</span>
                 <span class="vendor-code">
-                    {{ $vendor->vendor_code ?: 'Belum diisi oleh SAP' }}
+                    @if(strtoupper($vendorRequest->status ?? '') === 'COMPLETED')
+                        {{ $vendor->vendor_code ?: '' }}
+                    @else
+                        {{-- Pada tahap awal approval SAP (Phase 1), Vendor Code masih kosong di PDF --}}
+                    @endif
                 </span>
             </td>
         </tr>
