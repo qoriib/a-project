@@ -1282,6 +1282,7 @@ class VendorController extends Controller
                 'swift_code' => $b->swift_code,
             ])->toArray();
             $oldSnapshot['vendor_subcategories'] = $vendor->vendorSubcategories->pluck('subcategory')->toArray();
+            $oldSnapshot['withholding_tax_ids'] = $vendor->withholdingTaxes->pluck('id')->map(fn($id) => (int)$id)->toArray();
 
             $newPayload = array_merge($vendorData, [
                 'vendor_subcategories' => $validated['vendor_subcategories'] ?? [],

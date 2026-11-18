@@ -324,8 +324,8 @@
     $logoSrc = $logoDataUri ?? null;
 
     // DATA BANK DAN TAX
-    $firstBank = $vendor->bankAccounts->first();
-    $selectedTaxes = $vendor->withholdingTaxes ?? collect();
+    $bankList = $bankAccounts ?? ($vendor->bankAccounts ?? collect());
+    $selectedTaxes = $selectedTaxes ?? ($vendor->withholdingTaxes ?? collect());
 
     // KOLOM APPROVAL
     $approvalStages = [
@@ -427,7 +427,7 @@
             <td colspan="4">
                 <span class="vendor-code-label">Vendor Code*:</span>
                 <span class="vendor-code">
-                    @if(strtoupper($vendorRequest->status ?? '') === 'COMPLETED')
+                    @if(in_array(strtoupper($vendorRequest->request_type ?? ''), ['UPDATE', 'EXISTING', 'IMPORT_EXISTING']) || strtoupper($vendorRequest->status ?? '') === 'COMPLETED')
                         {{ $vendor->vendor_code ?: '' }}
                     @else
                         {{-- Pada tahap awal approval SAP (Phase 1), Vendor Code masih kosong di PDF --}}
@@ -496,11 +496,20 @@
                 $kategoriName = $vendor->kategori->name ?? null;
 
                 if (strtolower(trim($kategoriName ?? '')) === 'other') {
-                $kategoriName = $vendor->kategori_other ?: 'Other';
+                    $kategoriName = $vendor->kategori_other ?: 'Other';
                 }
+
+                $subcatText = !empty($subcategories)
+                    ? (is_string($subcategories) ? $subcategories : collect($subcategories)->join(', '))
+                    : null;
                 @endphp
 
                 {{ $kategoriName ?? '-' }}
+                @if($subcatText)
+                    <span style="font-size: 6px; color: #444; margin-left: 4px;">
+                        (Subkategori: {{ $subcatText }})
+                    </span>
+                @endif
             </td>
         </tr>
     </table>
@@ -615,13 +624,20 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($vendor->bankAccounts as $bank)
+            @forelse($bankList as $bank)
+            @php
+                $bName = is_array($bank) ? ($bank['bank_name'] ?? '-') : ($bank->bank_name ?? '-');
+                $bNumber = is_array($bank) ? ($bank['account_number'] ?? ($bank['rekening'] ?? '-')) : ($bank->account_number ?? '-');
+                $bBeneficiary = is_array($bank) ? ($bank['account_name'] ?? ($bank['benificiary'] ?? '-')) : ($bank->account_name ?? '-');
+                $bCurrency = is_array($bank) ? ($bank['currency'] ?? ($vendor->order_currency ?? 'IDR')) : ($bank->currency ?? ($vendor->order_currency ?? 'IDR'));
+                $bSwift = is_array($bank) ? ($bank['swift_code'] ?? '-') : ($bank->swift_code ?? '-');
+            @endphp
             <tr>
-                <td>{{ $bank->bank_name ?? '-' }}</td>
-                <td>{{ $bank->account_number ?? '-' }}</td>
-                <td>{{ $bank->account_name ?? '-' }}</td>
-                <td>{{ $bank->currency ?? $vendor->order_currency ?? 'IDR' }}</td>
-                <td>{{ $bank->swift_code ?? '-' }}</td>
+                <td>{{ $bName ?: '-' }}</td>
+                <td>{{ $bNumber ?: '-' }}</td>
+                <td>{{ $bBeneficiary ?: '-' }}</td>
+                <td>{{ $bCurrency ?: 'IDR' }}</td>
+                <td>{{ $bSwift ?: '-' }}</td>
             </tr>
             @empty
             <tr>
@@ -632,7 +648,7 @@
                 <td></td>
             </tr>
             @endforelse
-            @for($i = $vendor->bankAccounts->count(); $i < 3; $i++)
+            @for($i = count($bankList); $i < 3; $i++)
                 <tr>
                 <td>&nbsp;</td>
                 <td></td>
@@ -640,7 +656,7 @@
                 <td></td>
                 <td></td>
                 </tr>
-                @endfor
+            @endfor
         </tbody>
     </table>
 

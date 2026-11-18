@@ -1355,6 +1355,18 @@ class VendorRequestController extends Controller
                 'payment_method' => $request->payment_method ?? 'Transfer',
             ]);
 
+            $detail = $vendorRequest->details()->latest()->first();
+            if ($detail && is_array($detail->new_data)) {
+                $newD = $detail->new_data;
+                $newD['account_group_id'] = $request->account_group_id;
+                $newD['account_group_other'] = $request->account_group_other;
+                $newD['recon_account_id'] = $request->recon_account_id;
+                $newD['recon_account_other'] = $request->recon_account_other;
+                $newD['payment_method'] = $request->payment_method ?? 'Transfer';
+                $detail->new_data = $newD;
+                $detail->save();
+            }
+
             $vendorRequest->update([
                 'status' => 'Pending',
                 'current_stage' => 'ACCOUNTING',
@@ -1430,6 +1442,18 @@ class VendorRequestController extends Controller
                 'recon_account_other' => $request->recon_account_other,
                 'payment_method' => $request->payment_method,
             ]);
+
+            $detail = $vendorRequest->details()->latest()->first();
+            if ($detail && is_array($detail->new_data)) {
+                $newD = $detail->new_data;
+                $newD['account_group_id'] = $request->account_group_id;
+                $newD['account_group_other'] = $request->account_group_other;
+                $newD['recon_account_id'] = $request->recon_account_id;
+                $newD['recon_account_other'] = $request->recon_account_other;
+                $newD['payment_method'] = $request->payment_method;
+                $detail->new_data = $newD;
+                $detail->save();
+            }
 
             // Sesuai alur workflow: Accounting approve -> lanjut ke Level 4 (Tax)
             $vendorRequest->update([
@@ -1516,6 +1540,19 @@ class VendorRequestController extends Controller
                 'intval',
                 $validated['withholding_tax_ids'] ?? []
             );
+
+            $detail = $vendorRequest->details()->latest()->first();
+            if ($detail && is_array($detail->new_data)) {
+                $oldD = $detail->old_data ?? [];
+                if (!isset($oldD['withholding_tax_ids'])) {
+                    $oldD['withholding_tax_ids'] = $vendorRequest->vendor->withholdingTaxes->pluck('id')->map(fn($id) => (int)$id)->toArray();
+                    $detail->old_data = $oldD;
+                }
+                $newD = $detail->new_data;
+                $newD['withholding_tax_ids'] = $taxIds;
+                $detail->new_data = $newD;
+                $detail->save();
+            }
 
             $vendorRequest->vendor
                 ->withholdingTaxes()
@@ -1606,6 +1643,19 @@ class VendorRequestController extends Controller
                 'intval',
                 $validated['withholding_tax_ids']
             );
+
+            $detail = $vendorRequest->details()->latest()->first();
+            if ($detail && is_array($detail->new_data)) {
+                $oldD = $detail->old_data ?? [];
+                if (!isset($oldD['withholding_tax_ids'])) {
+                    $oldD['withholding_tax_ids'] = $vendorRequest->vendor->withholdingTaxes->pluck('id')->map(fn($id) => (int)$id)->toArray();
+                    $detail->old_data = $oldD;
+                }
+                $newD = $detail->new_data;
+                $newD['withholding_tax_ids'] = $taxIds;
+                $detail->new_data = $newD;
+                $detail->save();
+            }
 
             $vendorRequest->vendor
                 ->withholdingTaxes()
@@ -2232,13 +2282,12 @@ class VendorRequestController extends Controller
             $logoDataUri = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
         }
 
-        $pdf = Pdf::loadView('pdf.vendor-master', [
-            'vendorRequest' => $finalRequest,
-            'vendor' => $finalRequest->vendor,
-            'approvals' => $finalRequest->approvalHistories,
-            'qrCodes' => $qrCodes,
-            'logoDataUri' => $logoDataUri,
-        ]);
+        $pdfData = VendorPdfController::buildPdfData($finalRequest);
+        $pdfData['approvals'] = $finalRequest->approvalHistories;
+        $pdfData['qrCodes'] = $qrCodes;
+        $pdfData['logoDataUri'] = $logoDataUri;
+
+        $pdf = Pdf::loadView('pdf.vendor-master', $pdfData);
 
         $pdf->setPaper('A4', 'portrait');
 

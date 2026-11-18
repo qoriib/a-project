@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Log;
 
 class VendorPdfController extends Controller
 {
-    public function show(Request $request, $id)
+    public static function buildPdfData(VendorRequest $vendorRequest): array
     {
-        $vendorRequest = VendorRequest::with([
+        $vendorRequest->loadMissing([
             'vendor.kategori',
             'vendor.bankAccounts',
             'vendor.documents',
@@ -21,16 +21,184 @@ class VendorPdfController extends Controller
             'vendor.reconAccount',
             'vendor.paymentTerm',
             'vendor.withholdingTaxes',
+            'vendor.vendorSubcategories.category',
             'requester',
             'details',
             'approvalHistories.actor',
-        ])->findOrFail($id);
+        ]);
 
         $vendor = $vendorRequest->vendor;
 
         if (!$vendor) {
             abort(404, 'Data vendor tidak ditemukan.');
         }
+
+        $isUpdate = in_array(
+            strtoupper($vendorRequest->request_type ?? ''),
+            ['UPDATE', 'EXISTING', 'IMPORT_EXISTING'],
+            true
+        );
+
+        $detail = $vendorRequest->relationLoaded('details')
+            ? $vendorRequest->details->sortByDesc('id')->first()
+            : $vendorRequest->details()->latest()->first();
+
+        // Siapkan objek vendor efektif
+        $effectiveVendor = clone $vendor;
+        $effectiveBankAccounts = $vendor->bankAccounts ?? collect();
+        $effectiveSubcategories = $vendor->vendorSubcategories ? $vendor->vendorSubcategories->pluck('subcategory') : collect();
+        $effectiveTaxes = $vendor->withholdingTaxes ?? collect();
+
+        if ($isUpdate && $detail && is_array($detail->new_data)) {
+            $newData = $detail->new_data;
+            $oldData = $detail->old_data ?? [];
+
+            // 1. OVERRIDE FIELD DATA UMUM / TUNGGAL DENGAN DATA TERBARU
+            $singleFields = [
+                'nama_perusahaan', 'search_term', 'address', 'city', 'postal_code',
+                'country', 'phone', 'mobile_phone', 'fax', 'pic_vendor', 'email',
+                'npwp', 'business_type', 'payment_method', 'company_code_purch_org',
+                'account_group_other', 'recon_account_other', 'payment_term_other',
+                'order_currency', 'order_currency_other', 'kategori_other'
+            ];
+
+            foreach ($singleFields as $field) {
+                if (array_key_exists($field, $newData) && $newData[$field] !== null) {
+                    $effectiveVendor->{$field} = $newData[$field];
+                }
+            }
+
+            if (!empty($newData['kategori_id']) && $newData['kategori_id'] != $vendor->kategori_id) {
+                $cat = \App\Models\VendorCategory::find($newData['kategori_id']);
+                if ($cat) {
+                    $effectiveVendor->setRelation('kategori', $cat);
+                    $effectiveVendor->kategori_id = $cat->id;
+                }
+            }
+
+            if (!empty($newData['account_group_id'])) {
+                $ag = \App\Models\AccountGroup::find($newData['account_group_id']);
+                if ($ag) {
+                    $effectiveVendor->setRelation('accountGroup', $ag);
+                    $effectiveVendor->account_group_id = $ag->id;
+                }
+            }
+
+            if (!empty($newData['recon_account_id'])) {
+                $ra = \App\Models\ReconAccount::find($newData['recon_account_id']);
+                if ($ra) {
+                    $effectiveVendor->setRelation('reconAccount', $ra);
+                    $effectiveVendor->recon_account_id = $ra->id;
+                }
+            }
+
+            if (!empty($newData['payment_term_id'])) {
+                $pt = \App\Models\PaymentTerm::find($newData['payment_term_id']);
+                if ($pt) {
+                    $effectiveVendor->setRelation('paymentTerm', $pt);
+                    $effectiveVendor->payment_term_id = $pt->id;
+                }
+            }
+
+            // 2. MULTI-VALUE FIELD 1: REKENING BANK
+            // "misal di rekening bank ada data lama kemudian ada penambahan rekening baru, buatlah tampilkan yang baru saja"
+            $newBanks = $newData['bank_accounts'] ?? [];
+            $oldBanks = $oldData['bank_accounts'] ?? [];
+
+            if (!empty($newBanks) && is_array($newBanks)) {
+                $addedOrModifiedBanks = collect($newBanks)->filter(function ($nBank) use ($oldBanks) {
+                    $isOldIdentical = collect($oldBanks)->contains(function ($oBank) use ($nBank) {
+                        return trim(strtolower($oBank['bank_name'] ?? '')) === trim(strtolower($nBank['bank_name'] ?? ''))
+                            && trim((string)($oBank['account_number'] ?? '')) === trim((string)($nBank['account_number'] ?? ''))
+                            && trim(strtolower($oBank['account_name'] ?? '')) === trim(strtolower($nBank['account_name'] ?? ''))
+                            && trim(strtolower($oBank['swift_code'] ?? '')) === trim(strtolower($nBank['swift_code'] ?? ''));
+                    });
+                    return !$isOldIdentical;
+                })->values();
+
+                if ($addedOrModifiedBanks->isNotEmpty()) {
+                    $effectiveBankAccounts = $addedOrModifiedBanks;
+                } else {
+                    $effectiveBankAccounts = collect($newBanks);
+                }
+            }
+
+            // 3. MULTI-VALUE FIELD 2: SUBKATEGORI VENDOR
+            // "bukan hanya rekening bank, tetapi inputan yang bisa dipilih lebih dari 1"
+            $newSubcatsRaw = $newData['vendor_subcategories'] ?? [];
+            $oldSubcatsRaw = $oldData['vendor_subcategories'] ?? [];
+
+            $newSubcats = collect($newSubcatsRaw)->map(function ($s) {
+                return is_array($s) ? ($s['subcategory'] ?? '') : (string)$s;
+            })->filter()->values();
+
+            $oldSubcats = collect($oldSubcatsRaw)->map(function ($s) {
+                return is_array($s) ? ($s['subcategory'] ?? '') : (string)$s;
+            })->filter()->values();
+
+            if ($newSubcats->isNotEmpty()) {
+                $addedSubcats = $newSubcats->filter(function ($sub) use ($oldSubcats) {
+                    return !$oldSubcats->contains($sub);
+                })->values();
+
+                if ($addedSubcats->isNotEmpty()) {
+                    $effectiveSubcategories = $addedSubcats;
+                } else {
+                    $effectiveSubcategories = $newSubcats;
+                }
+            }
+
+            // 4. MULTI-VALUE FIELD 3: WITHHOLDING TAX (PPh)
+            // "bukan hanya rekening bank, tetapi inputan yang bisa dipilih lebih dari 1"
+            $newTaxIds = collect($newData['withholding_tax_ids'] ?? [])->map(fn($id) => (int)$id)->filter()->values();
+            $oldTaxIds = collect($oldData['withholding_tax_ids'] ?? [])->map(fn($id) => (int)$id)->filter()->values();
+
+            if ($newTaxIds->isNotEmpty()) {
+                $addedTaxIds = $newTaxIds->filter(function ($id) use ($oldTaxIds) {
+                    return !$oldTaxIds->contains($id);
+                })->values();
+
+                if ($oldTaxIds->isNotEmpty() && $addedTaxIds->isNotEmpty()) {
+                    $targetTaxIds = $addedTaxIds;
+                } else {
+                    $targetTaxIds = $newTaxIds;
+                }
+
+                $effectiveTaxes = \App\Models\WithholdingTax::whereIn('id', $targetTaxIds)->get();
+            }
+        }
+
+        // Normalisasi bank accounts agar dapat diakses baik objek maupun array
+        $normalizedBanks = collect($effectiveBankAccounts)->map(function ($b) use ($effectiveVendor) {
+            if (is_array($b)) {
+                return (object) [
+                    'id' => $b['id'] ?? null,
+                    'bank_name' => $b['bank_name'] ?? '',
+                    'account_number' => $b['account_number'] ?? ($b['rekening'] ?? ''),
+                    'account_name' => $b['account_name'] ?? ($b['benificiary'] ?? ''),
+                    'currency' => $b['currency'] ?? ($effectiveVendor->order_currency ?? 'IDR'),
+                    'swift_code' => $b['swift_code'] ?? '',
+                ];
+            }
+            return $b;
+        });
+
+        $effectiveVendor->setRelation('bankAccounts', $normalizedBanks);
+        $effectiveVendor->setRelation('withholdingTaxes', $effectiveTaxes);
+
+        return [
+            'vendorRequest' => $vendorRequest,
+            'vendor' => $effectiveVendor,
+            'bankAccounts' => $normalizedBanks,
+            'subcategories' => $effectiveSubcategories,
+            'selectedTaxes' => $effectiveTaxes,
+        ];
+    }
+
+    public function show(Request $request, $id)
+    {
+        $vendorRequest = VendorRequest::findOrFail($id);
+        $pdfData = self::buildPdfData($vendorRequest);
 
         $stageOrder = [
             'REQUESTER' => 0,
@@ -195,15 +363,13 @@ class VendorPdfController extends Controller
             }
         }
 
-        $pdf = Pdf::loadView('pdf.vendor-master', [
-            'vendorRequest' => $vendorRequest,
-            'vendor' => $vendor,
-            'approvals' => $approvals,
-            'qrCodes' => $qrCodes,
-            'logoDataUri' => $logoDataUri,
-        ]);
+        $pdfData['approvals'] = $approvals;
+        $pdfData['qrCodes'] = $qrCodes;
+        $pdfData['logoDataUri'] = $logoDataUri;
 
-        $pdf->setPaper('A4', 'landscape');
+        $pdf = Pdf::loadView('pdf.vendor-master', $pdfData);
+
+        $pdf->setPaper('A4', 'portrait');
 
         return $pdf->stream(
             'vendor-master-' . $vendorRequest->id . '.pdf'
