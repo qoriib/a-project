@@ -1563,6 +1563,13 @@ function editVendor() {
               </button>
             </div>
 
+            <div className="alert alert-info py-2 px-3 mb-3 d-flex align-items-center" style={{ fontSize: "12px", borderRadius: "8px" }}>
+              <span className="me-2" style={{ fontSize: "16px" }}>ℹ️</span>
+              <span>
+                <strong>Catatan Alur Approval:</strong> Penambahan, perubahan, atau penghapusan rekening bank tetap memerlukan persetujuan dari Tim Tax (Level 4) sebelum diproses ke tahap akhir oleh SAP.
+              </span>
+            </div>
+
             <div className="bank-account-list">
               {bankAccounts.map((bank, index) => (
                 <div
@@ -1734,77 +1741,62 @@ function editVendor() {
           <div className="account-section">
             <div className="d-flex align-items-center justify-content-between mb-2">
               <h5 className="account-section-title mb-0">Data Accounting</h5>
-              {isRequester && (
-                <span className="badge bg-secondary" style={{ fontSize: "11px", fontWeight: "normal" }}>
-                  Dikelola oleh Tim Accounting (Level 3)
-                </span>
-              )}
+              <span className="badge bg-light text-dark border" style={{ fontSize: "11px", fontWeight: "normal" }}>
+                Approval Tim Accounting (Level 3) jika data diubah
+              </span>
             </div>
 
             <p className="account-section-description">
-              {isRequester
-                ? "Bagian ini bersifat read-only bagi Requester dan akan ditinjau serta diisi oleh Tim Accounting pada tahap approval Level 3."
-                : "Informasi accounting vendor."}
+              Informasi accounting vendor. Jika ada perubahan pada bagian ini, pengajuan akan diteruskan ke Tim Accounting pada tahap approval Level 3 untuk persetujuan.
             </p>
 
             <div className="row account-detail-row">
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Account Group {!isRequester && <span className="text-danger">*</span>}
+                  Account Group <span className="text-danger">*</span>
                 </label>
 
                 <select
-                  className="account-detail-input account-detail-select bg-light"
+                  className="account-detail-input account-detail-select"
                   name="account_group_id"
                   value={String(form.account_group_id || "")}
                   onChange={updateField}
-                  disabled={saving || isRequester}
-                  style={isRequester ? { cursor: "not-allowed", backgroundColor: "#f8f9fa" } : {}}
+                  disabled={saving}
                 >
-                  <option value="">
-                    {isRequester
-                      ? accountGroups.find((a) => String(a.id) === String(form.account_group_id))?.name || "Belum ditentukan"
-                      : "Pilih Account Group"}
-                  </option>
-                  {!isRequester && renderSelectOptions(accountGroups)}
+                  <option value="">Pilih Account Group</option>
+                  {renderSelectOptions(accountGroups)}
                 </select>
               </div>
 
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Recon Account {!isRequester && <span className="text-danger">*</span>}
+                  Recon Account <span className="text-danger">*</span>
                 </label>
 
                 <select
-                  className="account-detail-input account-detail-select bg-light"
+                  className="account-detail-input account-detail-select"
                   name="recon_account_id"
                   value={String(form.recon_account_id || "")}
                   onChange={updateField}
-                  disabled={saving || isRequester}
-                  style={isRequester ? { cursor: "not-allowed", backgroundColor: "#f8f9fa" } : {}}
+                  disabled={saving}
                 >
-                  <option value="">
-                    {isRequester
-                      ? reconAccounts.find((r) => String(r.id) === String(form.recon_account_id))?.name || "Belum ditentukan"
-                      : "Pilih Recon Account"}
-                  </option>
-                  {!isRequester && renderSelectOptions(reconAccounts)}
+                  <option value="">Pilih Recon Account</option>
+                  {renderSelectOptions(reconAccounts)}
                 </select>
               </div>
 
               <div className="col-md-6 account-detail-field">
                 <label className="account-detail-label">
-                  Payment Method {!isRequester && <span className="text-danger">*</span>}
+                  Payment Method <span className="text-danger">*</span>
                 </label>
 
                 <input
-                  className="account-detail-input bg-light"
+                  className="account-detail-input"
                   name="payment_method"
                   value={form.payment_method}
                   onChange={updateField}
-                  placeholder={isRequester ? "Dikelola oleh Tim Accounting" : "Contoh: Transfer"}
-                  disabled={saving || isRequester}
-                  style={isRequester ? { cursor: "not-allowed", backgroundColor: "#f8f9fa" } : {}}
+                  placeholder="Contoh: Transfer"
+                  disabled={saving}
                 />
               </div>
             </div>
@@ -1817,17 +1809,13 @@ function editVendor() {
           <div className="account-section">
             <div className="d-flex align-items-center justify-content-between mb-2">
               <h5 className="account-section-title mb-0">Data Tax</h5>
-              {isRequester && (
-                <span className="badge bg-secondary" style={{ fontSize: "11px", fontWeight: "normal" }}>
-                  Dikelola oleh Tim Tax (Level 4)
-                </span>
-              )}
+              <span className="badge bg-light text-dark border" style={{ fontSize: "11px", fontWeight: "normal" }}>
+                Approval Tim Tax (Level 4) jika data Tax / Rekening Bank diubah
+              </span>
             </div>
 
             <p className="account-section-description">
-              {isRequester
-                ? "Bagian ini bersifat read-only bagi Requester dan akan ditentukan oleh Tim Perpajakan pada tahap approval Level 4."
-                : "Pilih satu atau beberapa Withholding Tax untuk vendor."}
+              Pilih satu atau beberapa Withholding Tax untuk vendor. Jika ada perubahan pada bagian ini atau pada Rekening Bank, pengajuan akan diverifikasi dan disetujui oleh Tim Tax pada Level 4.
             </p>
 
             <div className="row account-detail-row">
@@ -1850,15 +1838,13 @@ function editVendor() {
                           key={tax.id}
                           className={`withholding-tax-option ${checked ? "selected" : ""
                             }`}
-                          style={isRequester ? { cursor: "not-allowed", opacity: checked ? 1 : 0.6 } : {}}
                         >
                           <input
                             type="checkbox"
                             className="withholding-tax-checkbox"
                             checked={checked}
-                            disabled={saving || isRequester}
+                            disabled={saving}
                             onChange={() => {
-                              if (isRequester) return;
                               setForm((previous) => {
                                 const currentIds = (
                                   previous.withholding_tax_ids || []
