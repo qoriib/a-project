@@ -54,11 +54,13 @@ class Vendor extends Model
         'order_currency_other',
 
         'created_by',
+        'is_active',
         'start_date',
         'end_date',
     ];
 
     protected $casts = [
+        'is_active' => 'boolean',
         'start_date' => 'date',
         'end_date' => 'date',
     ];

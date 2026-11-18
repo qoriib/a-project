@@ -201,6 +201,16 @@ Route::middleware('auth:sanctum')->group(function () {
             'update'
         ]);
 
+        Route::patch('/{id}/toggle-status', [
+            VendorController::class,
+            'toggleStatus'
+        ]);
+
+        Route::post('/{id}/toggle-status', [
+            VendorController::class,
+            'toggleStatus'
+        ]);
+
         Route::delete('/{id}', [
             VendorController::class,
             'destroy'

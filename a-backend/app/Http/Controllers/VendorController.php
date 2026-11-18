@@ -962,6 +962,12 @@ class VendorController extends Controller
             ], 403);
         }
 
+        if ($vendor->is_active === false && !$isAdmin) {
+            return response()->json([
+                'message' => 'Vendor ini sedang dinonaktifkan dan tidak dapat diajukan perbaikan. Hubungi Administrator untuk mengaktifkan kembali.',
+            ], 403);
+        }
+
         if (blank($vendor->vendor_code)) {
             return response()->json([
                 'message' => 'Update hanya dapat dilakukan pada vendor yang sudah memiliki Vendor Code SAP.',
@@ -1531,18 +1537,47 @@ class VendorController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | DELETE VENDOR
+    | TOGGLE STATUS (ACTIVE / NONACTIVE) - ADMIN ONLY
+    |--------------------------------------------------------------------------
+    */
+
+    public function toggleStatus(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user || !$user->isAdmin()) {
+            return response()->json([
+                'message' => 'Hanya Administrator yang berhak mengubah status aktif/nonaktif vendor.',
+            ], 403);
+        }
+
+        $vendor = Vendor::findOrFail($id);
+
+        if ($request->has('is_active')) {
+            $vendor->is_active = $request->boolean('is_active');
+        } else {
+            $vendor->is_active = !$vendor->is_active;
+        }
+
+        $vendor->save();
+
+        $statusText = $vendor->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+        return response()->json([
+            'message' => "Vendor {$vendor->nama_perusahaan} berhasil {$statusText}.",
+            'data' => $vendor->fresh(),
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE VENDOR (DISABLED)
     |--------------------------------------------------------------------------
     */
 
     public function destroy($id)
     {
-        $vendor = Vendor::findOrFail($id);
-
-        $vendor->delete();
-
         return response()->json([
-            'message' => 'Vendor berhasil dihapus.',
-        ]);
+            'message' => 'Vendor tidak dapat dihapus. Status vendor dapat diubah menjadi Aktif atau Nonaktif hanya oleh Administrator.',
+        ], 403);
     }
 }
