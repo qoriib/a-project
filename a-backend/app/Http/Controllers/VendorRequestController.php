@@ -1254,6 +1254,7 @@ class VendorRequestController extends Controller
                 'current_stage' => 'ASISTEN_KADIV',
                 'submitted_at' => now(),
                 'rejection_reason' => null,
+                'cancellation_reason' => null,
             ]);
 
             // Reset status FormApproval jika sebelumnya ditolak
@@ -1435,6 +1436,7 @@ class VendorRequestController extends Controller
                 'current_stage' => 'TAX',
                 'status' => 'PENDING_L4',
                 'rejection_reason' => null,
+                'cancellation_reason' => null,
             ]);
 
             // History menandakan Accounting approve
@@ -1614,6 +1616,7 @@ class VendorRequestController extends Controller
                 'current_stage' => 'SAP',
                 'status' => 'PENDING_L5',
                 'rejection_reason' => null,
+                'cancellation_reason' => null,
             ]);
 
             // Mencatat Tax yang melakukan approve.
@@ -1806,6 +1809,7 @@ class VendorRequestController extends Controller
                 'current_stage' => $destination['stage'],
                 'status' => $destination['status'],
                 'rejection_reason' => null,
+                'cancellation_reason' => null,
             ]);
 
             // Update FormApproval stage saat ini menjadi APPROVED
@@ -1905,7 +1909,21 @@ class VendorRequestController extends Controller
             return $response;
         }
 
-        $reason = $request->input('reason') ?? $request->input('notes') ?? ('Cancel Approve oleh ' . $stage);
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:1000',
+            'cancellation_reason' => 'nullable|string|max:1000',
+        ]);
+
+        $reason = trim((string) ($validated['cancellation_reason'] ?? $validated['reason'] ?? $request->input('reason') ?? $request->input('notes') ?? ''));
+
+        if (empty($reason)) {
+            return response()->json([
+                'message' => 'Alasan pembatalan (cancel approve) wajib diisi.',
+                'errors' => [
+                    'reason' => ['Alasan pembatalan (cancel approve) wajib diisi.'],
+                ],
+            ], 422);
+        }
 
         // Kasus khusus SAP: Jika sedang di Phase 2 (status FORM_APPROVED / Menunggu Kode SAP),
         // maka cancel-approve akan mengembalikan status ke Phase 1 (PENDING_L5 / Review Tim SAP).
@@ -2106,6 +2124,7 @@ class VendorRequestController extends Controller
                 'status' => 'COMPLETED',
                 'completed_at' => now(),
                 'rejection_reason' => null,
+                'cancellation_reason' => null,
             ]);
 
             // Update FormApproval stage SAP menjadi APPROVED
