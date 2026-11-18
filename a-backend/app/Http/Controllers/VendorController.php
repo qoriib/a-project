@@ -1166,13 +1166,10 @@ class VendorController extends Controller
             array_merge($rules, $this->generalDocumentRules())
         );
 
-        // Jika Requester yang mengedit, data Accounting, Tax, dan SAP tidak boleh diubah oleh Requester
+        // Field SAP dikunci dan dijaga dari data vendor
         if (!$isAdmin) {
-            $validated['account_group_id'] = $vendor->account_group_id;
-            $validated['recon_account_id'] = $vendor->recon_account_id;
-            $validated['payment_method'] = $vendor->payment_method;
             $validated['company_code_purch_org'] = $vendor->company_code_purch_org ?: '1200 / 1300 (PROJECT BAKTI)';
-            $validated['withholding_tax_ids'] = $vendor->withholdingTaxes()->pluck('withholding_taxes.id')->toArray();
+            $validated['vendor_code'] = $vendor->vendor_code;
         }
 
         $subcategoryError = $this->validateVendorSubcategories(
@@ -1339,6 +1336,23 @@ class VendorController extends Controller
                 ];
             }
 
+            // Cek perbedaan Withholding Tax
+            $oldTaxIds = collect($oldSnapshot['withholding_tax_ids'] ?? [])->map(fn($id) => (int)$id)->sort()->values();
+            $newTaxIds = collect($validated['withholding_tax_ids'] ?? [])->map(fn($id) => (int)$id)->sort()->values();
+            if ($oldTaxIds->join(',') !== $newTaxIds->join(',')) {
+                $oldTaxLabels = DB::table('withholding_taxes')->whereIn('id', $oldTaxIds)->pluck('name')->join(', ');
+                $newTaxLabels = DB::table('withholding_taxes')->whereIn('id', $newTaxIds)->pluck('name')->join(', ');
+                $diffData['withholding_tax_ids'] = [
+                    'field' => 'withholding_tax_ids',
+                    'label' => 'Withholding Tax (PPH)',
+                    'role' => 'TAX',
+                    'old' => $oldTaxLabels ?: 'Belum ada pajak',
+                    'new' => $newTaxLabels ?: 'Belum ada pajak',
+                    'old_items' => $oldTaxIds->toArray(),
+                    'new_items' => $newTaxIds->toArray(),
+                ];
+            }
+
             $updateRequest = null;
             $formNumber = null;
 
@@ -1456,7 +1470,35 @@ class VendorController extends Controller
                     'signature_token' => bin2hex(random_bytes(32)),
                 ]);
 
-                // Inisialisasi Form Approvals untuk alur update ini
+                // Tentukan approval stages yang dibutuhkan untuk alur update ini
+                $accountingFields = [
+                    'account_group_id',
+                    'account_group_other',
+                    'recon_account_id',
+                    'recon_account_other',
+                    'payment_method',
+                ];
+                $hasAccountingChange = false;
+                foreach ($accountingFields as $af) {
+                    if (isset($diffData[$af])) {
+                        $hasAccountingChange = true;
+                        break;
+                    }
+                }
+
+                // Terkhusus rekening bank, meskipun diinput requester, tetap memerlukan persetujuan dari Tim Tax
+                $hasTaxChange = isset($diffData['withholding_tax_ids']) || isset($diffData['bank_accounts']);
+
+                $requiredStages = ['ASISTEN_KADIV', 'KADIV'];
+                if ($hasAccountingChange) {
+                    $requiredStages[] = 'ACCOUNTING';
+                }
+                if ($hasTaxChange) {
+                    $requiredStages[] = 'TAX';
+                }
+                $requiredStages[] = 'SAP';
+
+                // Inisialisasi Form Approvals dinamis untuk alur update ini
                 if ($catCode) {
                     $layers = DB::table('master_approval_layer')
                         ->where('cat_code', $catCode)
@@ -1464,19 +1506,21 @@ class VendorController extends Controller
                         ->orderBy('priority')
                         ->get();
 
-                    foreach ($layers as $layer) {
-                        \App\Models\FormApproval::firstOrCreate(
-                            [
-                                'vendor_request_id' => $updateRequest->id,
-                                'priority' => $layer->priority,
-                            ],
-                            [
-                                'stage' => $layer->stage,
-                                'nik' => $layer->nik,
-                                'email' => $layer->email,
-                                'status' => $layer->priority === 1 ? 'IN_PROGRESS' : 'WAITING',
-                            ]
-                        );
+                    $filteredLayers = $layers->filter(function ($layer) use ($requiredStages) {
+                        return in_array($layer->stage, $requiredStages, true);
+                    })->values();
+
+                    $seqPriority = 1;
+                    foreach ($filteredLayers as $layer) {
+                        \App\Models\FormApproval::create([
+                            'vendor_request_id' => $updateRequest->id,
+                            'stage' => $layer->stage,
+                            'priority' => $seqPriority,
+                            'nik' => $layer->nik,
+                            'email' => $layer->email,
+                            'status' => $seqPriority === 1 ? 'IN_PROGRESS' : 'WAITING',
+                        ]);
+                        $seqPriority++;
                     }
                 }
             }

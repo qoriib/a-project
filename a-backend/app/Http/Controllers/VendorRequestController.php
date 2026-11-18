@@ -1455,13 +1455,48 @@ class VendorRequestController extends Controller
                 $detail->save();
             }
 
-            // Sesuai alur workflow: Accounting approve -> lanjut ke Level 4 (Tax)
+            // Update FormApproval stage ACCOUNTING menjadi APPROVED
+            $currentFa = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', 'ACCOUNTING')
+                ->first();
+
+            if ($currentFa) {
+                $currentFa->update(['status' => 'APPROVED']);
+            }
+
+            // Cari layer berikutnya yang menunggu di FormApproval
+            $nextApproval = null;
+            if ($currentFa) {
+                $nextApproval = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('priority', '>', $currentFa->priority)
+                    ->where('status', 'WAITING')
+                    ->orderBy('priority', 'asc')
+                    ->first();
+            } else {
+                $nextApproval = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('status', 'WAITING')
+                    ->orderBy('priority', 'asc')
+                    ->first();
+            }
+
+            $stageStatusMap = [
+                'TAX' => ['status' => 'PENDING_L4', 'label' => 'Tax'],
+                'SAP' => ['status' => 'PENDING_L5', 'label' => 'SAP'],
+            ];
+
+            $nextStage = $nextApproval ? $nextApproval->stage : 'SAP';
+            $destInfo = $stageStatusMap[$nextStage] ?? ['status' => 'PENDING_L5', 'label' => $nextStage];
+
             $vendorRequest->update([
-                'current_stage' => 'TAX',
-                'status' => 'PENDING_L4',
+                'current_stage' => $nextStage,
+                'status' => $destInfo['status'],
                 'rejection_reason' => null,
                 'cancellation_reason' => null,
             ]);
+
+            if ($nextApproval) {
+                $nextApproval->update(['status' => 'IN_PROGRESS']);
+            }
 
             // History menandakan Accounting approve
             $this->recordApprovalHistory(
@@ -1474,7 +1509,7 @@ class VendorRequestController extends Controller
             DB::commit();
 
             return response()->json([
-                'message' => 'Data Accounting berhasil disimpan dan disetujui. Pengajuan diteruskan ke Tax.',
+                'message' => "Data Accounting berhasil disimpan dan disetujui. Pengajuan diteruskan ke {$destInfo['label']}.",
                 'data' => $vendorRequest
                     ->fresh()
                     ->load($this->vendorRelations()),
@@ -1661,13 +1696,43 @@ class VendorRequestController extends Controller
                 ->withholdingTaxes()
                 ->sync($taxIds);
 
-            // Sesuai alur workflow: Tax approve -> lanjut ke Level 5 (SAP)
+            // Update FormApproval stage TAX menjadi APPROVED
+            $currentFa = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', 'TAX')
+                ->first();
+
+            if ($currentFa) {
+                $currentFa->update(['status' => 'APPROVED']);
+            }
+
+            // Cari layer berikutnya di FormApproval
+            $nextApproval = null;
+            if ($currentFa) {
+                $nextApproval = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('priority', '>', $currentFa->priority)
+                    ->where('status', 'WAITING')
+                    ->orderBy('priority', 'asc')
+                    ->first();
+            } else {
+                $nextApproval = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('status', 'WAITING')
+                    ->orderBy('priority', 'asc')
+                    ->first();
+            }
+
+            $nextStage = $nextApproval ? $nextApproval->stage : 'SAP';
+            $destInfo = ['status' => 'PENDING_L5', 'label' => 'SAP'];
+
             $vendorRequest->update([
-                'current_stage' => 'SAP',
-                'status' => 'PENDING_L5',
+                'current_stage' => $nextStage,
+                'status' => $destInfo['status'],
                 'rejection_reason' => null,
                 'cancellation_reason' => null,
             ]);
+
+            if ($nextApproval) {
+                $nextApproval->update(['status' => 'IN_PROGRESS']);
+            }
 
             // Mencatat Tax yang melakukan approve.
             $this->recordApprovalHistory(
@@ -1794,45 +1859,6 @@ class VendorRequestController extends Controller
             $vendorRequest->current_stage ?? ''
         );
 
-        $nextStage = [
-            'REQUESTER' => [
-                'stage' => 'ASISTEN_KADIV',
-                'status' => 'PENDING_L1',
-                'label' => 'Level 1 (Asisten Kadiv)',
-            ],
-            'ASISTEN_KADIV' => [
-                'stage' => 'KADIV',
-                'status' => 'PENDING_L2',
-                'label' => 'Level 2 (Kadiv SCM)',
-            ],
-            'KADIV' => [
-                'stage' => 'ACCOUNTING',
-                'status' => 'PENDING_L3',
-                'label' => 'Level 3 (Accounting)',
-            ],
-            'ACCOUNTING' => [
-                'stage' => 'TAX',
-                'status' => 'PENDING_L4',
-                'label' => 'Level 4 (Tax)',
-            ],
-            'TAX' => [
-                'stage' => 'SAP',
-                'status' => 'PENDING_L5',
-                'label' => 'Level 5 (SAP)',
-            ],
-            'SAP' => [
-                'stage' => 'SAP',
-                'status' => 'FORM_APPROVED',
-                'label' => 'Form Full Approved (Menunggu Pengisian Vendor Code SAP)',
-            ],
-        ];
-
-        if (!array_key_exists($stage, $nextStage)) {
-            return response()->json([
-                'message' => "Approval tidak tersedia pada tahap {$stage}.",
-            ], 422);
-        }
-
         if ($response = $this->ensureApprovalAccess(
             $request,
             $vendorRequest,
@@ -1852,32 +1878,76 @@ class VendorRequestController extends Controller
                 'Approved'
             );
 
-            // Lanjutkan ke tahap berikutnya.
-            $destination = $nextStage[$stage];
-
-            $vendorRequest->update([
-                'current_stage' => $destination['stage'],
-                'status' => $destination['status'],
-                'rejection_reason' => null,
-                'cancellation_reason' => null,
-            ]);
-
             // Update FormApproval stage saat ini menjadi APPROVED
-            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+            $currentFa = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
                 ->where('stage', $stage)
-                ->update(['status' => 'APPROVED']);
+                ->first();
 
-            // Update FormApproval stage berikutnya menjadi IN_PROGRESS
-            if (isset($destination['stage'])) {
-                \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
-                    ->where('stage', $destination['stage'])
-                    ->where('status', 'WAITING')
-                    ->update(['status' => 'IN_PROGRESS']);
+            if ($currentFa) {
+                $currentFa->update(['status' => 'APPROVED']);
             }
 
-            // Jika SAP (Level 5 Step 1: SAP Approval), buat PDF final
-            if ($stage === 'SAP') {
+            // Cari layer berikutnya yang berstatus WAITING
+            $nextFa = null;
+            if ($currentFa) {
+                $nextFa = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('priority', '>', $currentFa->priority)
+                    ->where('status', 'WAITING')
+                    ->orderBy('priority', 'asc')
+                    ->first();
+            } else {
+                $nextFa = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('status', 'WAITING')
+                    ->orderBy('priority', 'asc')
+                    ->first();
+            }
+
+            $stageStatusMap = [
+                'ASISTEN_KADIV' => ['status' => 'PENDING_L1', 'label' => 'Level 1 (Asisten Kadiv)'],
+                'KADIV' => ['status' => 'PENDING_L2', 'label' => 'Level 2 (Kadiv SCM)'],
+                'ACCOUNTING' => ['status' => 'PENDING_L3', 'label' => 'Level 3 (Accounting)'],
+                'TAX' => ['status' => 'PENDING_L4', 'label' => 'Level 4 (Tax)'],
+                'SAP' => ['status' => 'PENDING_L5', 'label' => 'Level 5 (SAP)'],
+            ];
+
+            if ($stage === 'SAP' || !$nextFa) {
+                // Seluruh form approval selesai disetujui.
+                // Masuk ke fase input Vendor Code SAP / Master Data Sync (Phase 2 Level 5).
+                $destination = [
+                    'stage' => 'SAP',
+                    'status' => 'FORM_APPROVED',
+                    'label' => 'Form Full Approved (Menunggu Pengisian Vendor Code SAP)',
+                ];
+
+                $vendorRequest->update([
+                    'current_stage' => 'SAP',
+                    'status' => 'FORM_APPROVED',
+                    'rejection_reason' => null,
+                    'cancellation_reason' => null,
+                ]);
+
+                // Buat PDF final
                 $this->generateFinalVendorPdf($vendorRequest->id);
+            } else {
+                $destInfo = $stageStatusMap[$nextFa->stage] ?? [
+                    'status' => 'PENDING_L' . $nextFa->priority,
+                    'label' => $nextFa->stage,
+                ];
+
+                $destination = [
+                    'stage' => $nextFa->stage,
+                    'status' => $destInfo['status'],
+                    'label' => $destInfo['label'],
+                ];
+
+                $vendorRequest->update([
+                    'current_stage' => $nextFa->stage,
+                    'status' => $destInfo['status'],
+                    'rejection_reason' => null,
+                    'cancellation_reason' => null,
+                ]);
+
+                $nextFa->update(['status' => 'IN_PROGRESS']);
             }
 
             DB::commit();
@@ -1917,35 +1987,8 @@ class VendorRequestController extends Controller
             $vendorRequest->current_stage ?? ''
         );
 
-        $rollbackMap = [
-            'ASISTEN_KADIV' => [
-                'target_stage' => 'REQUESTER',
-                'target_status' => 'DRAFT',
-                'message' => 'Cancel Approve berhasil. Pengajuan dikembalikan ke Draft.',
-            ],
-            'KADIV' => [
-                'target_stage' => 'ASISTEN_KADIV',
-                'target_status' => 'PENDING_L1',
-                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 1 (Asisten Kadiv).',
-            ],
-            'ACCOUNTING' => [
-                'target_stage' => 'KADIV',
-                'target_status' => 'PENDING_L2',
-                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 2 (Kadiv SCM).',
-            ],
-            'TAX' => [
-                'target_stage' => 'ACCOUNTING',
-                'target_status' => 'PENDING_L3',
-                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 3 (Accounting).',
-            ],
-            'SAP' => [
-                'target_stage' => 'TAX',
-                'target_status' => 'PENDING_L4',
-                'message' => 'Cancel Approve berhasil. Pengajuan di-rollback ke Level 4 (Tax).',
-            ],
-        ];
-
-        if (!array_key_exists($stage, $rollbackMap)) {
+        $allowedStages = ['ASISTEN_KADIV', 'KADIV', 'ACCOUNTING', 'TAX', 'SAP'];
+        if (!in_array($stage, $allowedStages, true)) {
             return response()->json([
                 'message' => "Cancel Approve tidak tersedia pada tahap {$stage}.",
             ], 422);
@@ -2026,28 +2069,58 @@ class VendorRequestController extends Controller
                 $reason
             );
 
-            $target = $rollbackMap[$stage];
+            // Cari layer saat ini di FormApproval
+            $currentFa = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                ->where('stage', $stage)
+                ->first();
+
+            $prevFa = null;
+            if ($currentFa) {
+                $prevFa = \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
+                    ->where('priority', '<', $currentFa->priority)
+                    ->orderBy('priority', 'desc')
+                    ->first();
+            }
+
+            $stageStatusMap = [
+                'ASISTEN_KADIV' => ['status' => 'PENDING_L1', 'name' => 'Level 1 (Asisten Kadiv)'],
+                'KADIV' => ['status' => 'PENDING_L2', 'name' => 'Level 2 (Kadiv SCM)'],
+                'ACCOUNTING' => ['status' => 'PENDING_L3', 'name' => 'Level 3 (Accounting)'],
+                'TAX' => ['status' => 'PENDING_L4', 'name' => 'Level 4 (Tax)'],
+                'SAP' => ['status' => 'PENDING_L5', 'name' => 'Level 5 (SAP)'],
+            ];
+
+            if ($prevFa) {
+                $targetStage = $prevFa->stage;
+                $targetStatus = $stageStatusMap[$targetStage]['status'] ?? 'PENDING';
+                $targetName = $stageStatusMap[$targetStage]['name'] ?? $targetStage;
+                $message = "Cancel Approve berhasil. Pengajuan di-rollback ke {$targetName}.";
+            } else {
+                $targetStage = 'REQUESTER';
+                $targetStatus = 'DRAFT';
+                $message = 'Cancel Approve berhasil. Pengajuan dikembalikan ke Draft.';
+            }
 
             $vendorRequest->update([
-                'current_stage' => $target['target_stage'],
-                'status' => $target['target_status'],
+                'current_stage' => $targetStage,
+                'status' => $targetStatus,
                 'cancellation_reason' => $reason,
             ]);
 
             // Update FormApproval stage saat ini menjadi CANCEL_APPROVE
-            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
-                ->where('stage', $stage)
-                ->update(['status' => 'CANCEL_APPROVE']);
+            if ($currentFa) {
+                $currentFa->update(['status' => 'CANCEL_APPROVE']);
+            }
 
             // Update FormApproval stage target rollback menjadi IN_PROGRESS
-            \App\Models\FormApproval::where('vendor_request_id', $vendorRequest->id)
-                ->where('stage', $target['target_stage'])
-                ->update(['status' => 'IN_PROGRESS']);
+            if ($prevFa) {
+                $prevFa->update(['status' => 'IN_PROGRESS']);
+            }
 
             DB::commit();
 
             return response()->json([
-                'message' => $target['message'],
+                'message' => $message,
                 'data' => $vendorRequest->fresh()->load($this->vendorRelations()),
             ]);
         } catch (\Throwable $e) {
